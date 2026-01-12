@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#E30A17"/>
+  <circle cx="425" cy="400" r="150" fill="#fff"/>
+  <circle cx="475" cy="400" r="120" fill="#E30A17"/>
+  <polygon points="580,320 595,365 640,365 605,390 620,435 580,410 540,435 555,390 520,365 565,365" fill="#fff" transform="rotate(-10 580 380)"/>
+</svg>
