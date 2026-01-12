@@ -33,7 +33,8 @@ export interface Course {
   schedule?: Translation;
   icon: string; // lucide icon name
   instructor?: string; // Kursu veren kişi
-  date?: string; // Tarih (YYYY-MM-DD format)
+  date?: string; // Formatlanmış tarih (DD.MM.YYYY)
+  dateISO?: string; // ISO 8601 format: YYYY-MM-DDTHH:mm:ss
   address?: string; // Adres
 }
 

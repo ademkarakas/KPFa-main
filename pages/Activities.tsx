@@ -41,27 +41,80 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
       setLoading(true);
       const data = await activitiesApi.getAll(false); // Sadece aktif olanlar
 
+      if (!data || data.length === 0) {
+        console.warn("API'den boş veri döndü, mock data kullanılıyor");
+        setActivities(MOCK_ACTIVITIES);
+        return;
+      }
+
       // Backend'den gelen verileri frontend formatına çevir
-      const formattedActivities: Activity[] = data.map((item: any) => ({
-        id: item.id,
-        title: { tr: item.titleTr, de: item.titleDe },
-        description: { tr: item.descriptionTr, de: item.descriptionDe },
-        detailedContent: {
-          tr: item.detailedContentTr || item.descriptionTr,
-          de: item.detailedContentDe || item.descriptionDe,
-        },
-        date: { tr: item.dateTr, de: item.dateDe },
-        dateISO: item.dateISO,
-        location: item.location,
-        imageUrl: item.imageUrl,
-        category: item.category,
-        videoUrl: item.videoUrl,
-        galleryImages: item.galleryImages || [],
-      }));
+      const formattedActivities: Activity[] = data.map((item: any) => {
+        // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
+        const formatDate = (dateISO: string, lang: "tr" | "de") => {
+          try {
+            const date = new Date(dateISO);
+            if (lang === "tr") {
+              return date.toLocaleDateString("tr-TR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            } else {
+              return date.toLocaleDateString("de-DE", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            }
+          } catch {
+            return dateISO;
+          }
+        };
+
+        // Adres formatı (address object'ini string'e çevir)
+        const formatAddress = (address: any) => {
+          if (!address) return "";
+          const parts = [];
+          if (address.street) parts.push(address.street);
+          if (address.houseNo) parts.push(address.houseNo);
+          if (address.zipCode) parts.push(address.zipCode);
+          if (address.city) parts.push(address.city);
+          return parts.join(", ");
+        };
+
+        return {
+          id: item.id,
+          title: { tr: item.titleTr || "", de: item.titleDe || "" },
+          description: {
+            tr: item.descriptionTr || "",
+            de: item.descriptionDe || "",
+          },
+          detailedContent: {
+            tr: item.detailedContentTr || item.descriptionTr || "",
+            de: item.detailedContentDe || item.descriptionDe || "",
+          },
+          date: {
+            tr: formatDate(item.date, "tr"),
+            de: formatDate(item.date, "de"),
+          },
+          dateISO: item.date || "",
+          location: formatAddress(item.address),
+          imageUrl: item.imageUrl || "",
+          category: item.category || "Etkinlik",
+          videoUrl: item.videoUrl || "",
+          galleryImages: item.galleryImages || [],
+        };
+      });
 
       setActivities(formattedActivities);
+      console.log(
+        `✅ ${formattedActivities.length} etkinlik başarıyla yüklendi`
+      );
     } catch (error) {
-      console.error("Etkinlikler yüklenemedi, mock data kullanılıyor:", error);
+      console.error(
+        "❌ Etkinlikler yüklenemedi, mock data kullanılıyor:",
+        error
+      );
       // Hata durumunda mock data kullan
       setActivities(MOCK_ACTIVITIES);
     } finally {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ArrowRight,
   Calendar,
@@ -12,17 +12,218 @@ import {
 } from "lucide-react";
 import { Language, PageView, Activity } from "../types";
 import { TEXTS, MOCK_ACTIVITIES } from "../constants";
+import ActivityDetail from "./ActivityDetail";
+
+interface HomeFeature {
+  id: string;
+  titleTr: string;
+  titleDe: string;
+  descriptionTr: string;
+  descriptionDe: string;
+  color: string;
+}
+
+interface HomeCTA {
+  id: string;
+  titleTr: string;
+  titleDe: string;
+  descriptionTr: string;
+  descriptionDe: string;
+  primaryButtonTr: string;
+  primaryButtonDe: string;
+  secondaryButtonTr: string;
+  secondaryButtonDe: string;
+  donateButtonTr: string;
+  donateButtonDe: string;
+}
+
+interface HomeData {
+  activities: Activity[];
+  features: HomeFeature[];
+  cta: HomeCTA;
+  instagramFeed: any[];
+}
 
 interface HomeProps {
   lang: Language;
   setPage: (page: PageView) => void;
 }
 
+// Mock data
+const MOCK_HOME_DATA: HomeData = {
+  activities: [],
+  features: [
+    {
+      id: "1",
+      titleTr: "Biz Kimiz",
+      titleDe: "Über Uns",
+      descriptionTr:
+        "Freiburg'un çok sesli kültür yapısını birleştiren bir köprüyüz.",
+      descriptionDe:
+        "Wir sind die Brücke, die Freiburgs vielfältige Kulturlandschaft verbindet.",
+      color: "#FF6B35",
+    },
+    {
+      id: "2",
+      titleTr: "Değerlerimiz",
+      titleDe: "Unsere Werte",
+      descriptionTr:
+        "Kapsayıcılık ve çeşitlilik üzerine kurulu bir gelecek inşa ediyoruz.",
+      descriptionDe:
+        "Wir bauen eine Zukunft, die auf Inklusion und Vielfalt basiert.",
+      color: "#FFCC00",
+    },
+    {
+      id: "3",
+      titleTr: "Topluluk",
+      titleDe: "Gemeinschaft",
+      descriptionTr:
+        "Birlikte öğreniyor, üretiyor ve Freiburg'u güzelleştiriyoruz.",
+      descriptionDe: "Gemeinsam lernen, gestalten und bereichern wir Freiburg.",
+      color: "#00CCFF",
+    },
+  ],
+  cta: {
+    id: "1",
+    titleTr: "Birlikte Daha Güçlüyüz",
+    titleDe: "Zusammen sind wir stärker",
+    descriptionTr:
+      "Kültürplattform Freiburg'un misyonu, kültürel değerleri yaşatmak ve toplumlar arası köprüler kurmak.",
+    descriptionDe:
+      "Die Mission der Kulturplattform Freiburg ist es, kulturelle Werte lebendig zu halten und Brücken zwischen Gesellschaften zu bauen.",
+    primaryButtonTr: "Etkinlikleri İncele",
+    primaryButtonDe: "Veranstaltungen ansehen",
+    secondaryButtonTr: "İletişime Geç",
+    secondaryButtonDe: "Kontakt aufnehmen",
+    donateButtonTr: "Gönüllü Ol",
+    donateButtonDe: "Freiwilliger werden",
+  },
+  instagramFeed: [],
+};
+
 const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null
   );
+  const [showDetailPage, setShowDetailPage] = useState<boolean>(false);
+  const [homeData, setHomeData] = useState<HomeData>(MOCK_HOME_DATA);
+  const [loading, setLoading] = useState(true);
   const t = (key: string) => TEXTS[key][lang];
+
+  // Backend'den Home verilerini yükle
+  useEffect(() => {
+    const loadHomeData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("https://localhost:7189/api/Home");
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data: HomeData = await response.json();
+
+        if (!data || Object.keys(data).length === 0) {
+          console.warn("API'den boş veri döndü, mock data kullanılıyor");
+          setHomeData(MOCK_HOME_DATA);
+          return;
+        }
+
+        // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
+        const formatDate = (dateISO: string, langCode: "tr" | "de") => {
+          try {
+            const date = new Date(dateISO);
+            if (langCode === "tr") {
+              return date.toLocaleDateString("tr-TR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            } else {
+              return date.toLocaleDateString("de-DE", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            }
+          } catch {
+            return dateISO;
+          }
+        };
+
+        // Adres formatı (address object'ini string'e çevir)
+        const formatAddress = (address: any) => {
+          if (!address) return "";
+          const parts = [];
+          if (address.street) parts.push(address.street);
+          if (address.houseNo) parts.push(address.houseNo);
+          if (address.zipCode) parts.push(address.zipCode);
+          if (address.city) parts.push(address.city);
+          return parts.join(", ");
+        };
+
+        // Backend'den gelen activities'i frontend formatına çevir
+        const formattedActivities: Activity[] = (data.activities || []).map(
+          (item: any) => ({
+            id: item.id,
+            title: { tr: item.titleTr || "", de: item.titleDe || "" },
+            description: {
+              tr: item.descriptionTr || "",
+              de: item.descriptionDe || "",
+            },
+            detailedContent: {
+              tr: item.detailedContentTr || item.descriptionTr || "",
+              de: item.detailedContentDe || item.descriptionDe || "",
+            },
+            date: {
+              tr: formatDate(item.date, "tr"),
+              de: formatDate(item.date, "de"),
+            },
+            dateISO: item.date || "",
+            location: formatAddress(item.address),
+            imageUrl: item.imageUrl || "",
+            category: item.category || "Etkinlik",
+            videoUrl: item.videoUrl || "",
+            galleryImages: item.galleryImages || [],
+          })
+        );
+
+        // Activities boşsa MOCK_ACTIVITIES'i kullan
+        const homeDataWithFallback: HomeData = {
+          ...data,
+          activities:
+            formattedActivities.length > 0
+              ? formattedActivities
+              : MOCK_ACTIVITIES.slice(0, 3),
+          features: data.features || MOCK_HOME_DATA.features,
+          cta: data.cta || MOCK_HOME_DATA.cta,
+        };
+
+        setHomeData(homeDataWithFallback);
+        console.log("✅ Home verisi başarıyla yüklendi");
+      } catch (error) {
+        console.error(
+          "❌ Home verisi yüklenemedi, mock data kullanılıyor:",
+          error
+        );
+        setHomeData(MOCK_HOME_DATA);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHomeData();
+  }, []);
+
+  // Detail page gösteriliyorsa ActivityDetail bileşenini döndür
+  if (showDetailPage && selectedActivity) {
+    return (
+      <ActivityDetail
+        activity={selectedActivity}
+        lang={lang}
+        onBack={() => {
+          setShowDetailPage(false);
+          setSelectedActivity(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col bg-slate-50">
@@ -79,75 +280,28 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
       <section className="relative -mt-20 z-20 pb-20 px-4">
         <div className="container mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                id: "who-we-are", // ID ekledik
-                title: lang === "tr" ? "Biz Kimiz" : "Über Uns",
-                desc:
-                  lang === "tr"
-                    ? "Freiburg'un çok sesli kültür yapısını birleştiren bir köprüyüz."
-                    : "Wir sind die Brücke, die Freiburgs vielfältige Kulturlandschaft verbindet.",
-                icon: <Users className="text-orange-500" size={32} />,
-                color: "bg-orange-500",
-                target: "about",
-              },
-              {
-                id: "values", // ID ekledik (Bu özel olan)
-                title: lang === "tr" ? "Değerlerimiz" : "Unsere Werte",
-                desc:
-                  lang === "tr"
-                    ? "Kapsayıcılık ve çeşitlilik üzerine kurulu bir gelecek inşa ediyoruz."
-                    : "Wir bauen eine Zukunft, die auf Inklusion und Vielfalt basiert.",
-                icon: <Heart className="text-teal-500" size={32} />,
-                color: "bg-teal-500",
-                target: "about",
-              },
-              {
-                id: "community", // ID ekledik
-                title: lang === "tr" ? "Topluluk" : "Gemeinschaft",
-                desc:
-                  lang === "tr"
-                    ? "Birlikte öğreniyor, üretiyor ve Freiburg'u güzelleştiriyoruz."
-                    : "Gemeinsam lernen, gestalten und bereichern wir Freiburg.",
-                icon: <Sparkles className="text-purple-500" size={32} />,
-                color: "bg-purple-500",
-                target: "volunteer",
-              },
-            ].map((feature, idx) => (
+            {homeData.features.map((feature) => (
               <div
-                key={idx}
+                key={feature.id}
                 onClick={() => {
-                  // 1. Sayfayı değiştir
-                  setPage(feature.target as PageView);
-
-                  // 2. Eğer tıklanan kart "Değerlerimiz" kartıysa, About sayfasındaki bölüme kaydır
-                  if (feature.id === "values") {
-                    setTimeout(() => {
-                      const element = document.getElementById(
-                        "core-values-section"
-                      );
-                      if (element) {
-                        element.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }
-                    }, 150); // Sayfanın render olması için kısa bir bekleme
-                  } else {
-                    // Diğer kartlar tıklandığında sayfanın en başına gitmesini sağlarız
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }
+                  setPage("about");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="group bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-slate-100"
               >
-                <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-                  {feature.icon}
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500"
+                  style={{ backgroundColor: `${feature.color}20` }}
+                >
+                  <Sparkles size={32} style={{ color: feature.color }} />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                  {feature.title}
+                  {lang === "tr" ? feature.titleTr : feature.titleDe}
                 </h3>
                 <p className="text-slate-600 leading-relaxed mb-6">
-                  {feature.desc}
+                  {lang === "tr"
+                    ? feature.descriptionTr
+                    : feature.descriptionDe}
                 </p>
                 <div className="flex items-center text-slate-400 font-bold text-sm group-hover:text-slate-900 transition-colors">
                   {lang === "tr" ? "Keşfet" : "Entdecken"}{" "}
@@ -190,11 +344,14 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {MOCK_ACTIVITIES.slice(0, 3).map((activity) => (
+            {homeData.activities.slice(0, 3).map((activity) => (
               <div
                 key={activity.id}
                 className="group bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer"
-                onClick={() => setSelectedActivity(activity)}
+                onClick={() => {
+                  setSelectedActivity(activity);
+                  setShowDetailPage(true);
+                }}
               >
                 <div className="relative h-64 overflow-hidden">
                   <img
@@ -311,80 +468,39 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
 
             <div className="relative z-10 max-w-4xl mx-auto">
               <h2 className="text-4xl md:text-6xl font-serif font-bold text-white mb-10 leading-tight">
-                {lang === "tr"
-                  ? "Birlikte Daha Güçlüyüz"
-                  : "Zusammen sind wir stärker"}
+                {lang === "tr" ? homeData.cta.titleTr : homeData.cta.titleDe}
               </h2>
 
               <p className="text-xl md:text-2xl text-slate-200 mb-16 leading-relaxed font-light">
-                {t("about_mission_short")}
+                {lang === "tr"
+                  ? homeData.cta.descriptionTr
+                  : homeData.cta.descriptionDe}
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center gap-6">
                 <button
-                  onClick={() => setPage("volunteer-form")}
+                  onClick={() => setPage("activities")}
                   className="bg-white text-rose-900 px-12 py-5 rounded-2xl font-extrabold hover:bg-slate-100 transition-all duration-300 flex items-center justify-center gap-3 shadow-xl hover:shadow-white/20 active:scale-95"
                 >
-                  <Heart size={24} fill="currentColor" />
-                  {lang === "tr" ? "Gönüllü Ol" : "Freiwilliger werden"}
+                  <ArrowRight size={24} />
+                  {lang === "tr"
+                    ? homeData.cta.primaryButtonTr
+                    : homeData.cta.primaryButtonDe}
                 </button>
 
                 <button
                   onClick={() => setPage("contact")}
                   className="bg-white/5 text-white border-2 border-white/20 backdrop-blur-sm px-12 py-5 rounded-2xl font-bold hover:bg-white/10 transition-all duration-300 active:scale-95"
                 >
-                  {t("nav_contact")}
+                  {lang === "tr"
+                    ? homeData.cta.secondaryButtonTr
+                    : homeData.cta.secondaryButtonDe}
                 </button>
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* --- Activity Detail Modal (Editoryal Stil) --- */}
-      {selectedActivity && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/90 backdrop-blur-md"
-            onClick={() => setSelectedActivity(null)}
-          ></div>
-          <div className="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-10 shadow-2xl animate-scale-in flex flex-col md:flex-row">
-            <button
-              onClick={() => setSelectedActivity(null)}
-              className="absolute top-6 right-6 bg-white shadow-xl text-slate-800 p-2 rounded-full z-20 hover:scale-110 transition-transform"
-            >
-              <X size={20} />
-            </button>
-            <div className="w-full md:w-1/2 h-64 md:h-auto overflow-hidden">
-              <img
-                src={selectedActivity.imageUrl}
-                alt={selectedActivity.title[lang]}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
-              <div className="text-kpf-red font-bold text-xs mb-4 uppercase tracking-[0.2em]">
-                {selectedActivity.date[lang]}
-              </div>
-              <h3 className="text-3xl font-serif font-bold text-slate-900 mb-6 leading-tight">
-                {selectedActivity.title[lang]}
-              </h3>
-              <div className="flex items-center gap-2 text-slate-500 mb-8 pb-6 border-b border-slate-100">
-                <MapPin size={16} /> {selectedActivity.location}
-              </div>
-              <p className="text-slate-600 leading-relaxed text-lg mb-10">
-                {selectedActivity.description[lang]}
-              </p>
-              <button
-                onClick={() => setSelectedActivity(null)}
-                className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors uppercase tracking-widest text-sm"
-              >
-                {lang === "tr" ? "Kapat" : "Schließen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

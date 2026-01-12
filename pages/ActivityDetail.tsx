@@ -32,7 +32,10 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
     null
   );
 
-  const t = (key: string) => TEXTS[key][lang];
+  const t = (key: string) => {
+    const value = TEXTS[key]?.[lang];
+    return value || key; // Eğer TEXTS'te anahtar yoksa, anahtarı döndür
+  };
 
   // Etkinlik tarihinin geçip geçmediğini kontrol eden fonksiyon
   const isPastActivity = (dateObj: { tr: string; de: string }): boolean => {
@@ -123,7 +126,11 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                 ) : (
                   <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 )}
-                {t(`activities_filter_${activity.category}`)}
+                {activity.category
+                  ? t(`activities_filter_${activity.category}`)
+                  : lang === "tr"
+                  ? "Etkinlik"
+                  : "Veranstaltung"}
               </div>
               <h1 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
                 {activity.title[lang]}
@@ -215,7 +222,30 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
 
                 {/* Dinamik Buton veya Mesaj */}
                 {!isPast ? (
-                  <button className="w-full flex items-center justify-center gap-3 bg-kpf-teal hover:bg-kpf-teal/90 text-white py-4 px-6 rounded-2xl font-bold transition-all shadow-xl shadow-kpf-teal/20 group">
+                  <button
+                    onClick={() => {
+                      // Google Calendar'a ekle
+                      const activityTitle = activity.title[lang];
+                      const dateISO = activity.dateISO;
+                      // ISO formatını YYYYMMDD'ye çevir
+                      const dateOnly = dateISO.split("T")[0].replace(/-/g, "");
+                      const startTime = `${dateOnly}T100000Z`;
+                      const endTime = `${dateOnly}T120000Z`;
+                      const activityDescription = activity.description[lang];
+                      const activityLocation = activity.location;
+
+                      const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+                        activityTitle
+                      )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
+                        activityDescription
+                      )}&location=${encodeURIComponent(
+                        activityLocation
+                      )}&sf=true&output=xml`;
+
+                      window.open(googleCalendarUrl, "_blank");
+                    }}
+                    className="w-full flex items-center justify-center gap-3 bg-kpf-teal hover:bg-kpf-teal/90 text-white py-4 px-6 rounded-2xl font-bold transition-all shadow-xl shadow-kpf-teal/20 group"
+                  >
                     <CalendarPlus
                       size={20}
                       className="group-hover:scale-110 transition-transform"
@@ -236,7 +266,39 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                   </div>
                 )}
 
-                <button className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-kpf-teal transition-colors pt-2 font-medium">
+                <button
+                  onClick={async () => {
+                    // Web Share API kullan veya clipboard'a kopyala
+                    const shareData = {
+                      title: activity.title[lang],
+                      text: activity.description[lang],
+                      url: window.location.href,
+                    };
+
+                    if (navigator.share) {
+                      try {
+                        await navigator.share(shareData);
+                      } catch (err) {
+                        console.log("Share cancelled");
+                      }
+                    } else {
+                      // Fallback: URL'yi clipboard'a kopyala
+                      try {
+                        await navigator.clipboard.writeText(
+                          window.location.href
+                        );
+                        alert(
+                          lang === "tr"
+                            ? "Etkinlik linki kopyalandı!"
+                            : "Veranstaltungslink kopiert!"
+                        );
+                      } catch (err) {
+                        console.error("Clipboard copy failed:", err);
+                      }
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-kpf-teal transition-colors pt-2 font-medium"
+                >
                   <Share2 size={18} />
                   {lang === "tr" ? "Paylaş" : "Teilen"}
                 </button>

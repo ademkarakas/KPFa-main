@@ -39,6 +39,10 @@ const Layout: React.FC<LayoutProps> = ({
 
   const t = (key: string) => TEXTS[key][lang];
 
+  const circumference = 307.919;
+  const progress =
+    circumference * (1 - Math.min(Math.max(scrollProgress, 0), 100) / 100);
+
   // Sayfa kaydırma takibi
   useEffect(() => {
     const handleScroll = () => {
@@ -52,6 +56,7 @@ const Layout: React.FC<LayoutProps> = ({
       setScrollProgress(progress);
     };
     window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Başlangıçta çağır
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -348,17 +353,15 @@ const Layout: React.FC<LayoutProps> = ({
         onClick={scrollToTop}
         className={`scroll-top fixed bottom-8 right-8 z-40 flex items-center justify-center transition-all duration-300 ${
           showScrollTop
-            ? "show opacity-100 translate-y-0 pointer-events-auto"
+            ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 translate-y-10 pointer-events-none"
         }`}
         aria-label="Scroll to top"
-        style={{
-          width: "64px",
-          height: "64px",
-        }}
+        style={{ width: "64px", height: "64px" }}
       >
+        {/* Progress Circle */}
         <svg
-          className="progress-circle svg-content absolute inset-0"
+          className="progress-circle svg-content absolute inset-0 pointer-events-none"
           width="100%"
           height="100%"
           viewBox="-1 -1 102 102"
@@ -372,32 +375,38 @@ const Layout: React.FC<LayoutProps> = ({
               x2="100%"
               y2="100%"
             >
-              <stop offset="0%" stopColor="#dc2638" />
-              <stop offset="100%" stopColor="#f97316" />
+              <stop offset="0%" stopColor="#6944ef" /> {/* red-500 */}
+              <stop offset="100%" stopColor="#7db3e6" /> {/* amber-500 */}
             </linearGradient>
           </defs>
+
+          {/* Background Circle */}
           <circle
             cx="50"
             cy="50"
             r="49"
             fill="none"
-            stroke="rgba(255,255,255,0.1)"
+            stroke="rgba(255,255,255,0.15)"
             strokeWidth="3"
           />
+
+          {/* Progress Path */}
           <path
             d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98"
             fill="none"
             stroke="url(#scrollGradient)"
             strokeWidth="3"
+            strokeDasharray={circumference}
+            strokeDashoffset={progress}
+            strokeLinecap="round"
             style={{
-              strokeDasharray: "307.919, 307.919",
-              strokeDashoffset: 307.919 * (1 - scrollProgress / 100),
-              transition: "stroke-dashoffset 10ms linear",
-              strokeLinecap: "round",
+              transition: "stroke-dashoffset 0.15s linear",
             }}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-orange-500 shadow-lg">
+
+        {/* Center Button */}
+        <div className="absolute inset-2 flex items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-amber-500 shadow-xl">
           <ChevronUp size={24} className="text-white transition-transform" />
         </div>
       </button>

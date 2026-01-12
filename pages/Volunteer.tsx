@@ -50,7 +50,7 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
         // if (!token) throw new Error("Token yok");
 
         const res = await fetch(
-          "https://localhost:7189/api/ValueItems/6620cb16-c787-486c-920a-6d559d12a6fa"
+          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d"
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json: VolunteerData = await res.json();

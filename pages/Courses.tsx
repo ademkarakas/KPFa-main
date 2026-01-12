@@ -37,23 +37,57 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
       setLoading(true);
       const data = await coursesApi.getAll(false); // Sadece aktif olanlar
 
+      if (!data || data.length === 0) {
+        console.warn("API'den boş veri döndü, mock data kullanılıyor");
+        setCourses(COURSES_DATA);
+        return;
+      }
+
+      // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
+      const formatDate = (dateISO: string) => {
+        try {
+          const date = new Date(dateISO);
+          return date.toLocaleDateString("de-DE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+        } catch {
+          return dateISO;
+        }
+      };
+
       // Backend'den gelen verileri frontend formatına çevir
       const formattedCourses: Course[] = data.map((item: any) => ({
         id: item.id,
-        icon: "BookOpen", // Default icon
-        title: { tr: item.titleTr, de: item.titleDe },
-        description: { tr: item.descriptionTr, de: item.descriptionDe },
-        schedule: item.schedule,
-        duration: item.duration,
-        instructor: item.instructor,
-        capacity: item.capacity,
-        price: item.price,
-        imageUrl: item.imageUrl,
+        icon: item.icon || "BookOpen",
+        title: { tr: item.titleTr || "", de: item.titleDe || "" },
+        description: {
+          tr: item.descriptionTr || "",
+          de: item.descriptionDe || "",
+        },
+        details: {
+          tr: item.detailsTr || item.descriptionTr || "",
+          de: item.detailsDe || item.descriptionDe || "",
+        },
+        schedule: {
+          tr: item.scheduleTr || "",
+          de: item.scheduleDe || "",
+        },
+        instructor: item.instructor || "",
+        date: item.date ? formatDate(item.date) : "",
+        dateISO: item.date || "",
+        address: item.courseLocation || "",
+        duration: item.duration || "",
+        capacity: item.capacity || 0,
+        price: item.price || 0,
+        imageUrl: item.imageUrl || "",
       }));
 
       setCourses(formattedCourses);
+      console.log(`✅ ${formattedCourses.length} kurs başarıyla yüklendi`);
     } catch (error) {
-      console.error("Kurslar yüklenemedi, mock data kullanılıyor:", error);
+      console.error("❌ Kurslar yüklenemedi, mock data kullanılıyor:", error);
       setCourses(COURSES_DATA);
     } finally {
       setLoading(false);
@@ -148,7 +182,9 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
               {course.schedule && (
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-50 px-4 py-2 rounded-lg inline-block">
                   <Clock size={16} className="text-kpf-teal" />
-                  {course.schedule[lang]}
+                  {typeof course.schedule === "object"
+                    ? course.schedule[lang]
+                    : course.schedule}
                 </div>
               )}
 
@@ -227,7 +263,9 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
                         {lang === "tr" ? "Zaman" : "Zeit"}
                       </p>
                       <p className="text-slate-800 font-semibold">
-                        {selectedCourse.schedule[lang]}
+                        {typeof selectedCourse.schedule === "object"
+                          ? selectedCourse.schedule[lang]
+                          : selectedCourse.schedule}
                       </p>
                     </div>
                   </div>
@@ -284,17 +322,16 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-6 border-t border-slate-200">
-                {selectedCourse.date && (
+                {selectedCourse.dateISO && (
                   <button
                     onClick={() => {
                       // Add to Google Calendar
                       const courseTitle = selectedCourse.title[lang];
-                      const courseDate =
-                        selectedCourse.date ||
-                        new Date().toISOString().split("T")[0];
-                      const [year, month, day] = courseDate.split("-");
-                      const startTime = `${year}${month}${day}T100000Z`;
-                      const endTime = `${year}${month}${day}T120000Z`;
+                      const dateISO = selectedCourse.dateISO;
+                      // ISO formatını YYYYMMDD'ye çevir
+                      const dateOnly = dateISO.split("T")[0].replace(/-/g, "");
+                      const startTime = `${dateOnly}T100000Z`;
+                      const endTime = `${dateOnly}T120000Z`;
                       const courseDescription = selectedCourse.details
                         ? selectedCourse.details[lang]
                         : selectedCourse.description[lang];
