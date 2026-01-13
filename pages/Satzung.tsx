@@ -114,7 +114,7 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
           <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-4">
             {title}
           </h1>
-          <div className="w-24 h-1 bg-kpf-red mx-auto rounded-full"></div>
+          <div className="w-24 h-1 bg-kpf-teal mx-auto rounded-full"></div>
         </div>
 
         {/* İçerik Bölümleri */}
@@ -192,9 +192,9 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
           </div>
 
           {/* 2. Zweck */}
-          <div className="bg-white rounded-xl shadow-lg p-8 border-l-4 border-kpf-red">
+          <div className="bg-white rounded-xl shadow-lg p-8 border-l-4 border-kpf-teal">
             <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-3">
-              <BookOpen className="text-kpf-red" size={28} />
+              <BookOpen className="text-kpf-teal" size={28} />
               {(isGerman
                 ? data.purposeOfAssociationGerman?.heading
                 : data.purposeOfAssociationTurkish?.heading) || ""}
@@ -208,7 +208,7 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
               {Array.isArray(data.purposes) && data.purposes.length > 0 ? (
                 data.purposes.map((purpose) => (
                   <div key={purpose.letter} className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-kpf-red text-white flex items-center justify-center font-bold">
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-kpf-teal text-white flex items-center justify-center font-bold">
                       {purpose.letter}
                     </span>
                     <p className="text-slate-700 leading-relaxed flex-1">

@@ -1,7 +1,61 @@
-import React, { useEffect, useState } from "react";
-import { Heart } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Heart, Save, Languages, Info, CheckCircle, List } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 
+// --- React 19 Uyumlu Modern Editör Bileşeni ---
+const QuillEditor = ({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (containerRef.current && !quillRef.current) {
+      const quill = new Quill(containerRef.current, {
+        theme: "snow",
+        placeholder: placeholder || "İçerik yazın...",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ["bold", "italic", "underline"],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["link", "clean"],
+          ],
+        },
+      });
+
+      quill.on("text-change", () => {
+        const html = quill.root.innerHTML;
+        onChange(html === "<p><br></p>" ? "" : html);
+      });
+
+      quillRef.current = quill;
+    }
+
+    // Backend'den veri geldiğinde editörün içeriğini bir kez doldurur
+    if (quillRef.current && value && isFirstRender.current) {
+      quillRef.current.root.innerHTML = value;
+      isFirstRender.current = false;
+    }
+  }, [value, placeholder]);
+
+  return (
+    <div className="quill-modern-container">
+      <div ref={containerRef} />
+    </div>
+  );
+};
+
+// --- Tip Tanımlamaları ---
 interface VolunteerSectionItem {
   titleTr: string;
   titleDe: string;
@@ -37,17 +91,17 @@ const AdminVolunteerPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // --- Backend Veri Çekme Mantığı (Eski Kod Korundu) ---
   useEffect(() => {
     const fetchVolunteer = async () => {
       setLoading(true);
       try {
         const res = await fetch(
-          "https://localhost:7189/api/ValueItems/6620cb16-c787-486c-920a-6d559d12a6fa"
+          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d"
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json: any = await res.json();
-        console.log("API Volunteer response:", json);
-        // Eksik section'lar varsa doldur
+
         const emptySection = {
           headingTr: "",
           headingDe: "",
@@ -55,17 +109,20 @@ const AdminVolunteerPage: React.FC = () => {
           bodyDe: "",
           items: [],
         };
+
         // Eğer sections dizisi varsa, sırayla map'le
         let nameAndPurpose = emptySection,
           why = emptySection,
           who = emptySection,
           how = emptySection;
+
         if (Array.isArray(json.sections)) {
           nameAndPurpose = json.sections[0] ?? emptySection;
           why = json.sections[1] ?? emptySection;
           who = json.sections[2] ?? emptySection;
           how = json.sections[3] ?? emptySection;
         }
+
         setData({
           ...json,
           nameAndPurpose:
@@ -77,6 +134,7 @@ const AdminVolunteerPage: React.FC = () => {
           how: json.how && typeof json.how === "object" ? json.how : how,
         });
       } catch (err) {
+        console.error("Fetch hatası:", err);
         setData(null);
       } finally {
         setLoading(false);
@@ -85,6 +143,7 @@ const AdminVolunteerPage: React.FC = () => {
     fetchVolunteer();
   }, []);
 
+  // --- Değişiklik Yönetimi ---
   const handleChange = (field: keyof VolunteerData, value: any) => {
     if (!data) return;
     setData({ ...data, [field]: value });
@@ -153,204 +212,249 @@ const AdminVolunteerPage: React.FC = () => {
     }
   };
 
-  const getIcon = (iconName: string) => {
-    // Sadece örnek: Admin panelde ikonlar sade gösterilebilir
+  if (loading)
     return (
-      <span className="inline-block w-6 h-6 bg-slate-200 rounded-full text-xs text-slate-500 flex items-center justify-center">
-        {iconName}
-      </span>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[40vh] bg-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-kpf-teal"></div>
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-red"></div>
+        <p className="mt-4 text-slate-500 font-medium">Veriler yükleniyor...</p>
       </div>
     );
-  }
 
-  if (!data) {
+  if (!data)
     return (
-      <div className="flex items-center justify-center min-h-[40vh] bg-white">
-        <p className="text-red-600">
-          {isGerman
-            ? "Freiwilligen-Daten konnten nicht geladen werden."
-            : "Gönüllü verisi yüklenemedi."}
-        </p>
+      <div className="text-center p-10 text-red-500 font-bold">
+        Veri bulunamadı.
       </div>
     );
-  }
 
   return (
-    <div className="bg-white min-h-[60vh] rounded-xl shadow p-8">
-      <form onSubmit={handleSave} className="space-y-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
-          <Heart className="text-kpf-red" size={36} />
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
+    <div className="max-w-7xl mx-auto pb-20 px-4">
+      <form onSubmit={handleSave} className="space-y-10">
+        {/* Üst Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-kpf-red/10 rounded-2xl">
+              <Heart className="text-kpf-red" size={28} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-slate-800">
+                Gönüllülük Yönetimi
+              </h1>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle size={10} className="text-green-500" /> React 19
+                Editor Mode
+              </p>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+          >
+            <Save size={18} />
+            {saving ? "Kaydediliyor..." : "Sitede Yayınla"}
+          </button>
+        </div>
+
+        {/* Ana Başlık ve Giriş Bölümü */}
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-2 gap-16">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
+                <Languages size={20} />
+                <span className="font-bold text-xs uppercase tracking-widest">
+                  Türkçe (TR) İçerik
+                </span>
+              </div>
               <input
                 type="text"
                 value={data.titleTr}
                 onChange={(e) => handleChange("titleTr", e.target.value)}
                 placeholder="Başlık (TR)"
-                className="px-3 py-2 border rounded-lg text-lg font-bold w-56"
+                className="w-full text-4xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200"
               />
-              <input
-                type="text"
-                value={data.titleDe}
-                onChange={(e) => handleChange("titleDe", e.target.value)}
-                placeholder="Başlık (DE)"
-                className="px-3 py-2 border rounded-lg text-lg font-bold w-56"
-              />
-            </div>
-            <div className="flex gap-2">
               <input
                 type="text"
                 value={data.subtitleTr}
                 onChange={(e) => handleChange("subtitleTr", e.target.value)}
                 placeholder="Alt Başlık (TR)"
-                className="px-3 py-2 border rounded-lg w-56"
+                className="w-full text-lg text-slate-500 font-medium border-none focus:ring-0 p-0"
+              />
+              <div className="pt-4 border-t border-slate-50">
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
+                  Giriş Metni
+                </label>
+                <QuillEditor
+                  value={data.introTr}
+                  onChange={(val) => handleChange("introTr", val)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-6 lg:border-l lg:border-slate-50 lg:pl-16">
+              <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
+                <Languages size={20} />
+                <span className="font-bold text-xs uppercase tracking-widest">
+                  Almanca (DE) İçerik
+                </span>
+              </div>
+              <input
+                type="text"
+                value={data.titleDe}
+                onChange={(e) => handleChange("titleDe", e.target.value)}
+                placeholder="Haupttitel (DE)"
+                className="w-full text-4xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200"
               />
               <input
                 type="text"
                 value={data.subtitleDe}
                 onChange={(e) => handleChange("subtitleDe", e.target.value)}
-                placeholder="Alt Başlık (DE)"
-                className="px-3 py-2 border rounded-lg w-56"
+                placeholder="Untertitel (DE)"
+                className="w-full text-lg text-slate-500 font-medium border-none focus:ring-0 p-0"
               />
+              <div className="pt-4 border-t border-slate-50">
+                <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
+                  Einleitungstext
+                </label>
+                <QuillEditor
+                  value={data.introDe}
+                  onChange={(val) => handleChange("introDe", val)}
+                />
+              </div>
             </div>
           </div>
         </div>
-        {/* Intro */}
-        <div className="mb-8 flex gap-2">
-          <textarea
-            value={data.introTr}
-            onChange={(e) => handleChange("introTr", e.target.value)}
-            placeholder="Açıklama (TR)"
-            className="w-1/2 px-3 py-2 border rounded-lg min-h-[60px]"
-          />
-          <textarea
-            value={data.introDe}
-            onChange={(e) => handleChange("introDe", e.target.value)}
-            placeholder="Açıklama (DE)"
-            className="w-1/2 px-3 py-2 border rounded-lg min-h-[60px]"
-          />
-        </div>
-        {/* Bölümler: nameAndPurpose, why, who, how */}
-        <div className="space-y-8">
+
+        {/* Dinamik Alt Bölümler */}
+        <div className="space-y-12">
           {(
             [
-              {
-                key: "nameAndPurpose",
-                label: isGerman ? "Name und Zweck" : "Ad ve Amaç",
-              },
-              { key: "why", label: isGerman ? "Warum?" : "Neden?" },
-              { key: "who", label: isGerman ? "Wer?" : "Kim?" },
-              { key: "how", label: isGerman ? "Wie?" : "Nasıl?" },
+              { key: "nameAndPurpose", label: "İsim ve Amaç / Name & Zweck" },
+              { key: "why", label: "Neden Katılmalısın? / Warum?" },
+              { key: "who", label: "Kimler Gelebilir? / Wer?" },
+              { key: "how", label: "Nasıl Çalışırız? / Wie?" },
             ] as const
           ).map(({ key, label }) => {
             const section = data[key];
             return (
-              <div
-                key={key}
-                className="bg-slate-50 rounded-lg p-6 border-l-4 border-kpf-red space-y-4"
-              >
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={section.headingTr}
-                    onChange={(e) =>
-                      handleSectionChange(key, "headingTr", e.target.value)
-                    }
-                    placeholder={label + " Başlık (TR)"}
-                    className="px-3 py-2 border rounded-lg w-1/2"
-                  />
-                  <input
-                    type="text"
-                    value={section.headingDe}
-                    onChange={(e) =>
-                      handleSectionChange(key, "headingDe", e.target.value)
-                    }
-                    placeholder={label + " Başlık (DE)"}
-                    className="px-3 py-2 border rounded-lg w-1/2"
-                  />
+              <div key={key} className="group">
+                <div className="flex items-center gap-4 mb-6 ml-4">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-2xl transition-transform group-hover:scale-110">
+                    <List size={20} />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-800">
+                    {label}
+                  </h2>
                 </div>
-                <div className="flex gap-2 mb-2">
-                  <textarea
-                    value={section.bodyTr}
-                    onChange={(e) =>
-                      handleSectionChange(key, "bodyTr", e.target.value)
-                    }
-                    placeholder={label + " Açıklama (TR)"}
-                    className="px-3 py-2 border rounded-lg w-1/2 min-h-[40px]"
-                  />
-                  <textarea
-                    value={section.bodyDe}
-                    onChange={(e) =>
-                      handleSectionChange(key, "bodyDe", e.target.value)
-                    }
-                    placeholder={label + " Açıklama (DE)"}
-                    className="px-3 py-2 border rounded-lg w-1/2 min-h-[40px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  {Array.isArray(section.items) &&
-                    section.items.map((item, iidx) => (
-                      <div key={iidx} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          value={item.titleTr}
-                          onChange={(e) =>
-                            handleItemChange(
-                              key,
-                              iidx,
-                              "titleTr",
-                              e.target.value
-                            )
-                          }
-                          placeholder={label + " Madde (TR)"}
-                          className="px-2 py-1 border rounded-lg w-1/3"
-                        />
-                        <input
-                          type="text"
-                          value={item.titleDe}
-                          onChange={(e) =>
-                            handleItemChange(
-                              key,
-                              iidx,
-                              "titleDe",
-                              e.target.value
-                            )
-                          }
-                          placeholder={label + " Madde (DE)"}
-                          className="px-2 py-1 border rounded-lg w-1/3"
-                        />
-                        <input
-                          type="text"
-                          value={item.icon}
-                          onChange={(e) =>
-                            handleItemChange(key, iidx, "icon", e.target.value)
-                          }
-                          placeholder="İkon"
-                          className="px-2 py-1 border rounded-lg w-1/6"
-                        />
-                      </div>
-                    ))}
+
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 lg:p-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  <div className="space-y-5">
+                    <input
+                      type="text"
+                      value={section.headingTr}
+                      onChange={(e) =>
+                        handleSectionChange(key, "headingTr", e.target.value)
+                      }
+                      placeholder="Başlık (TR)"
+                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-red outline-none pb-2 transition-all"
+                    />
+                    <QuillEditor
+                      value={section.bodyTr}
+                      onChange={(val) =>
+                        handleSectionChange(key, "bodyTr", val)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-5">
+                    <input
+                      type="text"
+                      value={section.headingDe}
+                      onChange={(e) =>
+                        handleSectionChange(key, "headingDe", e.target.value)
+                      }
+                      placeholder="Überschrift (DE)"
+                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-red outline-none pb-2 transition-all"
+                    />
+                    <QuillEditor
+                      value={section.bodyDe}
+                      onChange={(val) =>
+                        handleSectionChange(key, "bodyDe", val)
+                      }
+                    />
+                  </div>
+
+                  {/* Maddeler */}
+                  {Array.isArray(section.items) && section.items.length > 0 && (
+                    <div className="lg:col-span-2 mt-4 pt-6 border-t border-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {section.items.map((item, iidx) => (
+                        <div
+                          key={iidx}
+                          className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 items-center"
+                        >
+                          <input
+                            type="text"
+                            value={item.icon}
+                            onChange={(e) =>
+                              handleItemChange(
+                                key,
+                                iidx,
+                                "icon",
+                                e.target.value
+                              )
+                            }
+                            className="w-12 h-12 text-center rounded-xl bg-white border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-kpf-red"
+                            placeholder="Ikon"
+                          />
+                          <div className="flex-1 space-y-1">
+                            <input
+                              type="text"
+                              value={item.titleTr}
+                              onChange={(e) =>
+                                handleItemChange(
+                                  key,
+                                  iidx,
+                                  "titleTr",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-2 py-1 bg-white rounded-lg text-sm border-none shadow-sm"
+                              placeholder="TR Madde"
+                            />
+                            <input
+                              type="text"
+                              value={item.titleDe}
+                              onChange={(e) =>
+                                handleItemChange(
+                                  key,
+                                  iidx,
+                                  "titleDe",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-2 py-1 bg-white rounded-lg text-sm border-none shadow-sm"
+                              placeholder="DE Punkt"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg"
-        >
-          {saving ? "Kaydediliyor..." : "Kaydet"}
-        </button>
       </form>
+
+      {/* Editor Özelleştirme CSS */}
+      <style>{`
+        .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
+        .quill-modern-container:focus-within { background: #fff; border-color: #ef4444; }
+        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
+        .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
+        .ql-editor { padding: 15px !important; }
+      `}</style>
     </div>
   );
 };

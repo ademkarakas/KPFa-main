@@ -61,7 +61,8 @@ const AdminCourses: React.FC = () => {
     try {
       setLoading(true);
       const data = await coursesApi.getAll(true);
-      setCourses(data);
+      const formatted = data.map(formatAdminCourse);
+      setCourses(formatted);
     } catch (error) {
       console.error("Kurslar yüklenirken hata:", error);
       alert("Kurslar yüklenemedi!");
@@ -84,6 +85,48 @@ const AdminCourses: React.FC = () => {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const formatAdminCourse = (item: any) => {
+    const formatAddress = (address: any) => {
+      if (!address) return "";
+      if (typeof address === "string") return address;
+
+      const parts = [];
+      if (address.street) parts.push(address.street);
+      if (address.houseNo) parts.push(address.houseNo);
+      if (address.zipCode) parts.push(address.zipCode);
+      if (address.city) parts.push(address.city);
+      return parts.join(", ");
+    };
+
+    return {
+      id: item.id,
+
+      titleTr: item.titleTr || "",
+      titleDe: item.titleDe || "",
+
+      descriptionTr: item.descriptionTr || "",
+      descriptionDe: item.descriptionDe || "",
+
+      instructor: item.instructor || "",
+
+      // 🟢 Admin listede gösterilecek tarih
+      date: item.date ? item.date.split("T")[0] : "",
+
+      // 🟢 Schedule (backend’te farklı olabilir)
+      schedule: item.scheduleTr || item.scheduleDe || item.schedule || "",
+
+      // 🟢 Adres / Lokasyon
+      location:
+        formatAddress(item.courseLocation) || formatAddress(item.address) || "",
+
+      duration: item.duration || "",
+      capacity: item.capacity ?? 0,
+      price: item.price || "",
+      imageUrl: item.imageUrl || "",
+      isActive: item.isActive ?? true,
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -191,7 +234,10 @@ const AdminCourses: React.FC = () => {
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
             {t("admin_courses_title")}
           </h1>
-          <p className="text-slate-600">Toplam {courses.length} kurs</p>
+          <p className="text-slate-600">
+            {language === "tr" ? "Toplam" : "Gesamt"} {courses.length}{" "}
+            {language === "tr" ? "kurs" : "Kurse"}
+          </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -210,77 +256,122 @@ const AdminCourses: React.FC = () => {
         />
         <input
           type="text"
-          placeholder="Kurs ara..."
+          placeholder={language === "tr" ? "Kurs ara..." : "Kurs suchen..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
         />
       </div>
 
-      {/* Courses Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredCourses.map((course) => (
-          <div
-            key={course.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-          >
-            <div className="relative h-48">
-              <img
-                src={course.imageUrl}
-                alt={course.titleTr}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 right-4">
+      {/* No Results */}
+      {filteredCourses.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-slate-500 text-lg">
+            {language === "tr"
+              ? "Arama sonucunda kurs bulunamadı."
+              : "Keine Kurse gefunden."}
+          </p>
+        </div>
+      )}
+
+      {/* Courses List */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-semibold text-slate-500 bg-slate-50">
+          <div className="col-span-4">
+            {language === "tr" ? "Kurs / Etkinlik" : "Kurs / Veranstaltung"}
+          </div>
+          <div className="col-span-2">
+            {language === "tr" ? "Eğitmen" : "Dozent"}
+          </div>
+          <div className="col-span-2">
+            {language === "tr" ? "Tarih" : "Termin"}
+          </div>
+          <div className="col-span-2">
+            {language === "tr" ? "Kapasite" : "Kapazität"}
+          </div>
+          <div className="col-span-1 text-center">
+            {language === "tr" ? "Durum" : "Status"}
+          </div>
+          <div className="col-span-1 text-right">
+            {language === "tr" ? "İşlemler" : "Aktionen"}
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-slate-100">
+          {filteredCourses.map((course) => (
+            <div
+              key={course.id}
+              className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50 transition-colors"
+            >
+              {/* Title + Image */}
+              <div className="col-span-4 flex items-center gap-4">
+                <div>
+                  <p className="font-semibold text-slate-800 line-clamp-1">
+                    {language === "tr" ? course.titleTr : course.titleDe}
+                  </p>
+                  <p className="text-xs text-slate-500 line-clamp-1">
+                    {language === "tr"
+                      ? course.descriptionTr
+                      : course.descriptionDe}
+                  </p>
+                </div>
+              </div>
+
+              {/* Instructor */}
+              <div className="col-span-2 text-sm text-slate-600 flex items-center gap-2">
+                <GraduationCap size={14} className="text-kpf-teal" />
+                <span className="line-clamp-1">{course.instructor}</span>
+              </div>
+
+              {/* Schedule */}
+              <div className="col-span-2 text-sm text-slate-600 flex items-center gap-2">
+                <Calendar size={14} className="text-kpf-teal" />
+                <span className="line-clamp-1">{course.schedule}</span>
+              </div>
+
+              {/* Capacity */}
+              <div className="col-span-2 text-sm text-slate-600 flex items-center gap-2">
+                <Users size={14} className="text-kpf-teal" />
+                <span>{course.capacity}</span>
+              </div>
+
+              {/* Status */}
+              <div className="col-span-1 flex justify-center">
                 {course.isActive ? (
-                  <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-                    <Eye size={14} />
-                    Aktif
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                    <Eye size={12} />
+                    {language === "tr" ? "Aktif" : "Aktiv"}
                   </span>
                 ) : (
-                  <span className="px-3 py-1 bg-slate-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-                    <EyeOff size={14} />
-                    Pasif
+                  <span className="px-2 py-1 bg-slate-200 text-slate-600 text-xs font-semibold rounded-full flex items-center gap-1">
+                    <EyeOff size={12} />
+                    {language === "tr" ? "Pasif" : "Inaktiv"}
                   </span>
                 )}
               </div>
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-2">
-                {course.titleTr}
-              </h3>
-              <div className="flex flex-col gap-2 text-sm text-slate-600 mb-4">
-                <div className="flex items-center gap-2">
-                  <GraduationCap size={16} />
-                  <span>{course.instructor}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>{course.schedule}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users size={16} />
-                  <span>Kapasite: {course.capacity}</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
+
+              {/* Actions */}
+              <div className="col-span-1 flex justify-end gap-2">
                 <button
                   onClick={() => handleEdit(course)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                  title={language === "tr" ? "Düzenle" : "Bearbeiten"}
                 >
                   <Edit size={16} />
-                  Düzenle
                 </button>
                 <button
                   onClick={() => handleDelete(course.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                  title={language === "tr" ? "Sil" : "Löschen"}
                 >
                   <Trash2 size={16} />
-                  Sil
                 </button>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Form Modal */}
@@ -289,7 +380,13 @@ const AdminCourses: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-slate-800">
-                {editingId ? "Kurs Düzenle" : "Yeni Kurs"}
+                {editingId
+                  ? language === "tr"
+                    ? "Kurs Düzenle"
+                    : "Kurs bearbeiten"
+                  : language === "tr"
+                  ? "Yeni Kurs"
+                  : "Neuer Kurs"}
               </h2>
               <button
                 onClick={resetForm}
@@ -503,14 +600,20 @@ const AdminCourses: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 font-semibold"
                 >
                   <Save size={20} />
-                  {editingId ? "Güncelle" : "Oluştur"}
+                  {editingId
+                    ? language === "tr"
+                      ? "Güncelle"
+                      : "Aktualisieren"
+                    : language === "tr"
+                    ? "Oluştur"
+                    : "Erstellen"}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all font-semibold"
                 >
-                  İptal
+                  {language === "tr" ? "İptal" : "Abbrechen"}
                 </button>
               </div>
             </form>

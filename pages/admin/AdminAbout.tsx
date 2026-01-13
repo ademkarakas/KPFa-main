@@ -22,7 +22,8 @@ interface TeamMemberField {
 }
 
 interface AboutForm {
-  quote: MultilangField;
+  quoteTr: MultilangField;
+  quoteDe: MultilangField;
   quoteAuthor: string;
   whoWeAreTr: MultilangField;
   whoWeAreDe: MultilangField;
@@ -39,7 +40,8 @@ interface AboutForm {
 }
 
 const initialForm: AboutForm = {
-  quote: { value: "" },
+  quoteTr: { value: "" },
+  quoteDe: { value: "" },
   quoteAuthor: "",
   whoWeAreTr: { value: "" },
   whoWeAreDe: { value: "" },
@@ -297,7 +299,8 @@ const AdminAbout: React.FC = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                     rows={4}
                     value={
-                      (form[item.key as keyof AboutForm] as MultilangField).value
+                      (form[item.key as keyof AboutForm] as MultilangField)
+                        .value
                     }
                     onChange={(e) =>
                       handleFieldChange(item.key as keyof AboutForm, {
@@ -317,20 +320,42 @@ const AdminAbout: React.FC = () => {
               {t.quote}
             </h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.quoteText}
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                  rows={4}
-                  placeholder={t.quoteText}
-                  value={form.quote.value}
-                  onChange={(e) =>
-                    handleFieldChange("quote", { value: e.target.value })
-                  }
-                />
-              </div>
+              {language === "tr" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
+                    {t.quoteText}
+                  </label>
+                  <textarea
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                    rows={4}
+                    placeholder={t.quoteText}
+                    value={form.quoteTr.value}
+                    onChange={(e) =>
+                      handleFieldChange("quoteTr", {
+                        value: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              )}
+              {language === "de" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">
+                    {t.quoteText}
+                  </label>
+                  <textarea
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                    rows={4}
+                    placeholder={t.quoteText}
+                    value={form.quoteDe.value}
+                    onChange={(e) =>
+                      handleFieldChange("quoteDe", {
+                        value: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-2">
                   {t.quoteAuthor}
@@ -487,9 +512,14 @@ const AdminAbout: React.FC = () => {
                             rows={3}
                             value={item.descriptionTr.value}
                             onChange={(e) =>
-                              handleListChange("coreValues", idx, "descriptionTr", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "coreValues",
+                                idx,
+                                "descriptionTr",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -521,9 +551,14 @@ const AdminAbout: React.FC = () => {
                             rows={3}
                             value={item.descriptionDe.value}
                             onChange={(e) =>
-                              handleListChange("coreValues", idx, "descriptionDe", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "coreValues",
+                                idx,
+                                "descriptionDe",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -671,9 +706,14 @@ const AdminAbout: React.FC = () => {
                             rows={3}
                             value={item.descriptionTr.value}
                             onChange={(e) =>
-                              handleListChange("focusAreas", idx, "descriptionTr", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "focusAreas",
+                                idx,
+                                "descriptionTr",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -705,9 +745,14 @@ const AdminAbout: React.FC = () => {
                             rows={3}
                             value={item.descriptionDe.value}
                             onChange={(e) =>
-                              handleListChange("focusAreas", idx, "descriptionDe", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "focusAreas",
+                                idx,
+                                "descriptionDe",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -841,9 +886,14 @@ const AdminAbout: React.FC = () => {
                             type="text"
                             value={item.titleTr.value}
                             onChange={(e) =>
-                              handleListChange("activityAreas", idx, "titleTr", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "activityAreas",
+                                idx,
+                                "titleTr",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -856,9 +906,14 @@ const AdminAbout: React.FC = () => {
                             rows={3}
                             value={item.descriptionTr.value}
                             onChange={(e) =>
-                              handleListChange("activityAreas", idx, "descriptionTr", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "activityAreas",
+                                idx,
+                                "descriptionTr",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -875,9 +930,14 @@ const AdminAbout: React.FC = () => {
                             type="text"
                             value={item.titleDe.value}
                             onChange={(e) =>
-                              handleListChange("activityAreas", idx, "titleDe", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "activityAreas",
+                                idx,
+                                "titleDe",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>
@@ -890,9 +950,14 @@ const AdminAbout: React.FC = () => {
                             rows={3}
                             value={item.descriptionDe.value}
                             onChange={(e) =>
-                              handleListChange("activityAreas", idx, "descriptionDe", {
-                                value: e.target.value,
-                              })
+                              handleListChange(
+                                "activityAreas",
+                                idx,
+                                "descriptionDe",
+                                {
+                                  value: e.target.value,
+                                }
+                              )
                             }
                           />
                         </div>

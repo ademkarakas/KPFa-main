@@ -11,6 +11,7 @@ import {
   MapPin,
   User,
   Calendar,
+  ChevronRight,
 } from "lucide-react";
 import { Language, PageView, Course } from "../types";
 import { TEXTS, COURSES_DATA } from "../constants";
@@ -35,15 +36,13 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
   const loadCourses = async () => {
     try {
       setLoading(true);
-      const data = await coursesApi.getAll(false); // Sadece aktif olanlar
+      const data = await coursesApi.getAll(false);
 
       if (!data || data.length === 0) {
-        console.warn("API'den boş veri döndü, mock data kullanılıyor");
         setCourses(COURSES_DATA);
         return;
       }
 
-      // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
       const formatDate = (dateISO: string) => {
         try {
           const date = new Date(dateISO);
@@ -57,7 +56,6 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
         }
       };
 
-      // Backend'den gelen verileri frontend formatına çevir
       const formattedCourses: Course[] = data.map((item: any) => ({
         id: item.id,
         icon: item.icon || "BookOpen",
@@ -70,10 +68,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
           tr: item.detailsTr || item.descriptionTr || "",
           de: item.detailsDe || item.descriptionDe || "",
         },
-        schedule: {
-          tr: item.scheduleTr || "",
-          de: item.scheduleDe || "",
-        },
+        schedule: { tr: item.scheduleTr || "", de: item.scheduleDe || "" },
         instructor: item.instructor || "",
         date: item.date ? formatDate(item.date) : "",
         dateISO: item.date || "",
@@ -85,269 +80,254 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
       }));
 
       setCourses(formattedCourses);
-      console.log(`✅ ${formattedCourses.length} kurs başarıyla yüklendi`);
     } catch (error) {
-      console.error("❌ Kurslar yüklenemedi, mock data kullanılıyor:", error);
+      console.error("❌ Veri hatası:", error);
       setCourses(COURSES_DATA);
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper to map string icon names to Lucide components
   const getIcon = (iconName: string) => {
+    const props = { size: 30 };
     switch (iconName) {
       case "MessageCircle":
-        return <MessageCircle size={32} />;
+        return <MessageCircle {...props} />;
       case "Languages":
-        return <Languages size={32} />;
+        return <Languages {...props} />;
       case "Music":
-        return <Music size={32} />;
+        return <Music {...props} />;
       case "BookOpen":
-        return <BookOpen size={32} />;
+        return <BookOpen {...props} />;
       case "Heart":
-        return <Heart size={32} />;
+        return <Heart {...props} />;
       default:
-        return <BookOpen size={32} />;
+        return <BookOpen {...props} />;
     }
   };
 
   const handleContactClick = () => {
-    if (setPage) {
-      setPage("contact");
-    } else {
-      console.warn("setPage prop is missing in Courses component");
-    }
+    if (setPage) setPage("contact");
     setSelectedCourse(null);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 py-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-red mx-auto mb-4"></div>
-          <p className="text-slate-600">
-            {lang === "tr"
-              ? "Kurslar yükleniyor..."
-              : "Kurse werden geladen..."}
-          </p>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-slate-200 border-t-kpf-teal rounded-full animate-spin"></div>
+          <div className="mt-6 text-slate-500 font-bold tracking-widest uppercase text-xs">
+            {lang === "tr" ? "Yükleniyor" : "Laden"}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-20">
+    <div className="min-h-screen bg-[#F8FAFC] py-16 lg:py-24">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16 max-w-3xl mx-auto">
-          <h1 className="text-4xl font-serif font-bold text-kpf-dark mb-4">
+        {/* Başlık Alanı */}
+        <div className="text-center mb-20 max-w-3xl mx-auto">
+          <span className="text-kpf-teal font-bold uppercase tracking-[0.2em] text-sm mb-4 block">
+            {lang === "tr" ? "Eğitim Programlarımız" : "Bildungsprogramme"}
+          </span>
+          <h1 className="text-4xl lg:text-5xl font-serif font-bold text-slate-900 mb-6 leading-tight">
             {t("courses_title")}
           </h1>
-          <div className="w-24 h-1.5 bg-kpf-red mx-auto rounded-full mb-6"></div>
-          <p className="text-xl text-slate-600">{t("courses_desc")}</p>
+          <div className="w-20 h-1 bg-kpf-teal mx-auto rounded-full mb-8"></div>
+          <p className="text-lg text-slate-600 leading-relaxed font-medium">
+            {t("courses_desc")}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        {/* Bento Grid Stilinde Kurslar */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10 max-w-7xl mx-auto">
           {courses.map((course, index) => (
             <div
               key={course.id}
               onClick={() => setSelectedCourse(course)}
-              className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-slate-100 group relative overflow-hidden cursor-pointer"
+              className="group bg-white rounded-[2.5rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(20,184,166,0.15)] transition-all duration-500 hover:-translate-y-2 border border-slate-100 cursor-pointer relative overflow-hidden"
             >
-              {/* Decorative Background */}
-              <div
-                className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-5 rounded-bl-full transition-transform group-hover:scale-150 ${
-                  index % 2 === 0
-                    ? "from-kpf-red to-orange-500"
-                    : "from-kpf-teal to-blue-500"
-                }`}
-              ></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-50 group-hover:bg-kpf-teal transition-colors duration-500"></div>
 
-              <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg transform group-hover:rotate-6 transition-transform ${
-                  index % 2 === 0 ? "bg-kpf-red" : "bg-kpf-teal"
-                }`}
-              >
-                {getIcon(course.icon)}
+              <div className="flex justify-between items-start mb-8">
+                <div
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ${
+                    index % 2 === 0
+                      ? "bg-kpf-teal shadow-teal-100"
+                      : "bg-slate-800 shadow-slate-200"
+                  }`}
+                >
+                  {getIcon(course.icon)}
+                </div>
+                <div className="bg-slate-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-x-2 group-hover:translate-x-0">
+                  <ArrowRight size={20} className="text-kpf-teal" />
+                </div>
               </div>
 
-              <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-kpf-teal transition-colors">
+              <h3 className="text-2xl font-bold text-slate-800 mb-4 group-hover:text-kpf-teal transition-colors duration-300">
                 {course.title[lang]}
               </h3>
 
-              <p className="text-slate-600 mb-6 leading-relaxed">
+              <p className="text-slate-500 mb-8 line-clamp-3 leading-relaxed text-[15px]">
                 {course.description[lang]}
               </p>
 
-              {course.schedule && (
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-500 bg-slate-50 px-4 py-2 rounded-lg inline-block">
-                  <Clock size={16} className="text-kpf-teal" />
-                  {typeof course.schedule === "object"
-                    ? course.schedule[lang]
-                    : course.schedule}
-                </div>
-              )}
-
-              <div className="mt-4 flex items-center text-kpf-teal font-bold text-sm opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                {lang === "tr" ? "Detaylar" : "Details"}{" "}
-                <ArrowRight size={16} className="ml-2" />
+              <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                {course.schedule && (
+                  <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <Clock size={16} className="text-kpf-teal" />
+                    <span>
+                      {typeof course.schedule === "object"
+                        ? course.schedule[lang]
+                        : course.schedule}
+                    </span>
+                  </div>
+                )}
+                <span className="text-xs font-black uppercase tracking-widest text-kpf-teal">
+                  {lang === "tr" ? "İncele" : "Details"}
+                </span>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Contact CTA for Courses */}
-        <div className="mt-20 text-center bg-white p-10 rounded-3xl border border-slate-200 max-w-4xl mx-auto shadow-sm">
-          <h3 className="text-2xl font-bold text-kpf-dark mb-4">
-            {t("course_cta")}
-          </h3>
-          <p className="text-slate-600 mb-8">{t("course_cta_desc")}</p>
-          <button
-            onClick={() => setPage && setPage("contact")}
-            className="inline-block bg-kpf-dark text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors"
-          >
-            {lang === "tr" ? "İletişime Geç" : "Kontakt aufnehmen"}
-          </button>
+        {/* Modern CTA */}
+        <div className="mt-24 text-center relative max-w-4xl mx-auto">
+          <div className="absolute inset-0 bg-kpf-teal/5 rounded-[3rem] -rotate-1 scale-105"></div>
+          <div className="relative bg-white p-12 lg:p-16 rounded-[3rem] border border-kpf-teal/10 shadow-sm">
+            <h3 className="text-3xl font-bold text-slate-900 mb-4">
+              {t("course_cta")}
+            </h3>
+            <p className="text-slate-600 mb-10 text-lg max-w-2xl mx-auto">
+              {t("course_cta_desc")}
+            </p>
+            <button
+              onClick={() => setPage && setPage("contact")}
+              className="group inline-flex items-center gap-3 bg-kpf-teal text-white px-10 py-4 rounded-2xl font-bold hover:bg-slate-900 transition-all duration-300 shadow-xl shadow-teal-100"
+            >
+              {lang === "tr" ? "İletişime Geç" : "Kontakt aufnehmen"}
+              <ChevronRight
+                size={20}
+                className="group-hover:translate-x-1 transition-transform"
+              />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Course Detail Modal */}
+      {/* Premium Detail Modal */}
       {selectedCourse && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
             onClick={() => setSelectedCourse(null)}
           ></div>
-          <div className="bg-white rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl animate-fade-in-up overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl relative z-10 shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden border border-white/20">
             <button
               onClick={() => setSelectedCourse(null)}
-              className="absolute top-4 right-4 bg-white/50 hover:bg-white text-slate-800 p-2 rounded-full transition-all backdrop-blur-md z-20"
+              className="absolute top-6 right-6 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-all backdrop-blur-xl z-20 border border-white/30"
             >
               <X size={24} />
             </button>
 
-            {/* Header with gradient background */}
-            <div className="bg-gradient-to-br from-kpf-teal to-teal-600 px-8 py-8 text-white">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-white/20 text-white shadow-lg">
+            <div className="bg-gradient-to-br from-kpf-teal to-teal-700 px-10 py-12 text-white relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+              <div className="relative flex flex-col md:flex-row items-center gap-6">
+                <div className="w-20 h-20 rounded-[1.5rem] flex items-center justify-center bg-white/20 text-white shadow-2xl border border-white/30 backdrop-blur-md">
                   {getIcon(selectedCourse.icon)}
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold">
+                <div className="text-center md:text-left">
+                  <h3 className="text-3xl font-bold mb-2">
                     {selectedCourse.title[lang]}
                   </h3>
-                  <p className="text-white/90">
-                    {lang === "tr" ? "Kurs Detayları" : "Kursdetails"}
-                  </p>
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-teal-50">
+                    <div className="w-2 h-2 rounded-full bg-teal-300 animate-pulse"></div>
+                    <span className="text-sm font-medium uppercase tracking-widest">
+                      {lang === "tr" ? "Kurs Detayları" : "Kurs-Info"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-8 space-y-6">
-              {/* Description */}
-              <div>
-                <p className="text-lg text-slate-600 leading-relaxed">
-                  {selectedCourse.details
-                    ? selectedCourse.details[lang]
-                    : selectedCourse.description[lang]}
-                </p>
-              </div>
+            <div className="p-10 space-y-8 bg-white">
+              <p className="text-lg text-slate-600 leading-relaxed font-medium">
+                {selectedCourse.details
+                  ? selectedCourse.details[lang]
+                  : selectedCourse.description[lang]}
+              </p>
 
-              {/* Schedule & Date Combined */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedCourse.schedule && (
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <Clock className="text-kpf-teal flex-shrink-0" size={20} />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {lang === "tr" ? "Zaman" : "Zeit"}
-                      </p>
-                      <p className="text-slate-800 font-semibold">
-                        {typeof selectedCourse.schedule === "object"
-                          ? selectedCourse.schedule[lang]
-                          : selectedCourse.schedule}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedCourse.date && (
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <Calendar
-                      className="text-kpf-red flex-shrink-0"
-                      size={20}
-                    />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {lang === "tr" ? "Başlangıç" : "Start"}
-                      </p>
-                      <p className="text-slate-800 font-semibold">
-                        {selectedCourse.date}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Instructor & Address Combined */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedCourse.instructor && (
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <User className="text-kpf-red flex-shrink-0" size={20} />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {lang === "tr" ? "Eğitmeni" : "Leiter"}
-                      </p>
-                      <p className="text-slate-800 font-semibold">
-                        {selectedCourse.instructor}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedCourse.address && (
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <MapPin className="text-kpf-red flex-shrink-0" size={20} />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        {lang === "tr" ? "Yer" : "Ort"}
-                      </p>
-                      <p className="text-slate-800 font-semibold text-sm">
-                        {selectedCourse.address}
-                      </p>
-                    </div>
-                  </div>
+                {[
+                  {
+                    icon: <Clock className="text-kpf-teal" />,
+                    label: lang === "tr" ? "Zaman" : "Zeit",
+                    value:
+                      typeof selectedCourse.schedule === "object"
+                        ? selectedCourse.schedule[lang]
+                        : selectedCourse.schedule,
+                    show: !!selectedCourse.schedule,
+                  },
+                  {
+                    icon: <Calendar className="text-teal-600" />,
+                    label: lang === "tr" ? "Başlangıç" : "Start",
+                    value: selectedCourse.date,
+                    show: !!selectedCourse.date,
+                  },
+                  {
+                    icon: <User className="text-teal-600" />,
+                    label: lang === "tr" ? "Eğitmen" : "Leiter",
+                    value: selectedCourse.instructor,
+                    show: !!selectedCourse.instructor,
+                  },
+                  {
+                    icon: <MapPin className="text-teal-600" />,
+                    label: lang === "tr" ? "Yer" : "Ort",
+                    value: selectedCourse.address,
+                    show: !!selectedCourse.address,
+                  },
+                ].map(
+                  (item, i) =>
+                    item.show && (
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-hover hover:bg-teal-50/50 duration-300"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+                            {item.label}
+                          </p>
+                          <p className="text-slate-800 font-bold text-sm">
+                            {item.value}
+                          </p>
+                        </div>
+                      </div>
+                    )
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-6 border-t border-slate-200">
+              <div className="flex flex-col sm:flex-row gap-4 pt-6">
                 {selectedCourse.dateISO && (
                   <button
                     onClick={() => {
-                      // Add to Google Calendar
-                      const courseTitle = selectedCourse.title[lang];
-                      const dateISO = selectedCourse.dateISO;
-                      // ISO formatını YYYYMMDD'ye çevir
-                      const dateOnly = dateISO.split("T")[0].replace(/-/g, "");
-                      const startTime = `${dateOnly}T100000Z`;
-                      const endTime = `${dateOnly}T120000Z`;
-                      const courseDescription = selectedCourse.details
-                        ? selectedCourse.details[lang]
-                        : selectedCourse.description[lang];
-                      const courseAddress = selectedCourse.address || "";
-
+                      const dateOnly = selectedCourse.dateISO
+                        .split("T")[0]
+                        .replace(/-/g, "");
                       const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-                        courseTitle
-                      )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
-                        courseDescription
+                        selectedCourse.title[lang]
+                      )}&dates=${dateOnly}T100000Z/${dateOnly}T120000Z&details=${encodeURIComponent(
+                        selectedCourse.description[lang]
                       )}&location=${encodeURIComponent(
-                        courseAddress
+                        selectedCourse.address || ""
                       )}&sf=true&output=xml`;
-
                       window.open(googleCalendarUrl, "_blank");
                     }}
-                    className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-semibold flex items-center justify-center gap-2"
+                    className="flex-1 px-8 py-4 bg-slate-100 text-slate-700 rounded-2xl hover:bg-slate-200 transition-all font-bold flex items-center justify-center gap-2"
                   >
                     <Calendar size={18} />
                     {lang === "tr" ? "Takvime Ekle" : "Kalender"}
@@ -355,13 +335,13 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
                 )}
                 <button
                   onClick={handleContactClick}
-                  className={`flex-1 px-4 py-3 bg-kpf-dark text-white rounded-lg hover:bg-slate-800 transition-colors font-semibold flex items-center justify-center gap-2 ${
+                  className={`flex-[1.5] px-8 py-4 bg-kpf-teal text-white rounded-2xl hover:bg-slate-900 transition-all font-bold flex items-center justify-center gap-3 shadow-xl shadow-teal-100 ${
                     !selectedCourse.date ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   disabled={!selectedCourse.date}
                 >
-                  {lang === "tr" ? "Kayıt Ol" : "Anmelden"}{" "}
-                  <ArrowRight size={18} />
+                  {lang === "tr" ? "Kayıt Ol" : "Anmelden"}
+                  <ArrowRight size={20} />
                 </button>
               </div>
             </div>

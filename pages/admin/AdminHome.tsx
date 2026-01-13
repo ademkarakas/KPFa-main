@@ -113,14 +113,68 @@ const AdminHome: React.FC = () => {
   const t = (key: string) => TEXTS[key]?.[language] || key;
 
   useEffect(() => {
-    // API'den veri yükle
     loadHomeContent();
   }, []);
 
   const loadHomeContent = async () => {
     try {
-      // TODO: API endpoint'inden verileri yükle
-      console.log("Home content loading...");
+      const response = await fetch("https://localhost:7189/api/Home");
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+
+      // Hero
+      setHeroContent({
+        title_tr: data.hero?.titleTr || "KulturPlattform Freiburg",
+        title_de: data.hero?.titleDe || "KulturPlattform Freiburg",
+        subtitle_tr:
+          data.hero?.subtitleTr || "Freiburg'un kültürü birleştiren platformu",
+        subtitle_de:
+          data.hero?.subtitleDe ||
+          "Die Kulturplattform, die Freiburg verbindet",
+        ctaPrimaryText_tr: data.hero?.ctaPrimaryTextTr || "Etkinlikleri Gör",
+        ctaPrimaryText_de:
+          data.hero?.ctaPrimaryTextDe || "Aktivitäten entdecken",
+        cta2Text_tr: data.hero?.cta2TextTr || "Gönüllü Ol",
+        cta2Text_de: data.hero?.cta2TextDe || "Freiwilliger werden",
+      });
+
+      // Features
+      setFeatures(
+        (data.features || []).map((f: any, idx: number) => ({
+          id: f.id || String(idx + 1),
+          title_tr: f.titleTr || "",
+          title_de: f.titleDe || "",
+          description_tr: f.descriptionTr || "",
+          description_de: f.descriptionDe || "",
+          icon: f.icon || "users",
+        }))
+      );
+
+      // Instagram
+      setInstagramSection({
+        title_tr: data.instagram?.titleTr || "Instagram'da Takip Et",
+        title_de: data.instagram?.titleDe || "Folge uns auf Instagram",
+        description_tr:
+          data.instagram?.descriptionTr ||
+          "Son fotoğrafları ve güncelleri görmek için",
+        description_de:
+          data.instagram?.descriptionDe ||
+          "Siehe die neuesten Fotos und Updates",
+        instagramHandle:
+          data.instagram?.instagramHandle || "@kulturplattformfreiburg",
+      });
+
+      // CTA
+      setCtaSection({
+        title_tr: data.cta?.titleTr || "Ailemize Katılın",
+        title_de: data.cta?.titleDe || "Werden Sie Teil unserer Familie",
+        description_tr:
+          data.cta?.descriptionTr ||
+          "KulturPlattform Freiburg'un misyonuna katılın",
+        description_de:
+          data.cta?.descriptionDe ||
+          "Treten Sie der Mission von KulturPlattform Freiburg bei",
+      });
     } catch (error) {
       console.error("Error loading home content:", error);
     }
@@ -129,8 +183,21 @@ const AdminHome: React.FC = () => {
   const saveHeroContent = async () => {
     setSaving(true);
     try {
-      // TODO: API'ye kaydet
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const response = await fetch("https://localhost:7189/api/Home/hero", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titleTr: heroContent.title_tr,
+          titleDe: heroContent.title_de,
+          subtitleTr: heroContent.subtitle_tr,
+          subtitleDe: heroContent.subtitle_de,
+          ctaPrimaryTextTr: heroContent.ctaPrimaryText_tr,
+          ctaPrimaryTextDe: heroContent.ctaPrimaryText_de,
+          cta2TextTr: heroContent.cta2Text_tr,
+          cta2TextDe: heroContent.cta2Text_de,
+        }),
+      });
+      if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
         text:
@@ -199,8 +266,21 @@ const AdminHome: React.FC = () => {
   const saveInstagramSection = async () => {
     setSaving(true);
     try {
-      // TODO: API'ye kaydet
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const response = await fetch(
+        "https://localhost:7189/api/Home/instagram",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titleTr: instagramSection.title_tr,
+            titleDe: instagramSection.title_de,
+            descriptionTr: instagramSection.description_tr,
+            descriptionDe: instagramSection.description_de,
+            instagramHandle: instagramSection.instagramHandle,
+          }),
+        }
+      );
+      if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
         text:
@@ -225,8 +305,17 @@ const AdminHome: React.FC = () => {
   const saveCtaSection = async () => {
     setSaving(true);
     try {
-      // TODO: API'ye kaydet
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const response = await fetch("https://localhost:7189/api/Home/cta", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titleTr: ctaSection.title_tr,
+          titleDe: ctaSection.title_de,
+          descriptionTr: ctaSection.description_tr,
+          descriptionDe: ctaSection.description_de,
+        }),
+      });
+      if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
         text:

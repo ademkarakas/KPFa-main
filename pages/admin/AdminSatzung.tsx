@@ -1,5 +1,6 @@
 import { Book, Plus, Save, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 // Backend DTO yapısı
 interface SectionContent {
@@ -21,7 +22,6 @@ interface MembershipDetail {
 
 interface SatzungDto {
   id: string;
-  key: string;
   titleTurkish: string;
   titleGerman: string;
   nameAndSeatTurkish: SectionContent;
@@ -55,7 +55,6 @@ const createEmptySection = (): SectionContent => ({
 
 const EMPTY_STATE: SatzungDto = {
   id: "",
-  key: "statute",
   titleTurkish: "",
   titleGerman: "",
   nameAndSeatTurkish: createEmptySection(),
@@ -85,6 +84,7 @@ const AdminSatzung: React.FC = () => {
   const [content, setContent] = useState<SatzungDto>(EMPTY_STATE);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("basic");
+  const { language } = useLanguage();
 
   useEffect(() => {
     loadSatzung();
@@ -93,41 +93,35 @@ const AdminSatzung: React.FC = () => {
   const loadSatzung = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("adminToken"); // Token alın
+      const token = localStorage.getItem("adminToken");
       if (!token) {
         console.warn("Token bulunamadı, giriş yapmalısınız.");
-        setLoading(false);
-        return;
+        return; // finally bloğu çalışacaktır
       }
 
-      const res = await fetch(
-        "https://localhost:7189/api/Satzung?key=statute",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // Burada token ekleniyor
-          },
-        }
-      );
+      const res = await fetch("https://localhost:7189/api/Satzung", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!res.ok) {
         console.warn("Satzung bulunamadı, boş başlatılıyor");
-        setLoading(false);
         return;
       }
+
       const contentType = res.headers.get("content-type");
       if (!contentType?.includes("application/json")) {
         console.warn("Backend JSON döndürmedi");
-        setLoading(false);
         return;
       }
 
-      const dataArray = await res.json(); // sadece bir kez
+      const dataArray = await res.json();
       if (!dataArray || dataArray.length === 0) {
-        setLoading(false);
         return;
       }
 
-      const data = dataArray[0]; // tek objeyi al
+      const data = dataArray[0];
       setContent({
         ...EMPTY_STATE,
         ...data,
@@ -136,6 +130,9 @@ const AdminSatzung: React.FC = () => {
       });
     } catch (err) {
       console.error("Satzung yükleme hatası:", err);
+    } finally {
+      // Başarılı olsa da hata alsa da loading'i kapatırız
+      setLoading(false);
     }
   };
 
@@ -147,6 +144,7 @@ const AdminSatzung: React.FC = () => {
       const token = localStorage.getItem("adminToken");
       if (!token) {
         alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
+        setLoading(false); // Burayı ekledik
         return;
       }
 
@@ -301,7 +299,7 @@ const AdminSatzung: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-2 flex items-center gap-3">
             <Book className="text-kpf-teal" size={32} />
-            Tüzük / Satzung Yönetimi
+            {language === "tr" ? "Tüzük Yönetimi" : "Satzung Verwaltung"}
           </h1>
         </div>
       </div>
@@ -309,11 +307,23 @@ const AdminSatzung: React.FC = () => {
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
         {[
-          { id: "basic", label: "Temel Bilgiler" },
-          { id: "name", label: "Ad ve Merkez" },
-          { id: "purpose", label: "Amaç" },
-          { id: "gemeinnuetzigkeit", label: "Kamu Yararı" },
-          { id: "membership", label: "Üyelik" },
+          {
+            id: "basic",
+            label: language === "tr" ? "Temel Bilgiler" : "Grunddaten",
+          },
+          {
+            id: "name",
+            label: language === "tr" ? "Ad ve Merkez" : "Name und Sitz",
+          },
+          { id: "purpose", label: language === "tr" ? "Amaç" : "Zweck" },
+          {
+            id: "gemeinnuetzigkeit",
+            label: language === "tr" ? "Kamu Yararı" : "Gemeinnützigkeit",
+          },
+          {
+            id: "membership",
+            label: language === "tr" ? "Üyelik" : "Mitgliedschaft",
+          },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -335,7 +345,9 @@ const AdminSatzung: React.FC = () => {
         {/* Temel Bilgiler */}
         {activeTab === "basic" && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">Başlıklar</h2>
+            <h2 className="text-xl font-bold text-slate-800 mb-4">
+              {language === "tr" ? "Başlıklar" : "Überschriften"}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
@@ -365,7 +377,7 @@ const AdminSatzung: React.FC = () => {
         {activeTab === "name" && (
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
             <SectionInput
-              label="Ad ve Merkez (TR)"
+              label={language === "tr" ? "Ad ve Merkez" : "Name und Sitz"}
               field="nameAndSeatTurkish"
               section={content.nameAndSeatTurkish}
             />

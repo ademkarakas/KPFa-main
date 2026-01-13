@@ -22,9 +22,7 @@ interface ActivityFormData {
   descriptionDe: string;
   detailedContentTr: string;
   detailedContentDe: string;
-  dateTr: string;
-  dateDe: string;
-  dateISO: string;
+  date: string;
   location: string;
   category: string;
   imageUrl: string;
@@ -49,9 +47,7 @@ const AdminActivities: React.FC = () => {
     descriptionDe: "",
     detailedContentTr: "",
     detailedContentDe: "",
-    dateTr: "",
-    dateDe: "",
-    dateISO: "",
+    date: "",
     location: "",
     category: "music",
     imageUrl: "",
@@ -68,7 +64,8 @@ const AdminActivities: React.FC = () => {
     try {
       setLoading(true);
       const data = await activitiesApi.getAll(true);
-      setActivities(data);
+      const formatted = data.map(formatAdminActivity);
+      setActivities(formatted);
     } catch (error) {
       console.error("Etkinlikler yüklenirken hata:", error);
       alert("Etkinlikler yüklenemedi!");
@@ -128,9 +125,7 @@ const AdminActivities: React.FC = () => {
         descriptionDe: formData.descriptionDe,
         detailedContentTr: formData.detailedContentTr,
         detailedContentDe: formData.detailedContentDe,
-        dateTr: formData.dateTr,
-        dateDe: formData.dateDe,
-        dateISO: formData.dateISO,
+        date: formData.date,
         location: formData.location,
         category: formData.category,
         imageUrl: formData.imageUrl,
@@ -162,9 +157,7 @@ const AdminActivities: React.FC = () => {
       descriptionDe: activity.descriptionDe,
       detailedContentTr: activity.detailedContentTr || "",
       detailedContentDe: activity.detailedContentDe || "",
-      dateTr: activity.dateTr,
-      dateDe: activity.dateDe,
-      dateISO: activity.dateISO,
+      date: activity.date,
       location: activity.location,
       category: activity.category,
       imageUrl: activity.imageUrl,
@@ -197,9 +190,7 @@ const AdminActivities: React.FC = () => {
       descriptionDe: "",
       detailedContentTr: "",
       detailedContentDe: "",
-      dateTr: "",
-      dateDe: "",
-      dateISO: "",
+      date: "",
       location: "",
       category: "music",
       imageUrl: "",
@@ -218,6 +209,42 @@ const AdminActivities: React.FC = () => {
       a.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const formatAdminActivity = (item: any) => {
+    const formatAddress = (address: any) => {
+      if (!address) return "";
+      const parts = [];
+      if (address.street) parts.push(address.street);
+      if (address.houseNo) parts.push(address.houseNo);
+      if (address.zipCode) parts.push(address.zipCode);
+      if (address.city) parts.push(address.city);
+      return parts.join(", ");
+    };
+
+    return {
+      id: item.id,
+
+      titleTr: item.titleTr || "",
+      titleDe: item.titleDe || "",
+
+      descriptionTr: item.descriptionTr || "",
+      descriptionDe: item.descriptionDe || "",
+
+      detailedContentTr: item.detailedContentTr || item.descriptionTr || "",
+      detailedContentDe: item.detailedContentDe || item.descriptionDe || "",
+
+      // input[type="date"] uyumlu ISO (YYYY-MM-DD)
+      date: item.date ? item.date.split("T")[0] : "",
+
+      location: formatAddress(item.address) || item.location || "",
+
+      category: item.category || "music",
+      imageUrl: item.imageUrl || "",
+      videoUrl: item.videoUrl || "",
+      galleryImages: item.galleryImages || [],
+      isActive: item.isActive ?? true,
+    };
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -234,7 +261,10 @@ const AdminActivities: React.FC = () => {
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
             {t("admin_activities_title")}
           </h1>
-          <p className="text-slate-600">Toplam {activities.length} etkinlik</p>
+          <p className="text-slate-600">
+            {language === "tr" ? "Toplam" : "Gesamt"} {activities.length}{" "}
+            {language === "tr" ? "etkinlik" : "Aktivitäten"}
+          </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -253,78 +283,130 @@ const AdminActivities: React.FC = () => {
         />
         <input
           type="text"
-          placeholder={t("admin_search")}
+          placeholder={
+            language === "tr" ? "Etkinlik ara..." : "Aktivität suchen..."
+          }
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
         />
       </div>
 
+      {/* No Results */}
+      {filteredActivities.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-slate-500 text-lg">
+            {language === "tr"
+              ? "Arama sonucunda etkinlik bulunamadı."
+              : "Keine Aktivitäten gefunden."}
+          </p>
+        </div>
+      )}
+
       {/* Activities List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredActivities.map((activity) => (
-          <div
-            key={activity.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-          >
-            <div className="relative h-48">
-              <img
-                src={activity.imageUrl}
-                alt={activity.titleTr}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 right-4">
-                {activity.isActive ? (
-                  <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-                    <Eye size={14} />
-                    {t("admin_active")}
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 bg-slate-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-                    <EyeOff size={14} />
-                    {t("admin_inactive")}
-                  </span>
-                )}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Header */}
+        <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-semibold text-slate-500 bg-slate-50">
+          <div className="col-span-4">
+            {language === "tr" ? "Etkinlik" : "Aktivität"}
+          </div>
+          <div className="col-span-2">
+            {language === "tr" ? "Kategori" : "Kategorie"}
+          </div>
+          <div className="col-span-2">
+            {language === "tr" ? "Tarih" : "Datum"}
+          </div>
+          <div className="col-span-2">
+            {language === "tr" ? "Konum" : "Ort"}
+          </div>
+          <div className="col-span-1 text-center">
+            {language === "tr" ? "Durum" : "Status"}
+          </div>
+          <div className="col-span-1 text-right">
+            {language === "tr" ? "İşlemler" : "Aktionen"}
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-slate-100">
+          {filteredActivities.map((activity) => (
+            <div
+              key={activity.id}
+              className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50 transition-colors"
+            >
+              {/* Title + Image */}
+              <div className="col-span-4 flex items-center gap-4">
+                <img
+                  src={activity.imageUrl}
+                  alt={activity.titleTr}
+                  className="w-14 h-14 rounded-lg object-cover"
+                />
+                <div>
+                  <p className="font-semibold text-slate-800 line-clamp-1">
+                    {language === "tr" ? activity.titleTr : activity.titleDe}
+                  </p>
+                  <p className="text-xs text-slate-500 line-clamp-1">
+                    {language === "tr"
+                      ? activity.descriptionTr
+                      : activity.descriptionDe}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="px-3 py-1 bg-kpf-teal text-white text-xs font-bold rounded-full">
+
+              {/* Category */}
+              <div className="col-span-2">
+                <span className="inline-block px-3 py-1 bg-kpf-teal/10 text-kpf-teal text-xs font-semibold rounded-full">
                   {activity.category}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-2">
-                {activity.titleTr}
-              </h3>
-              <div className="flex flex-col gap-2 text-sm text-slate-600 mb-4">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>{activity.dateTr}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin size={16} />
-                  <span>{activity.location}</span>
-                </div>
+
+              {/* Date */}
+              <div className="col-span-2 text-sm text-slate-600 flex items-center gap-2">
+                <Calendar size={14} className="text-kpf-teal" />
+                <span>{activity.date}</span>
               </div>
-              <div className="flex gap-2">
+
+              {/* Location */}
+              <div className="col-span-2 text-sm text-slate-600 flex items-center gap-2">
+                <MapPin size={14} className="text-kpf-teal" />
+                <span className="line-clamp-1">{activity.location}</span>
+              </div>
+
+              {/* Status */}
+              <div className="col-span-1 flex justify-center">
+                {activity.isActive ? (
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                    <Eye size={12} />
+                    {language === "tr" ? "Aktif" : "Aktiv"}
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 bg-slate-200 text-slate-600 text-xs font-semibold rounded-full flex items-center gap-1">
+                    <EyeOff size={12} />
+                    {language === "tr" ? "Pasif" : "Inaktiv"}
+                  </span>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="col-span-1 flex justify-end gap-2">
                 <button
                   onClick={() => handleEdit(activity)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                  title={language === "tr" ? "Düzenle" : "Bearbeiten"}
                 >
                   <Edit size={16} />
-                  Düzenle
                 </button>
                 <button
                   onClick={() => handleDelete(activity.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                  title={language === "tr" ? "Sil" : "Löschen"}
                 >
                   <Trash2 size={16} />
-                  Sil
                 </button>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Form Modal */}
@@ -333,7 +415,13 @@ const AdminActivities: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-slate-800">
-                {editingId ? "Etkinlik Düzenle" : "Yeni Etkinlik"}
+                {editingId
+                  ? language === "tr"
+                    ? "Etkinlik Düzenle"
+                    : "Aktivität bearbeiten"
+                  : language === "tr"
+                  ? "Yeni Etkinlik"
+                  : "Neue Aktivität"}
               </h2>
               <button
                 onClick={resetForm}
@@ -628,7 +716,7 @@ const AdminActivities: React.FC = () => {
                   htmlFor="isActive"
                   className="text-sm font-semibold text-slate-700"
                 >
-                  Etkinlik Aktif
+                  {language === "tr" ? "Etkinlik Aktif" : "Aktivität aktiv"}
                 </label>
               </div>
 
@@ -640,14 +728,20 @@ const AdminActivities: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 font-semibold"
                 >
                   <Save size={20} />
-                  {editingId ? "Güncelle" : "Oluştur"}
+                  {editingId
+                    ? language === "tr"
+                      ? "Güncelle"
+                      : "Aktualisieren"
+                    : language === "tr"
+                    ? "Oluştur"
+                    : "Erstellen"}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all font-semibold"
                 >
-                  İptal
+                  {language === "tr" ? "İptal" : "Abbrechen"}
                 </button>
               </div>
             </form>

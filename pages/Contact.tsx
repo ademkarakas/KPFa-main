@@ -120,7 +120,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
           <h1 className="text-5xl font-serif font-bold text-kpf-dark mb-4">
             {t("contact_title")}
           </h1>
-          <div className="w-24 h-1.5 bg-kpf-red mx-auto rounded-full"></div>
+          <div className="w-24 h-1.5 bg-kpf-teal mx-auto rounded-full"></div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 max-w-6xl mx-auto">
@@ -310,7 +310,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                     </div>
                   </div>
 
-                  {contactData.officeHours && (
+                  {/* {contactData.officeHours && (
                     <div className="flex items-start gap-4 group/item">
                       <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm group-hover/item:bg-white/30 transition-colors">
                         <Clock className="text-white" size={24} />
@@ -328,7 +328,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                         </p>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               ) : null}
             </div>

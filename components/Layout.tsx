@@ -235,7 +235,7 @@ const Layout: React.FC<LayoutProps> = ({
               <NavLink page="contact" label={t("nav_contact")} />
 
               <div className="mx-2"></div>
-              <NavLink page="donate" label={t("nav_donate")} primary />
+              <NavLink page="donate" label={t("nav_donate")} />
               {/*<NavLink page="contact" label={t("nav_contact")} />*/}
             </div>
 
@@ -336,12 +336,188 @@ const Layout: React.FC<LayoutProps> = ({
               </button>
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-slate-600 p-2"
+                className="text-slate-600 p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                aria-label="Toggle menu"
+                aria-expanded={isMenuOpen}
               >
                 {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
               </button>
             </div>
           </div>
+
+          {/* Mobile Menu */}
+          {isMenuOpen && (
+            <div className="lg:hidden border-t border-slate-200 bg-white">
+              <div className="flex flex-col space-y-2 px-4 py-4">
+                <button
+                  onClick={() => {
+                    setPage("home");
+                    setIsMenuOpen(false);
+                  }}
+                  className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
+                    currentPage === "home"
+                      ? "bg-kpf-teal/10 text-kpf-teal"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {t("nav_home")}
+                </button>
+
+                {/* About Section */}
+                <div>
+                  <button
+                    onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-semibold flex items-center justify-between ${
+                      ["about", "satzung", "guelen"].includes(currentPage)
+                        ? "bg-kpf-teal/10 text-kpf-teal"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {t("nav_about")}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${
+                        isAboutDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {isAboutDropdownOpen && (
+                    <div className="pl-4 space-y-2 mt-2">
+                      <button
+                        onClick={() => {
+                          setPage("about");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
+                      >
+                        {lang === "tr" ? "Hakkımızda" : "Über uns"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPage("satzung");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
+                      >
+                        {lang === "tr" ? "Tüzük" : "Satzung"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPage("guelen");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
+                      >
+                        {lang === "tr" ? "Gülen Hareketi" : "Über die Bewegung"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Activities Section */}
+                <div>
+                  <button
+                    onClick={() =>
+                      setIsActivityDropdownOpen(!isActivityDropdownOpen)
+                    }
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-semibold flex items-center justify-between ${
+                      ["activities", "teegespraeche"].includes(currentPage)
+                        ? "bg-kpf-teal/10 text-kpf-teal"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {t("nav_activities")}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${
+                        isActivityDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {isActivityDropdownOpen && (
+                    <div className="pl-4 space-y-2 mt-2">
+                      <button
+                        onClick={() => {
+                          setPage("activities");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
+                      >
+                        {t("nav_activities_all")}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPage("teegespraeche");
+                          setIsMenuOpen(false);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
+                      >
+                        {t("nav_teegespraeche")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setPage("courses");
+                    setIsMenuOpen(false);
+                  }}
+                  className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
+                    currentPage === "courses"
+                      ? "bg-kpf-teal/10 text-kpf-teal"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {t("nav_courses")}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setPage("volunteer");
+                    setIsMenuOpen(false);
+                  }}
+                  className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
+                    currentPage === "volunteer"
+                      ? "bg-kpf-teal/10 text-kpf-teal"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {lang === "tr" ? "Gönüllü Ol" : "Freiwilliger"}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setPage("contact");
+                    setIsMenuOpen(false);
+                  }}
+                  className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
+                    currentPage === "contact"
+                      ? "bg-kpf-teal/10 text-kpf-teal"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {t("nav_contact")}
+                </button>
+
+                <div className="my-2 border-t border-slate-200"></div>
+
+                <button
+                  onClick={() => {
+                    setPage("donate");
+                    setIsMenuOpen(false);
+                  }}
+                  className={`text-left px-6 py-3 rounded-full font-semibold transition-all ${
+                    currentPage === "donate"
+                      ? "bg-kpf-teal text-white"
+                      : "bg-kpf-teal text-white hover:bg-teal-700"
+                  }`}
+                >
+                  {t("nav_donate")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -406,7 +582,7 @@ const Layout: React.FC<LayoutProps> = ({
         </svg>
 
         {/* Center Button */}
-        <div className="absolute inset-2 flex items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-amber-500 shadow-xl">
+        <div className="absolute inset-2 flex items-center justify-center rounded-full bg-gradient-to-br from-teal-700 to-teal-700 shadow-xl">
           <ChevronUp size={24} className="text-white transition-transform" />
         </div>
       </button>
@@ -554,7 +730,7 @@ const Layout: React.FC<LayoutProps> = ({
                   setPage("volunteer");
                   scrollToTop();
                 }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-kpf-red to-orange-500 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:-translate-y-1 transition-all"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-kpf-teal to-teal-700 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:-translate-y-1 transition-all"
               >
                 <Heart size={18} />
                 {lang === "tr" ? "Gönüllü Ol" : "Freiwilliger werden"}

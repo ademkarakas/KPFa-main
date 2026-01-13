@@ -374,7 +374,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
                         setSelectedActivity(activity);
                         setShowDetailPage(true);
                       }}
-                      className="text-kpf-red font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all"
+                      className="text-kpf-teal font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all"
                     >
                       {lang === "tr" ? "Detayları Gör" : "Details anzeigen"}{" "}
                       <ArrowRight size={16} />

@@ -63,9 +63,9 @@ const About: React.FC<AboutProps> = ({ lang }) => {
         <div className="bg-white p-10 md:p-14 rounded-2xl shadow-xl border-t-8 border-kpf-teal max-w-4xl mx-auto text-center transform hover:-translate-y-1 transition-transform duration-300">
           <Quote className="text-kpf-teal/20 w-16 h-16 mx-auto mb-6" />
           <p className="text-2xl md:text-3xl font-serif text-slate-700 italic mb-8 leading-relaxed">
-            "{aboutData ? aboutData.quote?.value : "..."}"
+            "{getText(aboutData, "quoteTr", "quoteDe")}"
           </p>
-          <div className="text-kpf-red font-bold tracking-widest uppercase text-sm">
+          <div className="text-kpf-teal font-bold tracking-widest uppercase text-sm">
             — {aboutData ? aboutData.quoteAuthor : "..."}
           </div>
         </div>
@@ -177,13 +177,13 @@ const About: React.FC<AboutProps> = ({ lang }) => {
               .map((value: any, index: number) => (
                 <div
                   key={value.id || value.titleTr?.value}
-                  className="group bg-white p-8 rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 border-t-4 border-transparent hover:border-kpf-red hover:-translate-y-1 relative overflow-hidden"
+                  className="group bg-white p-8 rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 border-t-4 border-transparent hover:border-kpf-teal hover:-translate-y-1 relative overflow-hidden"
                 >
-                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:bg-red-50 transition-colors"></div>
-                  <div className="text-5xl font-bold text-slate-100 group-hover:text-red-100 transition-colors mb-4 absolute right-4 top-2 select-none">
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:bg-teal-50 transition-colors"></div>
+                  <div className="text-5xl font-bold text-slate-100 group-hover:text-teal-100 transition-colors mb-4 absolute right-4 top-2 select-none">
                     {index + 1}
                   </div>
-                  <h3 className="text-xl font-bold text-kpf-dark mb-4 relative z-10 pr-8 group-hover:text-kpf-red transition-colors">
+                  <h3 className="text-xl font-bold text-kpf-dark mb-4 relative z-10 pr-8 group-hover:text-kpf-teal transition-colors">
                     {lang === "tr" ? value.titleTr.value : value.titleDe.value}
                   </h3>
                   <p className="text-slate-600 text-sm leading-relaxed relative z-10">

@@ -63,11 +63,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         },
         {
           id: "guelen",
-          label: language === "tr" ? "Guelen Hareketi" : "Guelen Bewegung",
+          label: language === "tr" ? "Gülen Hareketi" : "Guelen Bewegung",
         },
         {
           id: "satzung",
-          label: "Satzung/Tüzük",
+          label: language === "tr" ? "Tüzük" : "Satzung",
         },
       ],
     },
@@ -78,7 +78,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       isDropdown: true,
       children: [
         { id: "activities", label: t("admin_menu_activities") },
-        { id: "teegespraeche", label: "Tee-Gespräche" },
+        { id: "teegespraeche", label: t("admin_menu_teegespraeche") },
         { id: "courses", label: t("admin_menu_courses") },
         { id: "pages", label: t("admin_menu_pages") },
       ],
@@ -105,9 +105,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       isDropdown: true,
       children: [
         { id: "contact", label: t("admin_contact_title") },
-        { id: "imprint", label: "Künye/Impressum" },
+        { id: "imprint", label: t("admin_imprint_title") },
         { id: "translations", label: "Çeviriler" },
-        { id: "donate", label: "Bağış/Spende" },
+        { id: "donate", label: t("admin_donate_title") },
       ],
     },
   ];

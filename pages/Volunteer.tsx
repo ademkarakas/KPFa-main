@@ -108,7 +108,7 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
   return (
     <div className="bg-white min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-r from-kpf-red to-red-700 text-white py-16 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden">
         <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
           <Heart size={300} />
         </div>
@@ -168,7 +168,7 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
             ))}
 
           {/* CTA */}
-          <section className="bg-gradient-to-r from-kpf-red to-red-700 text-white p-8 rounded-2xl text-center">
+          <section className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white p-8 rounded-2xl text-center">
             <h2 className="text-3xl font-bold mb-4">
               {isGerman
                 ? "Beginnen Sie jetzt, machen Sie einen Unterschied!"
@@ -183,11 +183,11 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
               onClick={() => {
                 if (setPage) setPage("volunteer-form");
               }}
-              className="bg-white text-kpf-red px-8 py-3 rounded-full font-bold hover:bg-red-50 transition-colors cursor-pointer"
+              className="bg-white text-kpf-dark px-8 py-3 rounded-full font-bold hover:bg-dark-50 transition-colors cursor-pointer"
             >
               {isGerman
-                ? data.ctaButtonDe
-                : data.ctaButtonTr || (isGerman ? "Mitmachen" : "Gönüllü Ol")}
+                ? data.ctaButtonDe || "Mitmachen"
+                : data.ctaButtonTr || "Gönüllü Ol"}
             </button>
           </section>
         </div>

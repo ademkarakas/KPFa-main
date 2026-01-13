@@ -42,11 +42,14 @@ export const TEXTS: Record<string, Translation> = {
   // Admin Menu
   admin_menu_dashboard: { tr: "Kontrol Paneli", de: "Dashboard" },
   admin_menu_activities: { tr: "Etkinlikler", de: "Aktivitäten" },
+  admin_menu_teegespraeche: { tr: "Çay Sohbetleri", de: "Teegespräche" },
   admin_menu_courses: { tr: "Kurslar", de: "Kurse" },
   admin_menu_team: { tr: "Ekip", de: "Team" },
   admin_menu_partners: { tr: "Partnerler", de: "Partner" },
   admin_menu_pages: { tr: "Sayfa İçerikleri", de: "Seiteninhalte" },
   admin_menu_volunteers: { tr: "Gönüllüler", de: "Freiwillige" },
+  admin_imprint_title: { tr: "Künye", de: "Impressum" },
+  admin_donate_title: { tr: "Bağış", de: "Spende" },
 
   // Admin Dashboard
   admin_dashboard_title: { tr: "Kontrol Paneli", de: "Dashboard" },

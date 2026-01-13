@@ -141,7 +141,7 @@ const Imprint: React.FC<ImprintProps> = ({ lang }) => {
   return (
     <div className="bg-white min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-r from-kpf-red to-red-700 text-white py-16 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden">
         <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
           <FileText size={200} />
         </div>

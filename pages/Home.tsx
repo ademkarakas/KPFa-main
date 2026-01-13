@@ -238,7 +238,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           <div className="absolute inset-0 bg-gradient-to-tr from-slate-900 via-slate-900/80 to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-4 z-10 relative text-white">
+        <div className="container mx-auto px-4 z-10 relative text-white ">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 backdrop-blur-md border border-teal-500/30 text-teal-300 text-sm font-medium mb-6 animate-fade-in-down">
               <Sparkles size={14} />
@@ -257,7 +257,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             <div className="flex flex-wrap gap-4 animate-fade-in-up delay-200">
               <button
                 onClick={() => setPage("activities")}
-                className="bg-kpf-red hover:bg-red-600 text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 group shadow-lg shadow-red-900/20"
+                className="bg-kpf-teal hover:bg-kpf-teal text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 group shadow-lg shadow-red-900/20"
               >
                 {t("hero_cta_primary")}
                 <ArrowRight
@@ -336,7 +336,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             </div>
             <button
               onClick={() => setPage("activities")}
-              className="inline-flex items-center gap-2 font-bold text-kpf-red hover:text-red-700 transition-colors border-b-2 border-kpf-red/20 pb-1"
+              className="inline-flex items-center gap-2 font-bold text-kpf-dark hover:text-kpf-teal transition-colors border-b-2 border-kpf-red/20 pb-1"
             >
               {lang === "tr" ? "Tümünü Gör" : "Alle ansehen"}
               <ArrowRight size={20} />
@@ -366,11 +366,11 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                   </div>
                 </div>
                 <div className="p-8">
-                  <div className="flex items-center gap-2 text-kpf-red text-sm font-bold mb-3">
+                  <div className="flex items-center gap-2 text-kpf-teal text-sm font-bold mb-3">
                     <Calendar size={16} />
                     {activity.date[lang]}
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-kpf-red transition-colors line-clamp-2">
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-kpf-teal transition-colors line-clamp-2">
                     {activity.title[lang]}
                   </h3>
                   <p className="text-slate-600 mb-6 line-clamp-3 leading-relaxed">
@@ -380,7 +380,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                     <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
                       <MapPin size={14} /> {activity.location.split(",")[0]}
                     </span>
-                    <span className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-kpf-red group-hover:text-white transition-all">
+                    <span className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-kpf-teal group-hover:text-white transition-all">
                       <ArrowRight size={18} />
                     </span>
                   </div>
@@ -459,7 +459,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
         <div className="container mx-auto px-4">
           <div
             className="relative rounded-[3.5rem] p-12 md:p-28 text-center overflow-hidden
-      bg-gradient-to-br from-slate-900 via-rose-950 to-kpf-red shadow-[0_30px_60px_-15px_rgba(159,18,57,0.4)]"
+      bg-gradient-to-br from-kpf-teal to-kpf-teal shadow-[0_30px_60px_-15px_rgba(159,18,57,0.4)]"
           >
             {/* Soyut Arka Plan Deseni */}
             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]"></div>
@@ -480,7 +480,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               <div className="flex flex-col sm:flex-row justify-center gap-6">
                 <button
                   onClick={() => setPage("activities")}
-                  className="bg-white text-rose-900 px-12 py-5 rounded-2xl font-extrabold hover:bg-slate-100 transition-all duration-300 flex items-center justify-center gap-3 shadow-xl hover:shadow-white/20 active:scale-95"
+                  className="bg-white text-teal-900 px-12 py-5 rounded-2xl font-extrabold hover:bg-slate-100 transition-all duration-300 flex items-center justify-center gap-3 shadow-xl hover:shadow-white/20 active:scale-95"
                 >
                   <ArrowRight size={24} />
                   {lang === "tr"
@@ -490,7 +490,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
 
                 <button
                   onClick={() => setPage("contact")}
-                  className="bg-white/5 text-white border-2 border-white/20 backdrop-blur-sm px-12 py-5 rounded-2xl font-bold hover:bg-white/10 transition-all duration-300 active:scale-95"
+                  className="bg-white/5 text-teal border-2 border-white/20 backdrop-blur-sm px-12 py-5 rounded-2xl font-bold hover:bg-slate-100 transition-all duration-300 active:scale-95"
                 >
                   {lang === "tr"
                     ? homeData.cta.secondaryButtonTr
