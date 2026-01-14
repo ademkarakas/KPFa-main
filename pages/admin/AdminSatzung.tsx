@@ -1,4 +1,4 @@
-import { Book, Plus, Save, Trash2 } from "lucide-react";
+import { Book, Plus, Save, Trash2, CheckCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -293,55 +293,72 @@ const AdminSatzung: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2 flex items-center gap-3">
-            <Book className="text-kpf-teal" size={32} />
-            {language === "tr" ? "Tüzük Yönetimi" : "Satzung Verwaltung"}
-          </h1>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 overflow-x-auto">
-        {[
-          {
-            id: "basic",
-            label: language === "tr" ? "Temel Bilgiler" : "Grunddaten",
-          },
-          {
-            id: "name",
-            label: language === "tr" ? "Ad ve Merkez" : "Name und Sitz",
-          },
-          { id: "purpose", label: language === "tr" ? "Amaç" : "Zweck" },
-          {
-            id: "gemeinnuetzigkeit",
-            label: language === "tr" ? "Kamu Yararı" : "Gemeinnützigkeit",
-          },
-          {
-            id: "membership",
-            label: language === "tr" ? "Üyelik" : "Mitgliedschaft",
-          },
-        ].map((tab) => (
+    <div className="max-w-7xl mx-auto pb-20 px-4">
+      <form onSubmit={handleSubmit} className="space-y-10">
+        {/* Sticky Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-kpf-red/10 rounded-2xl">
+              <Book className="text-kpf-red" size={28} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-slate-800">
+                {language === "tr" ? "Tüzük Yönetimi" : "Satzung Verwaltung"}
+              </h1>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle size={10} className="text-green-500" />
+                {language === "tr"
+                  ? "Tüzük içeriğini düzenle"
+                  : "Satzung bearbeiten"}
+              </p>
+            </div>
+          </div>
           <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "border-b-2 border-kpf-teal text-kpf-teal"
-                : "text-slate-600 hover:text-slate-800"
-            }`}
+            type="submit"
+            disabled={loading}
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
           >
-            {tab.label}
+            <Save size={18} />
+            {loading ? "Kaydediliyor..." : "Sitede Yayınla"}
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Tabs */}
+        <div className="flex gap-2 border-b border-slate-200 overflow-x-auto bg-white rounded-2xl p-4">
+          {[
+            {
+              id: "basic",
+              label: language === "tr" ? "Temel Bilgiler" : "Grunddaten",
+            },
+            {
+              id: "name",
+              label: language === "tr" ? "Ad ve Merkez" : "Name und Sitz",
+            },
+            { id: "purpose", label: language === "tr" ? "Amaç" : "Zweck" },
+            {
+              id: "gemeinnuetzigkeit",
+              label: language === "tr" ? "Kamu Yararı" : "Gemeinnützigkeit",
+            },
+            {
+              id: "membership",
+              label: language === "tr" ? "Üyelik" : "Mitgliedschaft",
+            },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? "border-b-2 border-kpf-teal text-kpf-teal"
+                  : "text-slate-600 hover:text-slate-800"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Temel Bilgiler */}
         {activeTab === "basic" && (
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -711,16 +728,6 @@ const AdminSatzung: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg text-lg font-semibold"
-        >
-          <Save size={20} />
-          {loading ? "Kaydediliyor..." : "Tüzük Güncelle"}
-        </button>
       </form>
     </div>
   );

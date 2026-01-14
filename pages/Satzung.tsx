@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FileText, BookOpen, Users, Shield } from "lucide-react";
+import { FileText, BookOpen, Users, Shield, Building2 } from "lucide-react";
 import { Language } from "../types";
 import { apiFetch } from "../services/api";
 
@@ -104,19 +104,25 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
   const title = isGerman ? data.titleGerman : data.titleTurkish;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-kpf-teal/10 mb-6">
-            <FileText className="text-kpf-teal" size={40} />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-4">
-            {title}
-          </h1>
-          <div className="w-24 h-1 bg-kpf-teal mx-auto rounded-full"></div>
+    <div className="bg-white min-h-screen">
+      {/* Header - Imprint.tsx tarzında */}
+      <div className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden">
+        <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
+          <FileText size={200} />
         </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex items-center gap-4 mb-4">
+            <FileText className="text-white" size={40} />
+            <h1 className="text-4xl md:text-5xl font-serif font-bold">
+              {title}
+            </h1>
+          </div>
+          <div className="w-24 h-1.5 bg-white/30 rounded-full"></div>
+        </div>
+      </div>
 
+      {/* Content */}
+      <div className="container mx-auto px-4 py-16 max-w-5xl">
         {/* İçerik Bölümleri */}
         <div className="space-y-8">
           {/* 1. Name und Sitz */}

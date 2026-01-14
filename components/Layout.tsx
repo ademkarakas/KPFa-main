@@ -46,22 +46,22 @@ const Layout: React.FC<LayoutProps> = ({
   // Sayfa kaydırma takibi
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
+      setShowScrollTop(globalThis.scrollY > 400);
 
       // Scroll yüzdesini hesapla
       const windowHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
+        document.documentElement.scrollHeight - globalThis.innerHeight;
       const progress =
-        windowHeight > 0 ? (window.scrollY / windowHeight) * 100 : 0;
+        windowHeight > 0 ? (globalThis.scrollY / windowHeight) * 100 : 0;
       setScrollProgress(progress);
     };
-    window.addEventListener("scroll", handleScroll);
+    globalThis.addEventListener("scroll", handleScroll);
     handleScroll(); // Başlangıçta çağır
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => globalThis.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    globalThis.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const NavLink = ({
@@ -75,7 +75,13 @@ const Layout: React.FC<LayoutProps> = ({
   }) => (
     <button
       onClick={() => {
-        setPage(page);
+        if (page === "home") {
+          globalThis.location.hash = "";
+          // Hash change event'ini manuel tetikle
+          globalThis.dispatchEvent(new HashChangeEvent("hashchange"));
+        } else {
+          globalThis.location.hash = page;
+        }
         setIsMenuOpen(false);
       }}
       className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
@@ -108,7 +114,11 @@ const Layout: React.FC<LayoutProps> = ({
             {/* Logo */}
             <div
               className="flex items-center space-x-3 cursor-pointer group"
-              onClick={() => setPage("home")}
+              onClick={() => {
+                globalThis.location.hash = "";
+                // Hash change event'ini manuel tetikle
+                globalThis.dispatchEvent(new HashChangeEvent("hashchange"));
+              }}
             >
               <img
                 src="/assets/cropped-Logoweb.png"

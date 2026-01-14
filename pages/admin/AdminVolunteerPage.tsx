@@ -16,7 +16,13 @@ const QuillEditor = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
-  const isFirstRender = useRef(true);
+  const isUpdating = useRef(false);
+  const onChangeRef = useRef(onChange);
+
+  // onChange'i ref'te sakla
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (containerRef.current && !quillRef.current) {
@@ -34,19 +40,36 @@ const QuillEditor = ({
       });
 
       quill.on("text-change", () => {
-        const html = quill.root.innerHTML;
-        onChange(html === "<p><br></p>" ? "" : html);
+        if (!isUpdating.current) {
+          const html = quill.root.innerHTML;
+          onChangeRef.current(html === "<p><br></p>" ? "" : html);
+        }
       });
 
       quillRef.current = quill;
-    }
 
-    // Backend'den veri geldiğinde editörün içeriğini bir kez doldurur
-    if (quillRef.current && value && isFirstRender.current) {
-      quillRef.current.root.innerHTML = value;
-      isFirstRender.current = false;
+      if (value) {
+        quill.root.innerHTML = value;
+      }
     }
-  }, [value, placeholder]);
+  }, [placeholder, value]);
+
+  useEffect(() => {
+    if (quillRef.current && !isUpdating.current) {
+      const currentContent = quillRef.current.root.innerHTML;
+      const normalizedValue = value || "";
+      const normalizedCurrent =
+        currentContent === "<p><br></p>" ? "" : currentContent;
+
+      if (normalizedValue !== normalizedCurrent) {
+        isUpdating.current = true;
+        quillRef.current.root.innerHTML = normalizedValue;
+        setTimeout(() => {
+          isUpdating.current = false;
+        }, 100);
+      }
+    }
+  }, [value]);
 
   return (
     <div className="quill-modern-container">

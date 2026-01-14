@@ -16,26 +16,145 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { TEXTS } from "../constants";
 import { Activity, Language } from "../types";
+import { activitiesApi } from "../services/api";
 
 interface ActivityDetailProps {
-  activity: Activity;
+  activityId?: string;
+  activity?: Activity;
   lang: Language;
   onBack: () => void;
 }
 
 const ActivityDetail: React.FC<ActivityDetailProps> = ({
-  activity,
+  activityId,
+  activity: providedActivity,
   lang,
   onBack,
 }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
+  const [activity, setActivity] = useState<Activity | null>(
+    providedActivity || null
+  );
+  const [loading, setLoading] = useState(!providedActivity);
+
+  // ID ile activity yükle
+  useEffect(() => {
+    if (activityId && !providedActivity) {
+      loadActivity(activityId);
+    }
+  }, [activityId, providedActivity]);
+
+  const loadActivity = async (id: string) => {
+    try {
+      setLoading(true);
+      const data = await activitiesApi.getAll(false);
+
+      // ID'ye göre activity'i bul
+      const foundActivity = data.find((item: any) => item.id === id);
+
+      if (foundActivity) {
+        // Backend formatını frontend formatına çevir
+        const formatDate = (dateISO: string, lang: "tr" | "de") => {
+          try {
+            const date = new Date(dateISO);
+            if (lang === "tr") {
+              return date.toLocaleDateString("tr-TR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            } else {
+              return date.toLocaleDateString("de-DE", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            }
+          } catch {
+            return dateISO;
+          }
+        };
+
+        const formatAddress = (address: any) => {
+          if (!address) return "";
+          const parts = [];
+          if (address.street) parts.push(address.street);
+          if (address.houseNo) parts.push(address.houseNo);
+          if (address.zipCode) parts.push(address.zipCode);
+          if (address.city) parts.push(address.city);
+          return parts.join(", ");
+        };
+
+        const formattedActivity: Activity = {
+          id: foundActivity.id,
+          title: {
+            tr: foundActivity.titleTr || "",
+            de: foundActivity.titleDe || "",
+          },
+          description: {
+            tr: foundActivity.descriptionTr || "",
+            de: foundActivity.descriptionDe || "",
+          },
+          detailedContent: {
+            tr:
+              foundActivity.detailedContentTr ||
+              foundActivity.descriptionTr ||
+              "",
+            de:
+              foundActivity.detailedContentDe ||
+              foundActivity.descriptionDe ||
+              "",
+          },
+          date: {
+            tr: formatDate(foundActivity.date, "tr"),
+            de: formatDate(foundActivity.date, "de"),
+          },
+          location: formatAddress(foundActivity.address) || "TBD",
+          imageUrl: foundActivity.imageUrl || "/api/placeholder/800/600",
+          galleryImages: foundActivity.galleryUrls || [],
+          videoUrl: foundActivity.videoUrl || "",
+          dateISO: foundActivity.date,
+          category: foundActivity.category || "social",
+        };
+
+        setActivity(formattedActivity);
+      }
+    } catch (error) {
+      console.error("Activity yükleme hatası:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Keyboard event listener (her zaman çalışmalı)
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedImageIndex(null);
+    };
+    globalThis.addEventListener("keydown", handleEsc);
+    return () => globalThis.removeEventListener("keydown", handleEsc);
+  }, []);
 
   const t = (key: string) => {
     const value = TEXTS[key]?.[lang];
     return value || key; // Eğer TEXTS'te anahtar yoksa, anahtarı döndür
   };
+
+  // Loading durumunu göster
+  if (loading || !activity) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-kpf-teal mx-auto mb-4"></div>
+          <p className="text-slate-600">
+            {lang === "tr" ? "Yükleniyor..." : "Wird geladen..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Etkinlik tarihinin geçip geçmediğini kontrol eden fonksiyon
   const isPastActivity = (dateObj: { tr: string; de: string }): boolean => {
@@ -64,14 +183,6 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
       : url.split("v=")[1]?.split("&")[0];
     return `https://www.youtube.com/embed/${videoId}`;
   };
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedImageIndex(null);
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, []);
 
   return (
     <motion.div

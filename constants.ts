@@ -46,7 +46,6 @@ export const TEXTS: Record<string, Translation> = {
   admin_menu_courses: { tr: "Kurslar", de: "Kurse" },
   admin_menu_team: { tr: "Ekip", de: "Team" },
   admin_menu_partners: { tr: "Partnerler", de: "Partner" },
-  admin_menu_pages: { tr: "Sayfa İçerikleri", de: "Seiteninhalte" },
   admin_menu_volunteers: { tr: "Gönüllüler", de: "Freiwillige" },
   admin_imprint_title: { tr: "Künye", de: "Impressum" },
   admin_donate_title: { tr: "Bağış", de: "Spende" },
@@ -106,19 +105,6 @@ export const TEXTS: Record<string, Translation> = {
   admin_activities_new: { tr: "Yeni Etkinlik", de: "Neue Aktivität" },
   admin_activities_edit: { tr: "Etkinlik Düzenle", de: "Aktivität bearbeiten" },
   admin_activities_list: { tr: "Etkinlik Listesi", de: "Aktivitätsliste" },
-
-  // Admin Page Contents
-  admin_pages_title: {
-    tr: "Sayfa İçerikleri Yönetimi",
-    de: "Verwaltung der Seiteninhalte",
-  },
-  admin_pages_subtitle: {
-    tr: "Statik sayfa içeriklerini düzenleyin",
-    de: "Bearbeiten Sie die statischen Seiteninhalte",
-  },
-  admin_pages_empty: { tr: "Boş", de: "Leer" },
-  admin_pages_create: { tr: "Oluştur", de: "Erstellen" },
-  admin_pages_edit_content: { tr: "İçeriği Düzenle", de: "Inhalt bearbeiten" },
 
   // Admin Courses
   admin_courses_title: { tr: "Kurs Yönetimi", de: "Kursverwaltung" },
@@ -265,6 +251,8 @@ export const TEXTS: Record<string, Translation> = {
   activities_filter_music: { tr: "Müzik", de: "Musik" },
   activities_filter_art: { tr: "Sanat", de: "Kunst" },
   activities_filter_education: { tr: "Eğitim", de: "Bildung" },
+  activities_filter_social: { tr: "Sosyal", de: "Soziales" },
+  activities_filter_sports: { tr: "Spor", de: "Sport" },
 
   teegespraeche_title: { tr: "Çay Sohbetleri", de: "Teegespräche" },
   teegespraeche_subtitle: {

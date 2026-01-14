@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Save,
   X,
@@ -9,9 +9,79 @@ import {
   EyeOff,
   Sparkles,
   Heart,
+  CheckCircle,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
+
+const QuillEditor = ({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const isUpdating = useRef(false);
+
+  useEffect(() => {
+    if (containerRef.current && !quillRef.current) {
+      const quill = new Quill(containerRef.current, {
+        theme: "snow",
+        placeholder: placeholder || "İçerik yazın...",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ["bold", "italic", "underline"],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["link", "clean"],
+          ],
+        },
+      });
+
+      quill.on("text-change", () => {
+        if (!isUpdating.current) {
+          const html = quill.root.innerHTML;
+          onChange(html === "<p><br></p>" ? "" : html);
+        }
+      });
+
+      quillRef.current = quill;
+
+      if (value) {
+        quill.root.innerHTML = value;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (quillRef.current) {
+      const currentContent = quillRef.current.root.innerHTML;
+      const normalizedValue = value || "";
+      const normalizedCurrent =
+        currentContent === "<p><br></p>" ? "" : currentContent;
+
+      if (normalizedValue !== normalizedCurrent) {
+        isUpdating.current = true;
+        quillRef.current.root.innerHTML = normalizedValue;
+        setTimeout(() => {
+          isUpdating.current = false;
+        }, 100);
+      }
+    }
+  }, [value]);
+
+  return (
+    <div className="quill-modern-container">
+      <div ref={containerRef} />
+    </div>
+  );
+};
 
 interface HeroContent {
   title_tr: string;
@@ -338,11 +408,11 @@ const AdminHome: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto pb-20 px-4">
       {/* Message */}
       {message && (
         <div
-          className={`p-4 rounded-lg flex items-center gap-3 ${
+          className={`p-4 rounded-lg flex items-center gap-3 mb-4 ${
             message.type === "success"
               ? "bg-green-50 text-green-700 border border-green-200"
               : "bg-red-50 text-red-700 border border-red-200"
@@ -352,16 +422,40 @@ const AdminHome: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          {language === "tr" ? "Anasayfa Yönetimi" : "Homepage-Verwaltung"}
-        </h1>
-        <p className="text-slate-600">
-          {language === "tr"
-            ? "Anasayfa içeriğini düzenle ve güncelle"
-            : "Bearbeite und aktualisiere die Homepage"}
-        </p>
+      {/* Sticky Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50 mb-8">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-kpf-red/10 rounded-2xl">
+            <Sparkles className="text-kpf-red" size={28} />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-slate-800">
+              {language === "tr" ? "Anasayfa Yönetimi" : "Homepage-Verwaltung"}
+            </h1>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+              <CheckCircle size={10} className="text-green-500" />
+              {language === "tr"
+                ? "Anasayfa içeriğini düzenle"
+                : "Homepage bearbeiten"}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={saveHeroContent}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+          >
+            <Save size={18} />
+            {saving
+              ? language === "tr"
+                ? "Kaydediliyor..."
+                : "Wird gespeichert..."
+              : language === "tr"
+              ? "Sitede Yayınla"
+              : "Veröffentlichen"}
+          </button>
+        </div>
       </div>
 
       {/* Hero Section */}
@@ -404,13 +498,12 @@ const AdminHome: React.FC = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr" ? "Alt Başlık (TR)" : "Untertitel (TR)"}
             </label>
-            <textarea
+            <QuillEditor
               value={heroContent.subtitle_tr}
-              onChange={(e) =>
-                setHeroContent({ ...heroContent, subtitle_tr: e.target.value })
+              onChange={(val) =>
+                setHeroContent({ ...heroContent, subtitle_tr: val })
               }
-              rows={3}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder="Alt başlık (Türkçe)..."
             />
           </div>
 
@@ -418,13 +511,12 @@ const AdminHome: React.FC = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr" ? "Alt Başlık (DE)" : "Untertitel (DE)"}
             </label>
-            <textarea
+            <QuillEditor
               value={heroContent.subtitle_de}
-              onChange={(e) =>
-                setHeroContent({ ...heroContent, subtitle_de: e.target.value })
+              onChange={(val) =>
+                setHeroContent({ ...heroContent, subtitle_de: val })
               }
-              rows={3}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder="Untertitel (Deutsch)..."
             />
           </div>
 
@@ -620,16 +712,15 @@ const AdminHome: React.FC = () => {
                         ? "Açıklama (TR)"
                         : "Beschreibung (TR)"}
                     </label>
-                    <textarea
+                    <QuillEditor
                       value={editingFeature.description_tr}
-                      onChange={(e) =>
+                      onChange={(val) =>
                         setEditingFeature({
                           ...editingFeature,
-                          description_tr: e.target.value,
+                          description_tr: val,
                         })
                       }
-                      rows={3}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+                      placeholder="Açıklama (Türkçe)..."
                     />
                   </div>
 
@@ -639,16 +730,15 @@ const AdminHome: React.FC = () => {
                         ? "Açıklama (DE)"
                         : "Beschreibung (DE)"}
                     </label>
-                    <textarea
+                    <QuillEditor
                       value={editingFeature.description_de}
-                      onChange={(e) =>
+                      onChange={(val) =>
                         setEditingFeature({
                           ...editingFeature,
-                          description_de: e.target.value,
+                          description_de: val,
                         })
                       }
-                      rows={3}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+                      placeholder="Beschreibung (Deutsch)..."
                     />
                   </div>
                 </div>
@@ -720,16 +810,15 @@ const AdminHome: React.FC = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr" ? "Açıklama (TR)" : "Beschreibung (TR)"}
             </label>
-            <textarea
+            <QuillEditor
               value={instagramSection.description_tr}
-              onChange={(e) =>
+              onChange={(val) =>
                 setInstagramSection({
                   ...instagramSection,
-                  description_tr: e.target.value,
+                  description_tr: val,
                 })
               }
-              rows={2}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder="Açıklama (Türkçe)..."
             />
           </div>
 
@@ -737,16 +826,15 @@ const AdminHome: React.FC = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr" ? "Açıklama (DE)" : "Beschreibung (DE)"}
             </label>
-            <textarea
+            <QuillEditor
               value={instagramSection.description_de}
-              onChange={(e) =>
+              onChange={(val) =>
                 setInstagramSection({
                   ...instagramSection,
-                  description_de: e.target.value,
+                  description_de: val,
                 })
               }
-              rows={2}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder="Beschreibung (Deutsch)..."
             />
           </div>
 
@@ -819,13 +907,12 @@ const AdminHome: React.FC = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr" ? "Açıklama (TR)" : "Beschreibung (TR)"}
             </label>
-            <textarea
+            <QuillEditor
               value={ctaSection.description_tr}
-              onChange={(e) =>
-                setCtaSection({ ...ctaSection, description_tr: e.target.value })
+              onChange={(val) =>
+                setCtaSection({ ...ctaSection, description_tr: val })
               }
-              rows={3}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder="Açıklama (Türkçe)..."
             />
           </div>
 
@@ -833,13 +920,12 @@ const AdminHome: React.FC = () => {
             <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr" ? "Açıklama (DE)" : "Beschreibung (DE)"}
             </label>
-            <textarea
+            <QuillEditor
               value={ctaSection.description_de}
-              onChange={(e) =>
-                setCtaSection({ ...ctaSection, description_de: e.target.value })
+              onChange={(val) =>
+                setCtaSection({ ...ctaSection, description_de: val })
               }
-              rows={3}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder="Beschreibung (Deutsch)..."
             />
           </div>
         </div>
@@ -853,6 +939,15 @@ const AdminHome: React.FC = () => {
           {language === "tr" ? "Kaydet" : "Speichern"}
         </button>
       </div>
+
+      {/* Editor Özelleştirme CSS */}
+      <style>{`
+        .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
+        .quill-modern-container:focus-within { background: #fff; border-color: #ef4444; }
+        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
+        .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
+        .ql-editor { padding: 15px !important; }
+      `}</style>
     </div>
   );
 };

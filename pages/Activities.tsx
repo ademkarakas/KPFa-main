@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { MOCK_ACTIVITIES, TEXTS } from "../constants";
 import { activitiesApi } from "../services/api";
 import { Activity, Language, ParticipantForm } from "../types";
-import ActivityDetail from "./ActivityDetail";
 
 interface ActivitiesProps {
   lang: Language;
@@ -15,7 +14,6 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null
   );
-  const [showDetailPage, setShowDetailPage] = useState<boolean>(false);
   const [showParticipationForm, setShowParticipationForm] =
     useState<boolean>(false);
   const [formData, setFormData] = useState<ParticipantForm>({
@@ -48,67 +46,71 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
       }
 
       // Backend'den gelen verileri frontend formatına çevir
-      const formattedActivities: Activity[] = data.map((item: any) => {
-        // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
-        const formatDate = (dateISO: string, lang: "tr" | "de") => {
-          try {
-            const date = new Date(dateISO);
-            if (lang === "tr") {
-              return date.toLocaleDateString("tr-TR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              });
-            } else {
-              return date.toLocaleDateString("de-DE", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              });
+      const formattedActivities: Activity[] = data
+        .filter((item: any) => item.isActive !== false) // ✅ Pasif olanları filtrele
+        .map((item: any) => {
+          // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
+          const formatDate = (dateISO: string, lang: "tr" | "de") => {
+            try {
+              const date = new Date(dateISO);
+              if (lang === "tr") {
+                return date.toLocaleDateString("tr-TR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
+              } else {
+                return date.toLocaleDateString("de-DE", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
+              }
+            } catch {
+              return dateISO;
             }
-          } catch {
-            return dateISO;
-          }
-        };
+          };
 
-        // Adres formatı (address object'ini string'e çevir)
-        const formatAddress = (address: any) => {
-          if (!address) return "";
-          const parts = [];
-          if (address.street) parts.push(address.street);
-          if (address.houseNo) parts.push(address.houseNo);
-          if (address.zipCode) parts.push(address.zipCode);
-          if (address.city) parts.push(address.city);
-          return parts.join(", ");
-        };
+          // Adres formatı (address object'ini string'e çevir)
+          const formatAddress = (address: any) => {
+            if (!address) return "";
+            const parts = [];
+            if (address.street) parts.push(address.street);
+            if (address.houseNo) parts.push(address.houseNo);
+            if (address.zipCode) parts.push(address.zipCode);
+            if (address.city) parts.push(address.city);
+            return parts.join(", ");
+          };
 
-        return {
-          id: item.id,
-          title: { tr: item.titleTr || "", de: item.titleDe || "" },
-          description: {
-            tr: item.descriptionTr || "",
-            de: item.descriptionDe || "",
-          },
-          detailedContent: {
-            tr: item.detailedContentTr || item.descriptionTr || "",
-            de: item.detailedContentDe || item.descriptionDe || "",
-          },
-          date: {
-            tr: formatDate(item.date, "tr"),
-            de: formatDate(item.date, "de"),
-          },
-          dateISO: item.date || "",
-          location: formatAddress(item.address),
-          imageUrl: item.imageUrl || "",
-          category: item.category || "Etkinlik",
-          videoUrl: item.videoUrl || "",
-          galleryImages: item.galleryImages || [],
-        };
-      });
+          return {
+            id: item.id,
+            title: { tr: item.titleTr || "", de: item.titleDe || "" },
+            description: {
+              tr: item.descriptionTr || "",
+              de: item.descriptionDe || "",
+            },
+            detailedContent: {
+              tr: item.detailedContentTr || item.descriptionTr || "",
+              de: item.detailedContentDe || item.descriptionDe || "",
+            },
+            date: {
+              tr: formatDate(item.date, "tr"),
+              de: formatDate(item.date, "de"),
+            },
+            dateISO: item.date || "",
+            location: formatAddress(item.address),
+            imageUrl: item.imageUrl || "",
+            category: item.category || "Etkinlik",
+            videoUrl: item.videoUrl || "",
+            galleryImages: item.galleryImages || [],
+          };
+        });
 
       setActivities(formattedActivities);
       console.log(
-        `✅ ${formattedActivities.length} etkinlik başarıyla yüklendi`
+        `✅ ${formattedActivities.length} aktif etkinlik yüklendi (${
+          data.length - formattedActivities.length
+        } pasif etkinlik filtrelendi)`
       );
     } catch (error) {
       console.error(
@@ -158,6 +160,8 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
     { id: "music", label: t("activities_filter_music") },
     { id: "art", label: t("activities_filter_art") },
     { id: "education", label: t("activities_filter_education") },
+    { id: "social", label: t("activities_filter_social") },
+    { id: "sports", label: t("activities_filter_sports") },
   ];
 
   // Open Google Calendar with event details
@@ -240,19 +244,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // If detail page is shown, render it
-  if (showDetailPage && selectedActivity) {
-    return (
-      <ActivityDetail
-        activity={selectedActivity}
-        lang={lang}
-        onBack={() => {
-          setShowDetailPage(false);
-          setSelectedActivity(null);
-        }}
-      />
-    );
-  }
+  // Main render - detail page routing App.tsx'de yapılıyor
 
   if (loading) {
     return (
@@ -337,8 +329,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
                 <div
                   className="relative h-64 overflow-hidden cursor-pointer"
                   onClick={() => {
-                    setSelectedActivity(activity);
-                    setShowDetailPage(true);
+                    globalThis.location.hash = `activity/${activity.id}`;
                   }}
                 >
                   <img
@@ -371,8 +362,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => {
-                        setSelectedActivity(activity);
-                        setShowDetailPage(true);
+                        globalThis.location.hash = `activity/${activity.id}`;
                       }}
                       className="text-kpf-teal font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all"
                     >

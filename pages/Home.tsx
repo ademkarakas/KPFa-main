@@ -280,38 +280,43 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
       <section className="relative -mt-20 z-20 pb-20 px-4">
         <div className="container mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {homeData.features.map((feature) => (
-              <div
-                key={feature.id}
-                onClick={() => {
-                  setPage("about");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="group bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-slate-100"
-              >
+            {homeData.features.map((feature, index) => {
+              // Her feature için ilgili section ID'sini belirle
+              const sectionIds = ["who-we-are", "core-values", "focus-areas"];
+              const sectionId = sectionIds[index];
+
+              return (
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500"
-                  style={{ backgroundColor: `${feature.color}20` }}
+                  key={feature.id}
+                  onClick={() => {
+                    globalThis.location.hash = `about/${sectionId}`;
+                  }}
+                  className="group bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-slate-100"
                 >
-                  <Sparkles size={32} style={{ color: feature.color }} />
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500"
+                    style={{ backgroundColor: `${feature.color}20` }}
+                  >
+                    <Sparkles size={32} style={{ color: feature.color }} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                    {lang === "tr" ? feature.titleTr : feature.titleDe}
+                  </h3>
+                  <p className="text-slate-600 leading-relaxed mb-6">
+                    {lang === "tr"
+                      ? feature.descriptionTr
+                      : feature.descriptionDe}
+                  </p>
+                  <div className="flex items-center text-slate-400 font-bold text-sm group-hover:text-slate-900 transition-colors">
+                    {lang === "tr" ? "Keşfet" : "Entdecken"}{" "}
+                    <ChevronRight
+                      size={18}
+                      className="ml-1 group-hover:translate-x-1 transition-transform"
+                    />
+                  </div>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                  {lang === "tr" ? feature.titleTr : feature.titleDe}
-                </h3>
-                <p className="text-slate-600 leading-relaxed mb-6">
-                  {lang === "tr"
-                    ? feature.descriptionTr
-                    : feature.descriptionDe}
-                </p>
-                <div className="flex items-center text-slate-400 font-bold text-sm group-hover:text-slate-900 transition-colors">
-                  {lang === "tr" ? "Keşfet" : "Entdecken"}{" "}
-                  <ChevronRight
-                    size={18}
-                    className="ml-1 group-hover:translate-x-1 transition-transform"
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

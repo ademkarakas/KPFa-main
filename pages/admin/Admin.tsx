@@ -6,7 +6,6 @@ import AdminActivities from "./AdminActivities";
 import AdminCourses from "./AdminCourses";
 import AdminTeam from "./AdminTeam";
 import AdminPartners from "./AdminPartners";
-import AdminPageContents from "./AdminPageContents";
 import AdminVolunteers from "./AdminVolunteers";
 import AdminContactSettings from "./AdminContactSettings";
 import AdminVolunteerPage from "./AdminVolunteerPage";
@@ -59,8 +58,6 @@ const Admin: React.FC = () => {
         return <AdminTeam />;
       case "partners":
         return <AdminPartners />;
-      case "pages":
-        return <AdminPageContents />;
       case "satzung":
         return <AdminSatzung />;
       case "guelen":

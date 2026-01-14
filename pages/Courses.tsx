@@ -56,28 +56,44 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
         }
       };
 
-      const formattedCourses: Course[] = data.map((item: any) => ({
-        id: item.id,
-        icon: item.icon || "BookOpen",
-        title: { tr: item.titleTr || "", de: item.titleDe || "" },
-        description: {
-          tr: item.descriptionTr || "",
-          de: item.descriptionDe || "",
-        },
-        details: {
-          tr: item.detailsTr || item.descriptionTr || "",
-          de: item.detailsDe || item.descriptionDe || "",
-        },
-        schedule: { tr: item.scheduleTr || "", de: item.scheduleDe || "" },
-        instructor: item.instructor || "",
-        date: item.date ? formatDate(item.date) : "",
-        dateISO: item.date || "",
-        address: item.courseLocation || "",
-        duration: item.duration || "",
-        capacity: item.capacity || 0,
-        price: item.price || 0,
-        imageUrl: item.imageUrl || "",
-      }));
+      const formatAddress = (courseLocation: any) => {
+        if (!courseLocation) return "";
+        if (typeof courseLocation === "string") return courseLocation;
+
+        const parts = [];
+        if (courseLocation.street) parts.push(courseLocation.street);
+        if (courseLocation.houseNo) parts.push(courseLocation.houseNo);
+        if (courseLocation.zipCode) parts.push(courseLocation.zipCode);
+        if (courseLocation.city) parts.push(courseLocation.city);
+        if (courseLocation.state) parts.push(courseLocation.state);
+        if (courseLocation.country) parts.push(courseLocation.country);
+        return parts.join(", ");
+      };
+
+      const formattedCourses: Course[] = data
+        .filter((item: any) => item.isActive !== false)
+        .map((item: any) => ({
+          id: item.id,
+          icon: item.icon || "BookOpen",
+          title: { tr: item.titleTr || "", de: item.titleDe || "" },
+          description: {
+            tr: item.descriptionTr || "",
+            de: item.descriptionDe || "",
+          },
+          details: {
+            tr: item.detailsTr || item.descriptionTr || "",
+            de: item.detailsDe || item.descriptionDe || "",
+          },
+          schedule: { tr: item.scheduleTr || "", de: item.scheduleDe || "" },
+          instructor: item.instructor || "",
+          date: item.date ? formatDate(item.date) : "",
+          dateISO: item.date || "",
+          address: formatAddress(item.courseLocation),
+          duration: item.duration || "",
+          capacity: item.capacity || 0,
+          price: item.price || 0,
+          imageUrl: item.imageUrl || "",
+        }));
 
       setCourses(formattedCourses);
     } catch (error) {

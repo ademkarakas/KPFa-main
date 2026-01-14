@@ -48,13 +48,13 @@ const About: React.FC<AboutProps> = ({ lang }) => {
   return (
     <div className="bg-white">
       {/* Header */}
-      <div className="bg-kpf-dark text-white py-20 relative overflow-hidden">
+      <div className="bg-kpf-teal text-white py-20 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6 tracking-tight">
             {lang === "tr" ? "Hakkımızda" : "Über uns"}
           </h1>
-          <div className="w-24 h-1.5 bg-kpf-red mx-auto rounded-full"></div>
+          <div className="w-24 h-1.5 bg-kpf-light mx-auto rounded-full"></div>
         </div>
       </div>
 
@@ -72,7 +72,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       </div>
 
       {/* Who We Are & Goals */}
-      <div className="container mx-auto px-4 mb-24 max-w-7xl">
+      <div className="container mx-auto px-4 mb-24 max-w-7xl" id="who-we-are">
         {/* Who We Are - Enhanced Layout with Image */}
         <div className="bg-white rounded-3xl shadow-xl border border-slate-100 relative overflow-hidden group mb-16">
           <div className="grid grid-cols-1 lg:grid-cols-2">
@@ -162,7 +162,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       </div>
 
       {/* Core Values */}
-      <div className="py-24 bg-slate-50">
+      <div className="py-24 bg-slate-50" id="core-values">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-serif font-bold text-kpf-dark mb-4">
@@ -198,7 +198,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       </div>
 
       {/* Focus Areas (Gender, Social, Dialog) */}
-      <div className="py-24 bg-white">
+      <div className="py-24 bg-white" id="focus-areas">
         <div className="container mx-auto px-4 max-w-5xl">
           <h2 className="text-3xl font-serif font-bold text-kpf-dark mb-16 text-center">
             {lang === "tr" ? "Odak Alanlarımız" : "Unsere Schwerpunkte"}
@@ -469,7 +469,9 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                   </p>
                 </div>
                 <div className="h-1 w-20 bg-kpf-red rounded-full mb-6 hidden md:block"></div>
-                {/* Eğer backend'den bio gelirse buraya ekleyin */}
+                {lang === "tr"
+                  ? selectedMember.descriptionTr.value
+                  : selectedMember.descriptionDe.value}
                 <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                   <button
                     onClick={() => setSelectedMember(null)}

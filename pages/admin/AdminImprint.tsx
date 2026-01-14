@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Save, Building2, Mail, MapPin, User, Shield } from "lucide-react";
+import {
+  Save,
+  Building2,
+  Mail,
+  MapPin,
+  User,
+  Shield,
+  CheckCircle,
+} from "lucide-react";
 
 interface ImprintContent {
   id?: string;
@@ -242,565 +250,583 @@ const AdminImprint: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          <Shield className="inline-block mr-2" size={32} />
-          Künye / Impressum
-        </h1>
-        <p className="text-slate-600">
-          Yasal bilgileri ve künye içeriğini düzenleyin
-        </p>
-      </div>
-
-      {/* Form */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Kuruluş Bilgileri */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Building2 size={24} className="text-kpf-red" />
-              Kuruluş Bilgileri / Organisation
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Kuruluş Adı / Name der Organisation
-                </label>
-                <input
-                  type="text"
-                  value={content.organizationName}
-                  onChange={(e) =>
-                    setContent({ ...content, organizationName: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Kuruluş Tipi / Organisationstyp
-                </label>
-                <input
-                  type="text"
-                  value={content.organizationType}
-                  onChange={(e) =>
-                    setContent({ ...content, organizationType: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
+    <div className="max-w-7xl mx-auto pb-20 px-4">
+      <form onSubmit={handleSubmit} className="space-y-10">
+        {/* Sticky Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-kpf-red/10 rounded-2xl">
+              <Shield className="text-kpf-red" size={28} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-slate-800">
+                Künye / Impressum
+              </h1>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle size={10} className="text-green-500" />
+                Yasal bilgileri ve künye içeriğini düzenleyin
+              </p>
             </div>
           </div>
-
-          {/* Adres */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <MapPin size={24} className="text-kpf-teal" />
-              Adres / Adresse
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-3">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Sokak / Straße
-                </label>
-                <input
-                  type="text"
-                  value={content.address.street}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      address: { ...content.address, street: e.target.value },
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Bina No / Hausnr.
-                </label>
-                <input
-                  type="text"
-                  value={content.address.houseNo}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      address: {
-                        ...content.address,
-                        houseNo: e.target.value,
-                      },
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Posta Kodu / PLZ
-                </label>
-                <input
-                  type="text"
-                  value={content.address.zipCode}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      address: {
-                        ...content.address,
-                        zipCode: e.target.value,
-                      },
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Şehir / Stadt
-                </label>
-                <input
-                  type="text"
-                  value={content.address.city}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      address: { ...content.address, city: e.target.value },
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Ülke / Land
-                </label>
-                <input
-                  type="text"
-                  value={content.address.country}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      address: { ...content.address, country: e.target.value },
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* İletişim */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Mail size={24} className="text-blue-600" />
-              İletişim / Kontakt
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  E-Mail
-                </label>
-                <input
-                  type="email"
-                  value={content.email}
-                  onChange={(e) =>
-                    setContent({ ...content, email: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Telefon
-                </label>
-                <input
-                  type="tel"
-                  value={content.phone}
-                  onChange={(e) =>
-                    setContent({ ...content, phone: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Sorumlu Kişiler */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <User size={24} className="text-green-600" />
-              Sorumlu Kişiler / Verantwortliche Personen
-            </h2>
-
-            <div className="space-y-6">
-              {/* Başkan */}
-              <div>
-                <h3 className="font-semibold text-slate-700 mb-3">
-                  Başkan / Vorsitzender
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Ad / Vorname
-                    </label>
-                    <input
-                      type="text"
-                      value={content.president.firstName}
-                      onChange={(e) =>
-                        setContent({
-                          ...content,
-                          president: {
-                            ...content.president,
-                            firstName: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Soyad / Nachname
-                    </label>
-                    <input
-                      type="text"
-                      value={content.president.lastName}
-                      onChange={(e) =>
-                        setContent({
-                          ...content,
-                          president: {
-                            ...content.president,
-                            lastName: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Ko-Başkan */}
-              <div>
-                <h3 className="font-semibold text-slate-700 mb-3">
-                  Ko-Başkan / Ko-Vorsitzender
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Ad / Vorname
-                    </label>
-                    <input
-                      type="text"
-                      value={content.vicePresident.firstName}
-                      onChange={(e) =>
-                        setContent({
-                          ...content,
-                          vicePresident: {
-                            ...content.vicePresident,
-                            firstName: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Soyad / Nachname
-                    </label>
-                    <input
-                      type="text"
-                      value={content.vicePresident.lastName}
-                      onChange={(e) =>
-                        setContent({
-                          ...content,
-                          vicePresident: {
-                            ...content.vicePresident,
-                            lastName: e.target.value,
-                          },
-                        })
-                      }
-                      required
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Yasal Yapı */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">
-              Yasal Yapı ve Amaç / Rechtliche Struktur und Zweck
-            </h2>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Yasal Yapı (Türkçe) / Rechtsstruktur (TR)
-                  </label>
-                  <input
-                    type="text"
-                    value={content.legalStructureTurkish}
-                    onChange={(e) =>
-                      setContent({
-                        ...content,
-                        legalStructureTurkish: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Yasal Yapı (Almanca) / Rechtsstruktur (DE)
-                  </label>
-                  <input
-                    type="text"
-                    value={content.legalStructureGerman}
-                    onChange={(e) =>
-                      setContent({
-                        ...content,
-                        legalStructureGerman: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Amaç (Türkçe) / Zweck (TR)
-                  </label>
-                  <textarea
-                    value={content.purposeTurkish}
-                    onChange={(e) =>
-                      setContent({ ...content, purposeTurkish: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Amaç (Almanca) / Zweck (DE)
-                  </label>
-                  <textarea
-                    value={content.purposeGerman}
-                    onChange={(e) =>
-                      setContent({ ...content, purposeGerman: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Vergi Muafiyeti (Türkçe) / Steuerbefreiung (TR)
-                  </label>
-                  <input
-                    type="text"
-                    value={content.taxExemptionTurkish}
-                    onChange={(e) =>
-                      setContent({
-                        ...content,
-                        taxExemptionTurkish: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Vergi Muafiyeti (Almanca) / Steuerbefreiung (DE)
-                  </label>
-                  <input
-                    type="text"
-                    value={content.taxExemptionGerman}
-                    onChange={(e) =>
-                      setContent({
-                        ...content,
-                        taxExemptionGerman: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* İçerik Sorumluluğu */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">
-              İçerik Sorumluluğu / Haftung für Inhalte
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Türkçe
-                </label>
-                <textarea
-                  value={content.contentResponsibilityTurkish}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      contentResponsibilityTurkish: e.target.value,
-                    })
-                  }
-                  rows={6}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Deutsch
-                </label>
-                <textarea
-                  value={content.contentResponsibilityGerman}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      contentResponsibilityGerman: e.target.value,
-                    })
-                  }
-                  rows={6}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bağlantılar Sorumluluğu */}
-          <div className="pb-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">
-              Bağlantılar İçin Sorumluluk / Haftung für Links
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Türkçe
-                </label>
-                <textarea
-                  value={content.linksResponsibilityTurkish}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      linksResponsibilityTurkish: e.target.value,
-                    })
-                  }
-                  rows={4}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Deutsch
-                </label>
-                <textarea
-                  value={content.linksResponsibilityGerman}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      linksResponsibilityGerman: e.target.value,
-                    })
-                  }
-                  rows={4}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Telif Hakkı */}
-          <div>
-            <h2 className="text-xl font-bold text-slate-800 mb-4">
-              Telif Hakkı / Urheberrecht
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Türkçe
-                </label>
-                <textarea
-                  value={content.copyrightTurkish}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      copyrightTurkish: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Deutsch
-                </label>
-                <textarea
-                  value={content.copyrightGerman}
-                  onChange={(e) =>
-                    setContent({
-                      ...content,
-                      copyrightGerman: e.target.value,
-                    })
-                  }
-                  rows={3}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg"
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
           >
-            <Save size={20} />
-            {loading
-              ? "Kaydediliyor..."
-              : content.id
-              ? "Güncelle"
-              : "Yeni Künye Oluştur"}
+            <Save size={18} />
+            {loading ? "Kaydediliyor..." : "Sitede Yayınla"}
           </button>
-        </form>
-      </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-8 lg:p-12 space-y-8">
+            {/* Kuruluş Bilgileri */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Building2 size={24} className="text-kpf-red" />
+                Kuruluş Bilgileri / Organisation
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Kuruluş Adı / Name der Organisation
+                  </label>
+                  <input
+                    type="text"
+                    value={content.organizationName}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        organizationName: e.target.value,
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Kuruluş Tipi / Organisationstyp
+                  </label>
+                  <input
+                    type="text"
+                    value={content.organizationType}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        organizationType: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Adres */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <MapPin size={24} className="text-kpf-teal" />
+                Adres / Adresse
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Sokak / Straße
+                  </label>
+                  <input
+                    type="text"
+                    value={content.address.street}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        address: { ...content.address, street: e.target.value },
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Bina No / Hausnr.
+                  </label>
+                  <input
+                    type="text"
+                    value={content.address.houseNo}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        address: {
+                          ...content.address,
+                          houseNo: e.target.value,
+                        },
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Posta Kodu / PLZ
+                  </label>
+                  <input
+                    type="text"
+                    value={content.address.zipCode}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        address: {
+                          ...content.address,
+                          zipCode: e.target.value,
+                        },
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Şehir / Stadt
+                  </label>
+                  <input
+                    type="text"
+                    value={content.address.city}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        address: { ...content.address, city: e.target.value },
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Ülke / Land
+                  </label>
+                  <input
+                    type="text"
+                    value={content.address.country}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        address: {
+                          ...content.address,
+                          country: e.target.value,
+                        },
+                      })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* İletişim */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <Mail size={24} className="text-blue-600" />
+                İletişim / Kontakt
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    E-Mail
+                  </label>
+                  <input
+                    type="email"
+                    value={content.email}
+                    onChange={(e) =>
+                      setContent({ ...content, email: e.target.value })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Telefon
+                  </label>
+                  <input
+                    type="tel"
+                    value={content.phone}
+                    onChange={(e) =>
+                      setContent({ ...content, phone: e.target.value })
+                    }
+                    required
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sorumlu Kişiler */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <User size={24} className="text-green-600" />
+                Sorumlu Kişiler / Verantwortliche Personen
+              </h2>
+
+              <div className="space-y-6">
+                {/* Başkan */}
+                <div>
+                  <h3 className="font-semibold text-slate-700 mb-3">
+                    Başkan / Vorsitzender
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Ad / Vorname
+                      </label>
+                      <input
+                        type="text"
+                        value={content.president.firstName}
+                        onChange={(e) =>
+                          setContent({
+                            ...content,
+                            president: {
+                              ...content.president,
+                              firstName: e.target.value,
+                            },
+                          })
+                        }
+                        required
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Soyad / Nachname
+                      </label>
+                      <input
+                        type="text"
+                        value={content.president.lastName}
+                        onChange={(e) =>
+                          setContent({
+                            ...content,
+                            president: {
+                              ...content.president,
+                              lastName: e.target.value,
+                            },
+                          })
+                        }
+                        required
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ko-Başkan */}
+                <div>
+                  <h3 className="font-semibold text-slate-700 mb-3">
+                    Ko-Başkan / Ko-Vorsitzender
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Ad / Vorname
+                      </label>
+                      <input
+                        type="text"
+                        value={content.vicePresident.firstName}
+                        onChange={(e) =>
+                          setContent({
+                            ...content,
+                            vicePresident: {
+                              ...content.vicePresident,
+                              firstName: e.target.value,
+                            },
+                          })
+                        }
+                        required
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Soyad / Nachname
+                      </label>
+                      <input
+                        type="text"
+                        value={content.vicePresident.lastName}
+                        onChange={(e) =>
+                          setContent({
+                            ...content,
+                            vicePresident: {
+                              ...content.vicePresident,
+                              lastName: e.target.value,
+                            },
+                          })
+                        }
+                        required
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Yasal Yapı */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">
+                Yasal Yapı ve Amaç / Rechtliche Struktur und Zweck
+              </h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Yasal Yapı (Türkçe) / Rechtsstruktur (TR)
+                    </label>
+                    <input
+                      type="text"
+                      value={content.legalStructureTurkish}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          legalStructureTurkish: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Yasal Yapı (Almanca) / Rechtsstruktur (DE)
+                    </label>
+                    <input
+                      type="text"
+                      value={content.legalStructureGerman}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          legalStructureGerman: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Amaç (Türkçe) / Zweck (TR)
+                    </label>
+                    <textarea
+                      value={content.purposeTurkish}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          purposeTurkish: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Amaç (Almanca) / Zweck (DE)
+                    </label>
+                    <textarea
+                      value={content.purposeGerman}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          purposeGerman: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Vergi Muafiyeti (Türkçe) / Steuerbefreiung (TR)
+                    </label>
+                    <input
+                      type="text"
+                      value={content.taxExemptionTurkish}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          taxExemptionTurkish: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Vergi Muafiyeti (Almanca) / Steuerbefreiung (DE)
+                    </label>
+                    <input
+                      type="text"
+                      value={content.taxExemptionGerman}
+                      onChange={(e) =>
+                        setContent({
+                          ...content,
+                          taxExemptionGerman: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* İçerik Sorumluluğu */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">
+                İçerik Sorumluluğu / Haftung für Inhalte
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Türkçe
+                  </label>
+                  <textarea
+                    value={content.contentResponsibilityTurkish}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        contentResponsibilityTurkish: e.target.value,
+                      })
+                    }
+                    rows={6}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Deutsch
+                  </label>
+                  <textarea
+                    value={content.contentResponsibilityGerman}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        contentResponsibilityGerman: e.target.value,
+                      })
+                    }
+                    rows={6}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bağlantılar Sorumluluğu */}
+            <div className="pb-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">
+                Bağlantılar İçin Sorumluluk / Haftung für Links
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Türkçe
+                  </label>
+                  <textarea
+                    value={content.linksResponsibilityTurkish}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        linksResponsibilityTurkish: e.target.value,
+                      })
+                    }
+                    rows={4}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Deutsch
+                  </label>
+                  <textarea
+                    value={content.linksResponsibilityGerman}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        linksResponsibilityGerman: e.target.value,
+                      })
+                    }
+                    rows={4}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Telif Hakkı */}
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 mb-4">
+                Telif Hakkı / Urheberrecht
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Türkçe
+                  </label>
+                  <textarea
+                    value={content.copyrightTurkish}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        copyrightTurkish: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Deutsch
+                  </label>
+                  <textarea
+                    value={content.copyrightGerman}
+                    onChange={(e) =>
+                      setContent({
+                        ...content,
+                        copyrightGerman: e.target.value,
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
   );
 };

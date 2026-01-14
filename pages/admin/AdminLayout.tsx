@@ -80,7 +80,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         { id: "activities", label: t("admin_menu_activities") },
         { id: "teegespraeche", label: t("admin_menu_teegespraeche") },
         { id: "courses", label: t("admin_menu_courses") },
-        { id: "pages", label: t("admin_menu_pages") },
       ],
     },
     {

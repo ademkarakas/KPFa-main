@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Edit,
@@ -14,6 +14,75 @@ import {
 import { teamMembersApi, uploadApi } from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
+
+const QuillEditor = ({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const isUpdating = useRef(false);
+
+  useEffect(() => {
+    if (containerRef.current && !quillRef.current) {
+      const quill = new Quill(containerRef.current, {
+        theme: "snow",
+        placeholder: placeholder || "İçerik yazın...",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ["bold", "italic", "underline"],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["link", "clean"],
+          ],
+        },
+      });
+
+      quill.on("text-change", () => {
+        if (!isUpdating.current) {
+          const html = quill.root.innerHTML;
+          onChange(html === "<p><br></p>" ? "" : html);
+        }
+      });
+
+      quillRef.current = quill;
+
+      if (value) {
+        quill.root.innerHTML = value;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (quillRef.current) {
+      const currentContent = quillRef.current.root.innerHTML;
+      const normalizedValue = value || "";
+      const normalizedCurrent =
+        currentContent === "<p><br></p>" ? "" : currentContent;
+
+      if (normalizedValue !== normalizedCurrent) {
+        isUpdating.current = true;
+        quillRef.current.root.innerHTML = normalizedValue;
+        setTimeout(() => {
+          isUpdating.current = false;
+        }, 100);
+      }
+    }
+  }, [value]);
+
+  return (
+    <div className="quill-modern-container">
+      <div ref={containerRef} />
+    </div>
+  );
+};
 
 interface TeamMemberFormData {
   nameTr: string;
@@ -356,28 +425,20 @@ const AdminTeam: React.FC = () => {
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Biyografi (Türkçe) *
                   </label>
-                  <textarea
-                    required
-                    rows={4}
+                  <QuillEditor
                     value={formData.bioTr}
-                    onChange={(e) =>
-                      setFormData({ ...formData, bioTr: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
+                    onChange={(val) => setFormData({ ...formData, bioTr: val })}
+                    placeholder="Biyografi (Türkçe)"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Biografie (Deutsch) *
                   </label>
-                  <textarea
-                    required
-                    rows={4}
+                  <QuillEditor
                     value={formData.bioDe}
-                    onChange={(e) =>
-                      setFormData({ ...formData, bioDe: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
+                    onChange={(val) => setFormData({ ...formData, bioDe: val })}
+                    placeholder="Biografie (Deutsch)"
                   />
                 </div>
               </div>
@@ -460,6 +521,15 @@ const AdminTeam: React.FC = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
+        .quill-modern-container:focus-within { background: #fff; border-color: #0d9488; }
+        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
+        .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
+        .ql-editor { padding: 15px !important; }
+        .ql-editor.ql-blank::before { color: #94a3b8; font-style: normal; }
+      `}</style>
     </div>
   );
 };

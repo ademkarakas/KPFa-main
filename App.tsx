@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Activities from "./pages/Activities";
+import ActivityDetail from "./pages/ActivityDetail";
 import Courses from "./pages/Courses";
 import Donate from "./pages/Donate";
 import Contact from "./pages/Contact";
@@ -21,6 +22,47 @@ import { Toaster } from "react-hot-toast";
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>("tr");
   const [currentPage, setCurrentPage] = useState<PageView>("home");
+  const [activityId, setActivityId] = useState<string | null>(null);
+
+  // Hash-based navigation için URL'i dinle
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = globalThis.location.hash.slice(1); // # işaretini kaldır
+
+      if (hash.startsWith("activity/")) {
+        const id = hash.split("/")[1];
+        setActivityId(id);
+        setCurrentPage("activities");
+      } else if (hash === "admin") {
+        // Admin sayfası için özel işlem yok, zaten aşağıda kontrol ediliyor
+      } else if (hash.startsWith("about/")) {
+        // About sayfası için section scroll desteği (örn: "about/core-values")
+        const sectionId = hash.split("/")[1];
+        setCurrentPage("about");
+        setActivityId(null);
+
+        // Section'a scroll yap
+        setTimeout(() => {
+          const element = document.getElementById(sectionId);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 100);
+      } else if (hash) {
+        setCurrentPage(hash as PageView);
+        setActivityId(null);
+      } else {
+        setCurrentPage("home");
+        setActivityId(null);
+      }
+    };
+
+    // İlk yüklemede ve hash değiştiğinde çalıştır
+    handleHashChange();
+    globalThis.addEventListener("hashchange", handleHashChange);
+
+    return () => globalThis.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   // Admin paneli için özel kontrol
   if (
@@ -35,6 +77,19 @@ const App: React.FC = () => {
   }
 
   const renderPage = () => {
+    // Activity detail sayfası için özel kontrol
+    if (activityId) {
+      return (
+        <ActivityDetail
+          activityId={activityId}
+          lang={lang}
+          onBack={() => {
+            globalThis.location.hash = "activities";
+          }}
+        />
+      );
+    }
+
     switch (currentPage) {
       case "home":
         return <Home lang={lang} setPage={setCurrentPage} />;
