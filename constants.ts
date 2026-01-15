@@ -559,7 +559,7 @@ export const PARTNERS: Partner[] = [
       de: "Internationale humanitäre Hilfsorganisation.",
     },
     logoUrl: "/assets/tth-logo-1a.png.webp",
-    websiteUrl: "https://timetohelp.de/",
+    websiteUrl: "https://timetohelp.eu/",
   },
   {
     id: "2",

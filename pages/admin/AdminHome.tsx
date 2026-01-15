@@ -301,36 +301,128 @@ const AdminHome: React.FC = () => {
     setEditingFeature(newFeature);
   };
 
-  const saveFeature = () => {
+  const saveFeature = async () => {
     if (!editingFeature) return;
 
-    const isDuplicate = features.some(
-      (f) => f.id === editingFeature.id && f.id !== editingFeature.id
-    );
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const isNew = !features.find((f) => f.id === editingFeature.id);
 
-    if (editingFeature.id && features.find((f) => f.id === editingFeature.id)) {
-      setFeatures(
-        features.map((f) => (f.id === editingFeature.id ? editingFeature : f))
-      );
-    } else {
-      setFeatures([...features, editingFeature]);
+      // Mevcut feature'dan color'ı al veya varsayılan kullan
+      const existingFeature = features.find((f) => f.id === editingFeature.id);
+
+      // Backend'e gönderilecek veri formatı
+      const featureData = {
+        id: editingFeature.id,
+        titleTr: editingFeature.title_tr,
+        titleDe: editingFeature.title_de,
+        descriptionTr: editingFeature.description_tr,
+        descriptionDe: editingFeature.description_de,
+        color:
+          (editingFeature as any).color || existingFeature?.color || "#FF6B35",
+      };
+
+      const response = await fetch("https://localhost:7189/api/Home/features", {
+        method: isNew ? "POST" : "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(featureData),
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem("adminToken");
+        globalThis.location.href = "/admin/login";
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Save failed");
+      }
+
+      // Verileri backend'den yeniden yükle
+      const reloadResponse = await fetch("https://localhost:7189/api/Home", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (reloadResponse.ok) {
+        const data = await reloadResponse.json();
+        setFeatures(
+          (data.features || []).map((f: any, idx: number) => ({
+            id: f.id,
+            title_tr: f.titleTr || "",
+            title_de: f.titleDe || "",
+            description_tr: f.descriptionTr || "",
+            description_de: f.descriptionDe || "",
+            icon: (["users", "sparkles", "calendar"] as const)[idx % 3],
+            color: f.color || "#FF6B35",
+          }))
+        );
+      }
+
+      setEditingFeature(null);
+      setMessage({
+        type: "success",
+        text: language === "tr" ? "Özellik kaydedildi" : "Funktion gespeichert",
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error("Feature kaydetme hatası:", error);
+      setMessage({
+        type: "error",
+        text:
+          language === "tr"
+            ? "Kaydedilirken hata oluştu"
+            : "Fehler beim Speichern",
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setSaving(false);
     }
-
-    setEditingFeature(null);
-    setMessage({
-      type: "success",
-      text: language === "tr" ? "Özellik kaydedildi" : "Funktion gespeichert",
-    });
-    setTimeout(() => setMessage(null), 3000);
   };
 
-  const deleteFeature = (id: string) => {
-    setFeatures(features.filter((f) => f.id !== id));
-    setMessage({
-      type: "success",
-      text: language === "tr" ? "Özellik silindi" : "Funktion gelöscht",
-    });
-    setTimeout(() => setMessage(null), 3000);
+  const deleteFeature = async (id: string) => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(
+        `https://localhost:7189/api/Home/features/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 401) {
+        localStorage.removeItem("adminToken");
+        globalThis.location.href = "/admin/login";
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Delete failed");
+      }
+
+      setFeatures(features.filter((f) => f.id !== id));
+      setMessage({
+        type: "success",
+        text: language === "tr" ? "Özellik silindi" : "Funktion gelöscht",
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error("Feature silme hatası:", error);
+      setMessage({
+        type: "error",
+        text:
+          language === "tr" ? "Silinirken hata oluştu" : "Fehler beim Löschen",
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveInstagramSection = async () => {

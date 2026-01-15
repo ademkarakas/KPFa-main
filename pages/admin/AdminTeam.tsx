@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Edit,
@@ -10,143 +10,176 @@ import {
   EyeOff,
   Save,
   X,
+  Shield,
+  User,
+  Clock,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
-import { teamMembersApi, uploadApi } from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { TEXTS } from "../../constants";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
 
-const QuillEditor = ({
-  value,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  placeholder?: string;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const quillRef = useRef<Quill | null>(null);
-  const isUpdating = useRef(false);
-
-  useEffect(() => {
-    if (containerRef.current && !quillRef.current) {
-      const quill = new Quill(containerRef.current, {
-        theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
-        modules: {
-          toolbar: [
-            [{ header: [1, 2, false] }],
-            ["bold", "italic", "underline"],
-            [{ list: "ordered" }, { list: "bullet" }],
-            ["link", "clean"],
-          ],
-        },
-      });
-
-      quill.on("text-change", () => {
-        if (!isUpdating.current) {
-          const html = quill.root.innerHTML;
-          onChange(html === "<p><br></p>" ? "" : html);
-        }
-      });
-
-      quillRef.current = quill;
-
-      if (value) {
-        quill.root.innerHTML = value;
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (quillRef.current) {
-      const currentContent = quillRef.current.root.innerHTML;
-      const normalizedValue = value || "";
-      const normalizedCurrent =
-        currentContent === "<p><br></p>" ? "" : currentContent;
-
-      if (normalizedValue !== normalizedCurrent) {
-        isUpdating.current = true;
-        quillRef.current.root.innerHTML = normalizedValue;
-        setTimeout(() => {
-          isUpdating.current = false;
-        }, 100);
-      }
-    }
-  }, [value]);
-
-  return (
-    <div className="quill-modern-container">
-      <div ref={containerRef} />
-    </div>
-  );
-};
-
-interface TeamMemberFormData {
-  nameTr: string;
-  nameDe: string;
-  roleTr: string;
-  roleDe: string;
-  bioTr: string;
-  bioDe: string;
+// Admin user interface
+interface AdminUser {
+  id: string;
   email: string;
-  photoUrl: string;
+  name: string;
+  role: string;
   isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
+// Form data for create/edit
+interface AdminFormData {
+  email: string;
+  password: string;
+  name: string;
+  role: string;
+}
+
+const API_BASE_URL = "https://localhost:7189/api";
+
 const AdminTeam: React.FC = () => {
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [originalRole, setOriginalRole] = useState<string>("");
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "";
+  }>({ message: "", type: "" });
   const { language } = useLanguage();
-  const t = (key: string) => TEXTS[key]?.[language] || key;
-  const [formData, setFormData] = useState<TeamMemberFormData>({
-    nameTr: "",
-    nameDe: "",
-    roleTr: "",
-    roleDe: "",
-    bioTr: "",
-    bioDe: "",
+
+  const [formData, setFormData] = useState<AdminFormData>({
     email: "",
-    photoUrl: "",
-    isActive: true,
+    password: "",
+    name: "",
+    role: "User",
   });
 
-  useEffect(() => {
-    loadTeamMembers();
-  }, []);
-
-  const loadTeamMembers = async () => {
-    try {
-      setLoading(true);
-      const data = await teamMembersApi.getAll(true);
-      setTeamMembers(data);
-    } catch (error) {
-      console.error("Ekip üyeleri yüklenirken hata:", error);
-      alert("Ekip üyeleri yüklenemedi!");
-    } finally {
-      setLoading(false);
-    }
+  const texts = {
+    tr: {
+      pageTitle: "Kullanıcı Yönetimi",
+      totalUsers: "Toplam",
+      users: "kullanıcı",
+      newUser: "Yeni Kullanıcı",
+      searchPlaceholder: "Kullanıcı ara...",
+      active: "Aktif",
+      inactive: "Pasif",
+      edit: "Düzenle",
+      delete: "Sil",
+      editUser: "Kullanıcı Düzenle",
+      createUser: "Yeni Kullanıcı Oluştur",
+      name: "İsim",
+      email: "E-posta",
+      password: "Şifre",
+      passwordHint: "Düzenlemede boş bırakılırsa değiştirilmez",
+      role: "Rol",
+      roleUser: "Kullanıcı",
+      roleUserAdmin: "Kullanıcı Yöneticisi",
+      roleSystemAdmin: "Sistem Yöneticisi",
+      save: "Kaydet",
+      update: "Güncelle",
+      create: "Oluştur",
+      cancel: "İptal",
+      confirmDelete: "Bu kullanıcıyı silmek istediğinizden emin misiniz?",
+      lastLogin: "Son Giriş",
+      createdAt: "Oluşturulma",
+      never: "Hiç giriş yapılmadı",
+      loadError: "Kullanıcılar yüklenemedi!",
+      deleteSuccess: "Kullanıcı silindi!",
+      deleteError: "Silme işlemi başarısız!",
+      saveSuccess: "Kullanıcı kaydedildi!",
+      saveError: "Kayıt başarısız!",
+    },
+    de: {
+      pageTitle: "Benutzerverwaltung",
+      totalUsers: "Insgesamt",
+      users: "Benutzer",
+      newUser: "Neuer Benutzer",
+      searchPlaceholder: "Benutzer suchen...",
+      active: "Aktiv",
+      inactive: "Inaktiv",
+      edit: "Bearbeiten",
+      delete: "Löschen",
+      editUser: "Benutzer bearbeiten",
+      createUser: "Neuen Benutzer erstellen",
+      name: "Name",
+      email: "E-Mail",
+      password: "Passwort",
+      passwordHint: "Bei Bearbeitung leer lassen, um es nicht zu ändern",
+      role: "Rolle",
+      roleUser: "Benutzer",
+      roleUserAdmin: "Benutzeradministrator",
+      roleSystemAdmin: "Systemadministrator",
+      save: "Speichern",
+      update: "Aktualisieren",
+      create: "Erstellen",
+      cancel: "Abbrechen",
+      confirmDelete:
+        "Sind Sie sicher, dass Sie diesen Benutzer löschen möchten?",
+      lastLogin: "Letzte Anmeldung",
+      createdAt: "Erstellt am",
+      never: "Nie angemeldet",
+      loadError: "Benutzer konnten nicht geladen werden!",
+      deleteSuccess: "Benutzer gelöscht!",
+      deleteError: "Löschen fehlgeschlagen!",
+      saveSuccess: "Benutzer gespeichert!",
+      saveError: "Speichern fehlgeschlagen!",
+    },
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const t = texts[language];
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("adminToken");
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token || ""}`,
+    };
+  };
+
+  const handleUnauthorized = () => {
+    localStorage.removeItem("adminToken");
+    alert("Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
+    globalThis.location.href = "/admin/login";
+  };
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: "", type: "" }), 4000);
+  };
+
+  useEffect(() => {
+    loadAdmins();
+  }, []);
+
+  const loadAdmins = async () => {
     try {
-      setUploadingImage(true);
-      const photoUrl = await uploadApi.uploadFile(file);
-      setFormData({ ...formData, photoUrl });
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/Admins`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error("Failed to load admins");
+      }
+
+      const data: AdminUser[] = await res.json();
+      setAdmins(data);
     } catch (error) {
-      console.error("Resim yüklenirken hata:", error);
-      alert("Resim yüklenemedi!");
+      console.error("Kullanıcılar yüklenirken hata:", error);
+      alert(t.loadError);
     } finally {
-      setUploadingImage(false);
+      setLoading(false);
     }
   };
 
@@ -154,84 +187,175 @@ const AdminTeam: React.FC = () => {
     e.preventDefault();
 
     try {
-      const dto = {
-        nameTr: formData.nameTr,
-        nameDe: formData.nameDe,
-        roleTr: formData.roleTr,
-        roleDe: formData.roleDe,
-        bioTr: formData.bioTr,
-        bioDe: formData.bioDe,
-        email: formData.email,
-        photoUrl: formData.photoUrl,
-        isActive: formData.isActive,
-      };
-
       if (editingId) {
-        await teamMembersApi.update(editingId, dto);
+        // Update existing admin
+        const res = await fetch(`${API_BASE_URL}/Admins/${editingId}`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: editingId,
+            email: formData.email,
+            name: formData.name,
+          }),
+        });
+
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Update failed");
+        }
+
+        // Update role if changed
+        if (formData.role !== originalRole) {
+          const roleRes = await fetch(
+            `${API_BASE_URL}/Admins/${editingId}/role`,
+            {
+              method: "PUT",
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                adminId: editingId,
+                role: formData.role,
+              }),
+            }
+          );
+
+          if (roleRes.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          if (!roleRes.ok) {
+            const errorText = await roleRes.text();
+            throw new Error(errorText || "Role update failed");
+          }
+        }
       } else {
-        await teamMembersApi.create(dto);
+        // Create new admin
+        const res = await fetch(`${API_BASE_URL}/Admins`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            name: formData.name,
+            role: formData.role,
+          }),
+        });
+
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Create failed");
+        }
       }
 
-      await loadTeamMembers();
+      await loadAdmins();
       resetForm();
-      alert(editingId ? "Ekip üyesi güncellendi!" : "Ekip üyesi oluşturuldu!");
+      showNotification(t.saveSuccess, "success");
     } catch (error) {
       console.error("Kayıt hatası:", error);
-      alert("İşlem başarısız!");
+      showNotification(t.saveError, "error");
     }
   };
 
-  const handleEdit = (member: any) => {
+  const handleEdit = (admin: AdminUser) => {
     setFormData({
-      nameTr: member.nameTr,
-      nameDe: member.nameDe,
-      roleTr: member.roleTr,
-      roleDe: member.roleDe,
-      bioTr: member.bioTr,
-      bioDe: member.bioDe,
-      email: member.email,
-      photoUrl: member.photoUrl,
-      isActive: member.isActive,
+      email: admin.email,
+      password: "",
+      name: admin.name,
+      role: admin.role,
     });
-    setEditingId(member.id);
+    setOriginalRole(admin.role);
+    setEditingId(admin.id);
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Bu ekip üyesini silmek istediğinizden emin misiniz?")) return;
+  const handleDelete = async (id: string) => {
+    if (!globalThis.confirm(t.confirmDelete)) return;
 
     try {
-      await teamMembersApi.delete(id);
-      await loadTeamMembers();
-      alert("Ekip üyesi silindi!");
+      const res = await fetch(`${API_BASE_URL}/Admins/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error("Delete failed");
+      }
+
+      await loadAdmins();
+      showNotification(t.deleteSuccess, "success");
     } catch (error) {
       console.error("Silme hatası:", error);
-      alert("Silme işlemi başarısız!");
+      showNotification(t.deleteError, "error");
     }
   };
 
   const resetForm = () => {
     setFormData({
-      nameTr: "",
-      nameDe: "",
-      roleTr: "",
-      roleDe: "",
-      bioTr: "",
-      bioDe: "",
       email: "",
-      photoUrl: "",
-      isActive: true,
+      password: "",
+      name: "",
+      role: "User",
     });
+    setOriginalRole("");
     setEditingId(null);
     setShowForm(false);
   };
 
-  const filteredMembers = teamMembers.filter(
-    (m) =>
-      m.nameTr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.nameDe.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAdmins = admins.filter(
+    (admin) =>
+      admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      admin.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      admin.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return t.never;
+    return new Date(dateString).toLocaleDateString(
+      language === "tr" ? "tr-TR" : "de-DE",
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
+
+  const getRoleIcon = (role: string) => {
+    if (role === "SystemAdmin") {
+      return <Shield size={14} className="text-red-500" />;
+    } else if (role === "UserAdmin") {
+      return <Shield size={14} className="text-amber-500" />;
+    } else {
+      return <User size={14} className="text-blue-500" />;
+    }
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    if (role === "SystemAdmin") {
+      return "bg-red-100 text-red-800 border-red-200";
+    } else if (role === "UserAdmin") {
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    } else {
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    }
+  };
 
   if (loading) {
     return (
@@ -243,14 +367,41 @@ const AdminTeam: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Toast Notification */}
+      {notification.message && (
+        <div
+          className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border transition-all duration-300 animate-slide-in-right ${
+            notification.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : "bg-red-50 border-red-200 text-red-800"
+          }`}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle size={24} className="text-green-500" />
+          ) : (
+            <AlertCircle size={24} className="text-red-500" />
+          )}
+          <div>
+            <p className="font-semibold">{notification.message}</p>
+          </div>
+          <button
+            onClick={() => setNotification({ message: "", type: "" })}
+            className="ml-4 p-1 hover:bg-white/50 rounded-full transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
-            {t("admin_team_title")}
+          <h1 className="text-3xl font-bold text-slate-800 mb-2 flex items-center gap-3">
+            <Users className="text-kpf-teal" />
+            {t.pageTitle}
           </h1>
           <p className="text-slate-600">
-            Toplam {teamMembers.length} ekip üyesi
+            {t.totalUsers} {admins.length} {t.users}
           </p>
         </div>
         <button
@@ -258,7 +409,7 @@ const AdminTeam: React.FC = () => {
           className="flex items-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all shadow-lg"
         >
           <Plus size={20} />
-          <span className="font-semibold">{t("admin_team_new")}</span>
+          <span className="font-semibold">{t.newUser}</span>
         </button>
       </div>
 
@@ -270,79 +421,131 @@ const AdminTeam: React.FC = () => {
         />
         <input
           type="text"
-          placeholder="Ekip üyesi ara..."
+          placeholder={t.searchPlaceholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
         />
       </div>
 
-      {/* Team Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredMembers.map((member) => (
-          <div
-            key={member.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-          >
-            <div className="relative">
-              <img
-                src={member.photoUrl}
-                alt={member.nameTr}
-                className="w-full h-64 object-cover"
-              />
-              <div className="absolute top-4 right-4">
-                {member.isActive ? (
-                  <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-                    <Eye size={14} />
-                    Aktif
+      {/* Users Table */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+                {t.name}
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+                {t.email}
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+                {t.role}
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+                Status
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+                {t.lastLogin}
+              </th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filteredAdmins.map((admin) => (
+              <tr
+                key={admin.id}
+                className="hover:bg-slate-50 transition-colors"
+              >
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-kpf-teal/10 flex items-center justify-center">
+                      <span className="text-kpf-teal font-bold text-lg">
+                        {admin.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="font-medium text-slate-800">
+                      {admin.name}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Mail size={14} />
+                    <span>{admin.email}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${getRoleBadgeColor(
+                      admin.role
+                    )}`}
+                  >
+                    {getRoleIcon(admin.role)}
+                    {admin.role === "SystemAdmin"
+                      ? t.roleSystemAdmin
+                      : admin.role === "UserAdmin"
+                      ? t.roleUserAdmin
+                      : t.roleUser}
                   </span>
-                ) : (
-                  <span className="px-3 py-1 bg-slate-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
-                    <EyeOff size={14} />
-                    Pasif
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-1">
-                {member.nameTr}
-              </h3>
-              <p className="text-sm text-kpf-teal font-semibold mb-3">
-                {member.roleTr}
-              </p>
-              <div className="flex items-center gap-2 text-sm text-slate-600 mb-4">
-                <Mail size={14} />
-                <span className="truncate">{member.email}</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(member)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                >
-                  <Edit size={14} />
-                  Düzenle
-                </button>
-                <button
-                  onClick={() => handleDelete(member.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                >
-                  <Trash2 size={14} />
-                  Sil
-                </button>
-              </div>
-            </div>
+                </td>
+                <td className="px-6 py-4">
+                  {admin.isActive ? (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                      <Eye size={12} />
+                      {t.active}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
+                      <EyeOff size={12} />
+                      {t.inactive}
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Clock size={14} />
+                    <span>{formatDate(admin.lastLoginAt)}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => handleEdit(admin)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title={t.edit}
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(admin.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title={t.delete}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filteredAdmins.length === 0 && (
+          <div className="text-center py-12 text-slate-500">
+            <Users size={48} className="mx-auto mb-4 opacity-30" />
+            <p>No users found</p>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8">
-            <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="border-b border-slate-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-slate-800">
-                {editingId ? "Ekip Üyesi Düzenle" : "Yeni Ekip Üyesi"}
+                {editingId ? t.editUser : t.createUser}
               </h2>
               <button
                 onClick={resetForm}
@@ -352,101 +555,27 @@ const AdminTeam: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* İsim */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    İsim (Türkçe) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nameTr}
-                    onChange={(e) =>
-                      setFormData({ ...formData, nameTr: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Name (Deutsch) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nameDe}
-                    onChange={(e) =>
-                      setFormData({ ...formData, nameDe: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                  />
-                </div>
-              </div>
-
-              {/* Rol */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Rol (Türkçe) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.roleTr}
-                    onChange={(e) =>
-                      setFormData({ ...formData, roleTr: e.target.value })
-                    }
-                    placeholder="örn: Kurucu Üye"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Rolle (Deutsch) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.roleDe}
-                    onChange={(e) =>
-                      setFormData({ ...formData, roleDe: e.target.value })
-                    }
-                    placeholder="z.B: Gründungsmitglied"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                  />
-                </div>
-              </div>
-
-              {/* Biyografi */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Biyografi (Türkçe) *
-                  </label>
-                  <QuillEditor
-                    value={formData.bioTr}
-                    onChange={(val) => setFormData({ ...formData, bioTr: val })}
-                    placeholder="Biyografi (Türkçe)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Biografie (Deutsch) *
-                  </label>
-                  <QuillEditor
-                    value={formData.bioDe}
-                    onChange={(val) => setFormData({ ...formData, bioDe: val })}
-                    placeholder="Biografie (Deutsch)"
-                  />
-                </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  {t.name} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                />
               </div>
 
               {/* Email */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  E-Mail *
+                  {t.email} *
                 </label>
                 <input
                   type="email"
@@ -459,62 +588,57 @@ const AdminTeam: React.FC = () => {
                 />
               </div>
 
-              {/* Fotoğraf */}
+              {/* Password - only for create */}
+              {!editingId && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    {t.password} *
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingId}
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                  />
+                </div>
+              )}
+
+              {/* Role - for both create and edit */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Fotoğraf *
+                  {t.role} *
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  disabled={uploadingImage}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                />
-                {formData.photoUrl && (
-                  <img
-                    src={formData.photoUrl}
-                    alt="Preview"
-                    className="mt-3 h-40 w-auto rounded-lg"
-                  />
-                )}
-              </div>
-
-              {/* Aktif/Pasif */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
+                <select
+                  value={formData.role}
                   onChange={(e) =>
-                    setFormData({ ...formData, isActive: e.target.checked })
+                    setFormData({ ...formData, role: e.target.value })
                   }
-                  className="w-5 h-5 text-kpf-teal focus:ring-kpf-teal border-slate-300 rounded"
-                />
-                <label
-                  htmlFor="isActive"
-                  className="text-sm font-semibold text-slate-700"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white"
                 >
-                  Ekip Üyesi Aktif
-                </label>
+                  <option value="User">{t.roleUser}</option>
+                  <option value="UserAdmin">{t.roleUserAdmin}</option>
+                  <option value="SystemAdmin">{t.roleSystemAdmin}</option>
+                </select>
               </div>
 
               {/* Buttons */}
-              <div className="flex gap-4 pt-6 border-t">
+              <div className="flex gap-4 pt-4 border-t">
                 <button
                   type="submit"
-                  disabled={uploadingImage}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
                 >
                   <Save size={20} />
-                  {editingId ? "Güncelle" : "Oluştur"}
+                  {editingId ? t.update : t.create}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all font-semibold"
                 >
-                  İptal
+                  {t.cancel}
                 </button>
               </div>
             </form>
@@ -522,13 +646,21 @@ const AdminTeam: React.FC = () => {
         </div>
       )}
 
+      {/* Animation Styles */}
       <style>{`
-        .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
-        .quill-modern-container:focus-within { background: #fff; border-color: #0d9488; }
-        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
-        .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
-        .ql-editor { padding: 15px !important; }
-        .ql-editor.ql-blank::before { color: #94a3b8; font-style: normal; }
+        @keyframes slide-in-right {
+          from {
+            opacity: 0;
+            transform: translateX(100px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-slide-in-right {
+          animation: slide-in-right 0.3s ease-out forwards;
+        }
       `}</style>
     </div>
   );

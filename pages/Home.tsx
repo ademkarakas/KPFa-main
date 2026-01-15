@@ -282,14 +282,16 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {homeData.features.map((feature, index) => {
               // Her feature için ilgili section ID'sini belirle
-              const sectionIds = ["who-we-are", "core-values", "focus-areas"];
+              const sectionIds = ["core-values", "who-we-are", "focus-areas"];
               const sectionId = sectionIds[index];
 
               return (
                 <div
                   key={feature.id}
                   onClick={() => {
-                    globalThis.location.hash = `about/${sectionId}`;
+                    // Section ID'yi sessionStorage'a kaydet, About sayfası bunu okuyup scroll edecek
+                    sessionStorage.setItem("scrollToSection", sectionId);
+                    setPage("about");
                   }}
                   className="group bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-slate-100"
                 >
