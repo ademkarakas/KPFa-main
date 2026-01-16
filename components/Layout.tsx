@@ -245,8 +245,24 @@ const Layout: React.FC<LayoutProps> = ({
               <NavLink page="contact" label={t("nav_contact")} />
 
               <div className="mx-2"></div>
-              <NavLink page="donate" label={t("nav_donate")} />
-              {/*<NavLink page="contact" label={t("nav_contact")} />*/}
+              {/* Donate Button - Special styling */}
+              <div className="ml-3">
+                <button
+                  onClick={() => {
+                    globalThis.location.hash = "donate";
+                  }}
+                  className="relative overflow-hidden bg-gradient-to-r from-kpf-teal to-kpf-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transform hover:-translate-y-0.5 transition-all group"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Heart
+                      size={16}
+                      className="group-hover:scale-110 transition-transform"
+                    />
+                    {t("nav_donate")}
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-kpf-teal to-kpf-teal opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+              </div>
             </div>
 
             {/* Right Side - Language Selector */}

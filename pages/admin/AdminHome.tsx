@@ -84,14 +84,18 @@ const QuillEditor = ({
 };
 
 interface HeroContent {
+  id: string;
   title_tr: string;
   title_de: string;
   subtitle_tr: string;
   subtitle_de: string;
-  ctaPrimaryText_tr: string;
-  ctaPrimaryText_de: string;
-  cta2Text_tr: string;
-  cta2Text_de: string;
+  description_tr: string;
+  description_de: string;
+  backgroundImageUrl: string;
+  primaryButtonText_tr: string;
+  primaryButtonText_de: string;
+  secondaryButtonText_tr: string;
+  secondaryButtonText_de: string;
 }
 
 interface Feature {
@@ -120,56 +124,35 @@ interface CTASection {
 
 const AdminHome: React.FC = () => {
   const [heroContent, setHeroContent] = useState<HeroContent>({
-    title_tr: "KulturPlattform Freiburg",
-    title_de: "KulturPlattform Freiburg",
-    subtitle_tr: "Freiburg'un kültürü birleştiren platformu",
-    subtitle_de: "Die Kulturplattform, die Freiburg verbindet",
-    ctaPrimaryText_tr: "Etkinlikleri Gör",
-    ctaPrimaryText_de: "Aktivitäten entdecken",
-    cta2Text_tr: "Gönüllü Ol",
-    cta2Text_de: "Freiwilliger werden",
+    id: "",
+    title_tr: "",
+    title_de: "",
+    subtitle_tr: "",
+    subtitle_de: "",
+    description_tr: "",
+    description_de: "",
+    backgroundImageUrl: "",
+    primaryButtonText_tr: "",
+    primaryButtonText_de: "",
+    secondaryButtonText_tr: "",
+    secondaryButtonText_de: "",
   });
 
-  const [features, setFeatures] = useState<Feature[]>([
-    {
-      id: "1",
-      title_tr: "Kültür ve Toplum",
-      title_de: "Kultur und Gemeinschaft",
-      description_tr: "Freiburg'da kültürün kalbi olmak",
-      description_de: "Das Herz der Kultur in Freiburg sein",
-      icon: "users",
-    },
-    {
-      id: "2",
-      title_tr: "Değerlerimiz",
-      title_de: "Unsere Werte",
-      description_tr: "Birlikte büyüyor, birlikte öğreniyoruz",
-      description_de: "Zusammen wachsen, zusammen lernen",
-      icon: "sparkles",
-    },
-    {
-      id: "3",
-      title_tr: "Etkinlikler",
-      title_de: "Veranstaltungen",
-      description_tr: "Tüm etkinlikleri keşfet",
-      description_de: "Alle Veranstaltungen entdecken",
-      icon: "calendar",
-    },
-  ]);
+  const [features, setFeatures] = useState<Feature[]>([]);
 
   const [instagramSection, setInstagramSection] = useState<InstagramSection>({
-    title_tr: "Instagram'da Takip Et",
-    title_de: "Folge uns auf Instagram",
-    description_tr: "Son fotoğrafları ve güncelleri görmek için",
-    description_de: "Siehe die neuesten Fotos und Updates",
-    instagramHandle: "@kulturplattformfreiburg",
+    title_tr: "",
+    title_de: "",
+    description_tr: "",
+    description_de: "",
+    instagramHandle: "",
   });
 
   const [ctaSection, setCtaSection] = useState<CTASection>({
-    title_tr: "Ailemize Katılın",
-    title_de: "Werden Sie Teil unserer Familie",
-    description_tr: "KulturPlattform Freiburg'un misyonuna katılın",
-    description_de: "Treten Sie der Mission von KulturPlattform Freiburg bei",
+    title_tr: "",
+    title_de: "",
+    description_tr: "",
+    description_de: "",
   });
 
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
@@ -188,24 +171,30 @@ const AdminHome: React.FC = () => {
 
   const loadHomeContent = async () => {
     try {
-      const response = await fetch("https://localhost:7189/api/Home");
-      if (!response.ok) throw new Error("Failed to fetch");
-      const data = await response.json();
+      // Ana Home verilerini ve Hero verisini paralel olarak çek
+      const [homeResponse, heroResponse] = await Promise.all([
+        fetch("https://localhost:7189/api/Home"),
+        fetch("https://localhost:7189/api/Home/hero"),
+      ]);
 
-      // Hero
+      const data = homeResponse.ok ? await homeResponse.json() : {};
+      const heroApiData = heroResponse.ok ? await heroResponse.json() : null;
+
+      // Hero - önce /api/Home/hero endpoint'inden gelen veriyi kullan
+      const heroSource = heroApiData || data.hero;
       setHeroContent({
-        title_tr: data.hero?.titleTr || "KulturPlattform Freiburg",
-        title_de: data.hero?.titleDe || "KulturPlattform Freiburg",
-        subtitle_tr:
-          data.hero?.subtitleTr || "Freiburg'un kültürü birleştiren platformu",
-        subtitle_de:
-          data.hero?.subtitleDe ||
-          "Die Kulturplattform, die Freiburg verbindet",
-        ctaPrimaryText_tr: data.hero?.ctaPrimaryTextTr || "Etkinlikleri Gör",
-        ctaPrimaryText_de:
-          data.hero?.ctaPrimaryTextDe || "Aktivitäten entdecken",
-        cta2Text_tr: data.hero?.cta2TextTr || "Gönüllü Ol",
-        cta2Text_de: data.hero?.cta2TextDe || "Freiwilliger werden",
+        id: heroSource?.id || "",
+        title_tr: heroSource?.titleTr || "",
+        title_de: heroSource?.titleDe || "",
+        subtitle_tr: heroSource?.subtitleTr || "",
+        subtitle_de: heroSource?.subtitleDe || "",
+        description_tr: heroSource?.descriptionTr || "",
+        description_de: heroSource?.descriptionDe || "",
+        backgroundImageUrl: heroSource?.backgroundImageUrl || "",
+        primaryButtonText_tr: heroSource?.primaryButtonTextTr || "",
+        primaryButtonText_de: heroSource?.primaryButtonTextDe || "",
+        secondaryButtonText_tr: heroSource?.secondaryButtonTextTr || "",
+        secondaryButtonText_de: heroSource?.secondaryButtonTextDe || "",
       });
 
       // Features
@@ -222,28 +211,19 @@ const AdminHome: React.FC = () => {
 
       // Instagram
       setInstagramSection({
-        title_tr: data.instagram?.titleTr || "Instagram'da Takip Et",
-        title_de: data.instagram?.titleDe || "Folge uns auf Instagram",
-        description_tr:
-          data.instagram?.descriptionTr ||
-          "Son fotoğrafları ve güncelleri görmek için",
-        description_de:
-          data.instagram?.descriptionDe ||
-          "Siehe die neuesten Fotos und Updates",
-        instagramHandle:
-          data.instagram?.instagramHandle || "@kulturplattformfreiburg",
+        title_tr: data.instagram?.titleTr || "",
+        title_de: data.instagram?.titleDe || "",
+        description_tr: data.instagram?.descriptionTr || "",
+        description_de: data.instagram?.descriptionDe || "",
+        instagramHandle: data.instagram?.instagramHandle || "",
       });
 
       // CTA
       setCtaSection({
-        title_tr: data.cta?.titleTr || "Ailemize Katılın",
-        title_de: data.cta?.titleDe || "Werden Sie Teil unserer Familie",
-        description_tr:
-          data.cta?.descriptionTr ||
-          "KulturPlattform Freiburg'un misyonuna katılın",
-        description_de:
-          data.cta?.descriptionDe ||
-          "Treten Sie der Mission von KulturPlattform Freiburg bei",
+        title_tr: data.cta?.titleTr || "",
+        title_de: data.cta?.titleDe || "",
+        description_tr: data.cta?.descriptionTr || "",
+        description_de: data.cta?.descriptionDe || "",
       });
     } catch (error) {
       console.error("Error loading home content:", error);
@@ -253,21 +233,44 @@ const AdminHome: React.FC = () => {
   const saveHeroContent = async () => {
     setSaving(true);
     try {
-      const response = await fetch("https://localhost:7189/api/Home/hero", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const token = localStorage.getItem("adminToken");
+      // Hero ID varsa PUT ile güncelle, yoksa POST ile oluştur
+      const url = heroContent.id
+        ? `https://localhost:7189/api/Home/hero/${heroContent.id}`
+        : "https://localhost:7189/api/Home/hero";
+      const method = heroContent.id ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
+          id: heroContent.id || undefined,
           titleTr: heroContent.title_tr,
           titleDe: heroContent.title_de,
           subtitleTr: heroContent.subtitle_tr,
           subtitleDe: heroContent.subtitle_de,
-          ctaPrimaryTextTr: heroContent.ctaPrimaryText_tr,
-          ctaPrimaryTextDe: heroContent.ctaPrimaryText_de,
-          cta2TextTr: heroContent.cta2Text_tr,
-          cta2TextDe: heroContent.cta2Text_de,
+          descriptionTr: heroContent.description_tr,
+          descriptionDe: heroContent.description_de,
+          backgroundImageUrl: heroContent.backgroundImageUrl,
+          primaryButtonTextTr: heroContent.primaryButtonText_tr,
+          primaryButtonTextDe: heroContent.primaryButtonText_de,
+          secondaryButtonTextTr: heroContent.secondaryButtonText_tr,
+          secondaryButtonTextDe: heroContent.secondaryButtonText_de,
         }),
       });
+      if (response.status === 401) {
+        localStorage.removeItem("adminToken");
+        globalThis.location.href = "/admin/login";
+        return;
+      }
       if (!response.ok) throw new Error("Save failed");
+
+      // Kayıt başarılı ise verileri yeniden yükle
+      await loadHomeContent();
+
       setMessage({
         type: "success",
         text:
@@ -351,12 +354,14 @@ const AdminHome: React.FC = () => {
         setFeatures(
           (data.features || []).map((f: any, idx: number) => ({
             id: f.id,
-            title_tr: f.titleTr || "",
-            title_de: f.titleDe || "",
-            description_tr: f.descriptionTr || "",
-            description_de: f.descriptionDe || "",
+            title_tr: f.titleTr || f.TitleTr || f.title_tr || "",
+            title_de: f.titleDe || f.TitleDe || f.title_de || "",
+            description_tr:
+              f.descriptionTr || f.DescriptionTr || f.description_tr || "",
+            description_de:
+              f.descriptionDe || f.DescriptionDe || f.description_de || "",
             icon: (["users", "sparkles", "calendar"] as const)[idx % 3],
-            color: f.color || "#FF6B35",
+            color: f.color || f.Color || "#FF6B35",
           }))
         );
       }
@@ -428,11 +433,15 @@ const AdminHome: React.FC = () => {
   const saveInstagramSection = async () => {
     setSaving(true);
     try {
+      const token = localStorage.getItem("adminToken");
       const response = await fetch(
         "https://localhost:7189/api/Home/instagram",
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             titleTr: instagramSection.title_tr,
             titleDe: instagramSection.title_de,
@@ -442,6 +451,11 @@ const AdminHome: React.FC = () => {
           }),
         }
       );
+      if (response.status === 401) {
+        localStorage.removeItem("adminToken");
+        globalThis.location.href = "/admin/login";
+        return;
+      }
       if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
@@ -467,9 +481,13 @@ const AdminHome: React.FC = () => {
   const saveCtaSection = async () => {
     setSaving(true);
     try {
+      const token = localStorage.getItem("adminToken");
       const response = await fetch("https://localhost:7189/api/Home/cta", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           titleTr: ctaSection.title_tr,
           titleDe: ctaSection.title_de,
@@ -477,6 +495,11 @@ const AdminHome: React.FC = () => {
           descriptionDe: ctaSection.description_de,
         }),
       });
+      if (response.status === 401) {
+        localStorage.removeItem("adminToken");
+        globalThis.location.href = "/admin/login";
+        return;
+      }
       if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
@@ -614,17 +637,63 @@ const AdminHome: React.FC = () => {
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
+              {language === "tr" ? "Açıklama (TR)" : "Beschreibung (TR)"}
+            </label>
+            <QuillEditor
+              value={heroContent.description_tr}
+              onChange={(val) =>
+                setHeroContent({ ...heroContent, description_tr: val })
+              }
+              placeholder="Açıklama (Türkçe)..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              {language === "tr" ? "Açıklama (DE)" : "Beschreibung (DE)"}
+            </label>
+            <QuillEditor
+              value={heroContent.description_de}
+              onChange={(val) =>
+                setHeroContent({ ...heroContent, description_de: val })
+              }
+              placeholder="Beschreibung (Deutsch)..."
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              {language === "tr"
+                ? "Arka Plan Görsel URL"
+                : "Hintergrundbild URL"}
+            </label>
+            <input
+              type="text"
+              value={heroContent.backgroundImageUrl}
+              onChange={(e) =>
+                setHeroContent({
+                  ...heroContent,
+                  backgroundImageUrl: e.target.value,
+                })
+              }
+              placeholder="https://..."
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
               {language === "tr"
                 ? "Ana Buton Metni (TR)"
                 : "Primär-Schaltflächentext (TR)"}
             </label>
             <input
               type="text"
-              value={heroContent.ctaPrimaryText_tr}
+              value={heroContent.primaryButtonText_tr}
               onChange={(e) =>
                 setHeroContent({
                   ...heroContent,
-                  ctaPrimaryText_tr: e.target.value,
+                  primaryButtonText_tr: e.target.value,
                 })
               }
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
@@ -639,11 +708,49 @@ const AdminHome: React.FC = () => {
             </label>
             <input
               type="text"
-              value={heroContent.ctaPrimaryText_de}
+              value={heroContent.primaryButtonText_de}
               onChange={(e) =>
                 setHeroContent({
                   ...heroContent,
-                  ctaPrimaryText_de: e.target.value,
+                  primaryButtonText_de: e.target.value,
+                })
+              }
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              {language === "tr"
+                ? "İkincil Buton Metni (TR)"
+                : "Sekundär-Schaltflächentext (TR)"}
+            </label>
+            <input
+              type="text"
+              value={heroContent.secondaryButtonText_tr}
+              onChange={(e) =>
+                setHeroContent({
+                  ...heroContent,
+                  secondaryButtonText_tr: e.target.value,
+                })
+              }
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              {language === "tr"
+                ? "İkincil Buton Metni (DE)"
+                : "Sekundär-Schaltflächentext (DE)"}
+            </label>
+            <input
+              type="text"
+              value={heroContent.secondaryButtonText_de}
+              onChange={(e) =>
+                setHeroContent({
+                  ...heroContent,
+                  secondaryButtonText_de: e.target.value,
                 })
               }
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
