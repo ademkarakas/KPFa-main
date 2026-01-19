@@ -2,18 +2,14 @@ import React, { useState, useEffect } from "react";
 import {
   ArrowRight,
   Calendar,
-  Users,
-  Heart,
   Sparkles,
   MapPin,
-  X,
   Instagram,
   ChevronRight,
 } from "lucide-react";
 import { Language, PageView, Activity } from "../types";
 import { TEXTS } from "../constants";
 import { activitiesApi } from "../services/api";
-import ActivityDetail from "./ActivityDetail";
 
 interface HomeHero {
   id: string;
@@ -101,20 +97,13 @@ const INITIAL_HOME_DATA: HomeData = {
 };
 
 const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null
-  );
-  const [showDetailPage, setShowDetailPage] = useState<boolean>(false);
   const [homeData, setHomeData] = useState<HomeData>(INITIAL_HOME_DATA);
-  const [loading, setLoading] = useState(true);
   const t = (key: string) => TEXTS[key][lang];
 
   // Backend'den Home verilerini yükle
   useEffect(() => {
     const loadHomeData = async () => {
       try {
-        setLoading(true);
-
         // Ana Home verilerini, Hero verisini ve Aktiviteleri paralel olarak çek
         const [homeResponse, heroResponse, activitiesData] = await Promise.all([
           fetch("https://localhost:7189/api/Home"),
@@ -193,7 +182,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             category: item.category || "Etkinlik",
             videoUrl: item.videoUrl || "",
             galleryImages: item.galleryImages || [],
-          })
+          }),
         );
 
         // Hero verisini parse et - önce /api/Home/hero endpoint'inden gelen veriyi kullan, yoksa data.hero kullan
@@ -222,7 +211,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             descriptionTr: stripHtml(f.descriptionTr || ""),
             descriptionDe: stripHtml(f.descriptionDe || ""),
             color: f.color || "#FF6B35",
-          })
+          }),
         );
 
         // Backend'den gelen verileri kullan
@@ -239,27 +228,11 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
       } catch (error) {
         console.error("❌ Home verisi yüklenemedi:", error);
         // Hata durumunda boş veri bırak, mock data kullanma
-      } finally {
-        setLoading(false);
       }
     };
 
     loadHomeData();
   }, []);
-
-  // Detail page gösteriliyorsa ActivityDetail bileşenini döndür
-  if (showDetailPage && selectedActivity) {
-    return (
-      <ActivityDetail
-        activity={selectedActivity}
-        lang={lang}
-        onBack={() => {
-          setShowDetailPage(false);
-          setSelectedActivity(null);
-        }}
-      />
-    );
-  }
 
   return (
     <div className="flex flex-col bg-slate-50">
@@ -313,22 +286,38 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 }}
               />
             )}
-            <div className="flex flex-wrap gap-4 animate-fade-in-up delay-200">
+            <div className="flex flex-wrap gap-2 sm:gap-4 animate-fade-in-up delay-200">
               <button
                 onClick={() => setPage("activities")}
-                className="bg-kpf-teal hover:bg-kpf-teal text-white px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 group shadow-lg shadow-red-900/20"
+                className="
+      bg-kpf-teal hover:bg-kpf-teal text-white
+      px-4 py-2 sm:px-8 sm:py-4
+      text-xs sm:text-base
+      rounded-lg sm:rounded-2xl
+      font-bold transition-all
+      flex items-center gap-1 sm:gap-2
+      group shadow-lg shadow-red-900/20
+    "
               >
                 {lang === "tr"
                   ? homeData.hero.primaryButtonTextTr
                   : homeData.hero.primaryButtonTextDe}
                 <ArrowRight
-                  size={20}
+                  size={16}
                   className="group-hover:translate-x-1 transition-transform"
                 />
               </button>
+
               <button
                 onClick={() => setPage("volunteer")}
-                className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-2xl font-bold transition-all"
+                className="
+      bg-white/10 hover:bg-white/20 backdrop-blur-md
+      text-white border border-white/30
+      px-4 py-2 sm:px-8 sm:py-4
+      text-xs sm:text-base
+      rounded-lg sm:rounded-2xl
+      font-bold transition-all
+    "
               >
                 {lang === "tr"
                   ? homeData.hero.secondaryButtonTextTr
@@ -426,7 +415,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 .sort(
                   (a, b) =>
                     new Date(b.dateISO).getTime() -
-                    new Date(a.dateISO).getTime()
+                    new Date(a.dateISO).getTime(),
                 )
                 .slice(0, 3)
                 .map((activity) => (
@@ -434,8 +423,8 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                     key={activity.id}
                     className="group bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer"
                     onClick={() => {
-                      setSelectedActivity(activity);
-                      setShowDetailPage(true);
+                      globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                      globalThis.location.hash = `activity/${activity.id}`;
                     }}
                   >
                     <div className="relative h-64 overflow-hidden">

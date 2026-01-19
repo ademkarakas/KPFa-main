@@ -81,6 +81,24 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
     e.preventDefault();
 
     if (validateForm()) {
+      // Send volunteer submission via API
+      fetch("https://localhost:7189/api/VolunteerSubmissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          message: `İlgi Alanı: ${formData.interest}\n\n${formData.message}`,
+        }),
+      })
+        .then((res) => res.json())
+        .catch((err) =>
+          console.error("Error sending volunteer submission:", err),
+        );
+
       setSubmitted(true);
       setFormData({
         firstName: "",
@@ -97,7 +115,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -115,7 +133,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
   return (
     <div className="bg-white min-h-screen">
       {/* Header */}
-      <div className="bg-gradient-to-r from-kpf-red to-red-700 text-white py-16 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden">
         <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
           <Heart size={300} />
         </div>
@@ -147,7 +165,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
               <div className="space-y-2 text-slate-700">
                 <div className="flex items-center justify-center gap-2">
                   <Mail size={20} className="text-kpf-red" />
-                  <span>info@kpf-freiburg.de</span>
+                  <span>info@kulturplattformfreiburg.org</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <Phone size={20} className="text-kpf-red" />
@@ -178,10 +196,10 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red transition-all ${
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all ${
                     errors.firstName
                       ? "border-red-500 focus:ring-red-500"
-                      : "border-slate-300 focus:border-kpf-red"
+                      : "border-slate-300 focus:border-kpf-teal"
                   }`}
                   placeholder={isGerman ? "Ihr Vorname" : "Adınız"}
                 />
@@ -246,7 +264,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red focus:border-kpf-red transition-all"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal transition-all"
                   placeholder={isGerman ? "+49 ..." : "+49 ..."}
                 />
               </div>
@@ -261,7 +279,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
                 name="interest"
                 value={formData.interest}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red focus:border-kpf-red transition-all"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal transition-all"
               >
                 <option value="events">{t.interest_events}</option>
                 <option value="projects">{t.interest_projects}</option>
@@ -280,7 +298,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
                 value={formData.message}
                 onChange={handleChange}
                 rows={5}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red focus:border-kpf-red transition-all resize-none"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal transition-all resize-none"
                 placeholder={
                   isGerman
                     ? "Erzählen Sie uns von Ihren Interessen..."
@@ -293,7 +311,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
             <div className="flex gap-4 pt-4">
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-kpf-red to-red-700 text-white px-8 py-3 rounded-lg font-bold hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                className="flex-1 bg-gradient-to-r from-kpf-teal to-teal-700 text-white px-8 py-3 rounded-lg font-bold hover:shadow-lg transition-all transform hover:-translate-y-0.5"
               >
                 {t.submit}
               </button>

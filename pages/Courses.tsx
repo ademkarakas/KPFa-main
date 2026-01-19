@@ -20,9 +20,10 @@ import { coursesApi } from "../services/api";
 interface CoursesProps {
   lang: Language;
   setPage?: (page: PageView) => void;
+  currentPage?: PageView;
 }
 
-const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
+const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,13 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
   useEffect(() => {
     loadCourses();
   }, []);
+
+  // Sayfadan çıkıldığında detay modalını kapat
+  useEffect(() => {
+    if (currentPage !== "courses") {
+      setSelectedCourse(null);
+    }
+  }, [currentPage]);
 
   const loadCourses = async () => {
     try {
@@ -235,32 +243,32 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
 
       {/* Premium Detail Modal */}
       {selectedCourse && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
           <div
             className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
             onClick={() => setSelectedCourse(null)}
           ></div>
-          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl relative z-10 shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden border border-white/20">
+          <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] w-full max-w-2xl relative z-10 shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden border border-white/20 max-h-[95vh] overflow-y-auto">
             <button
               onClick={() => setSelectedCourse(null)}
-              className="absolute top-6 right-6 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-all backdrop-blur-xl z-20 border border-white/30"
+              className="sticky top-0 right-0 float-right bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-all backdrop-blur-xl z-20 border border-white/30 m-4"
             >
               <X size={24} />
             </button>
 
-            <div className="bg-gradient-to-br from-kpf-teal to-teal-700 px-10 py-12 text-white relative">
+            <div className="bg-gradient-to-br from-kpf-teal to-teal-700 px-6 sm:px-10 py-8 sm:py-12 text-white relative">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-              <div className="relative flex flex-col md:flex-row items-center gap-6">
-                <div className="w-20 h-20 rounded-[1.5rem] flex items-center justify-center bg-white/20 text-white shadow-2xl border border-white/30 backdrop-blur-md">
+              <div className="relative flex flex-col md:flex-row items-center gap-4 sm:gap-6">
+                <div className="w-16 sm:w-20 h-16 sm:h-20 rounded-[1.5rem] flex items-center justify-center bg-white/20 text-white shadow-2xl border border-white/30 backdrop-blur-md flex-shrink-0">
                   {getIcon(selectedCourse.icon)}
                 </div>
                 <div className="text-center md:text-left">
-                  <h3 className="text-3xl font-bold mb-2">
+                  <h3 className="text-2xl sm:text-3xl font-bold mb-2 line-clamp-2">
                     {selectedCourse.title[lang]}
                   </h3>
                   <div className="flex items-center justify-center md:justify-start gap-2 text-teal-50">
                     <div className="w-2 h-2 rounded-full bg-teal-300 animate-pulse"></div>
-                    <span className="text-sm font-medium uppercase tracking-widest">
+                    <span className="text-xs sm:text-sm font-medium uppercase tracking-widest">
                       {lang === "tr" ? "Kurs Detayları" : "Kurs-Info"}
                     </span>
                   </div>
@@ -268,14 +276,14 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
               </div>
             </div>
 
-            <div className="p-10 space-y-8 bg-white">
-              <p className="text-lg text-slate-600 leading-relaxed font-medium">
+            <div className="p-6 sm:p-10 space-y-6 sm:space-y-8 bg-white">
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-medium">
                 {selectedCourse.details
                   ? selectedCourse.details[lang]
                   : selectedCourse.description[lang]}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {[
                   {
                     icon: <Clock className="text-kpf-teal" />,
@@ -309,25 +317,25 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
                     item.show && (
                       <div
                         key={i}
-                        className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 transition-hover hover:bg-teal-50/50 duration-300"
+                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100 transition-hover hover:bg-teal-50/50 duration-300"
                       >
-                        <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
                           {item.icon}
                         </div>
-                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+                        <div className="min-w-0">
+                          <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
                             {item.label}
                           </p>
-                          <p className="text-slate-800 font-bold text-sm">
+                          <p className="text-slate-800 font-bold text-xs sm:text-sm truncate sm:break-normal">
                             {item.value}
                           </p>
                         </div>
                       </div>
-                    )
+                    ),
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
+              <div className="flex flex-col gap-3 sm:gap-4 pt-4 sm:pt-6">
                 {selectedCourse.dateISO && (
                   <button
                     onClick={() => {
@@ -335,15 +343,15 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
                         .split("T")[0]
                         .replace(/-/g, "");
                       const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-                        selectedCourse.title[lang]
+                        selectedCourse.title[lang],
                       )}&dates=${dateOnly}T100000Z/${dateOnly}T120000Z&details=${encodeURIComponent(
-                        selectedCourse.description[lang]
+                        selectedCourse.description[lang],
                       )}&location=${encodeURIComponent(
-                        selectedCourse.address || ""
+                        selectedCourse.address || "",
                       )}&sf=true&output=xml`;
                       window.open(googleCalendarUrl, "_blank");
                     }}
-                    className="flex-1 px-8 py-4 bg-slate-100 text-slate-700 rounded-2xl hover:bg-slate-200 transition-all font-bold flex items-center justify-center gap-2"
+                    className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-slate-100 text-slate-700 rounded-xl sm:rounded-2xl hover:bg-slate-200 transition-all font-bold flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
                     <Calendar size={18} />
                     {lang === "tr" ? "Takvime Ekle" : "Kalender"}
@@ -351,7 +359,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage }) => {
                 )}
                 <button
                   onClick={handleContactClick}
-                  className={`flex-[1.5] px-8 py-4 bg-kpf-teal text-white rounded-2xl hover:bg-slate-900 transition-all font-bold flex items-center justify-center gap-3 shadow-xl shadow-teal-100 ${
+                  className={`w-full px-6 sm:px-8 py-3 sm:py-4 bg-kpf-teal text-white rounded-xl sm:rounded-2xl hover:bg-slate-900 transition-all font-bold flex items-center justify-center gap-3 shadow-xl shadow-teal-100 text-sm sm:text-base ${
                     !selectedCourse.date ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   disabled={!selectedCourse.date}

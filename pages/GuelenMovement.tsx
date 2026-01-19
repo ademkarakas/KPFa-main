@@ -45,7 +45,7 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
     const fetchData = async () => {
       try {
         const response = await fetch(
-          "https://localhost:7189/api/GuelenMovement"
+          "https://localhost:7189/api/GuelenMovement",
         );
         if (!response.ok) {
           throw new Error("Failed to fetch data");
@@ -128,28 +128,26 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
         }
       `}</style>
       {/* Header */}
-      <div
-        className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden"
-        style={{
-          backgroundImage: `url(${data.imageUrl})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/40"></div>
+      <div className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden">
         <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
           <Globe size={300} />
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex items-center gap-4 mb-4">
             <Heart className="text-white" size={40} />
-            <h1 className="text-4xl md:text-5xl font-serif font-bold">
+            <h1 className="text-3xl md:text-5xl font-serif font-bold">
               {isGerman ? data.titleDe : data.titleTr}
             </h1>
           </div>
-          <p className="text-teal-100 text-lg">
-            {isGerman ? data.introductionDe : data.introductionTr}
-          </p>
+          <div
+            className="text-teal-100 text-lg html-content"
+            style={{
+              color: "#D1FAE5",
+            }}
+            dangerouslySetInnerHTML={{
+              __html: isGerman ? data.introductionDe : data.introductionTr,
+            }}
+          />
           <div className="w-24 h-1.5 bg-white/30 rounded-full mt-4"></div>
         </div>
       </div>

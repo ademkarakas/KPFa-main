@@ -33,8 +33,13 @@ const App: React.FC = () => {
         const id = hash.split("/")[1];
         setActivityId(id);
         setCurrentPage("activities");
+        // Aktivite detail açıldığında scroll to top
+        setTimeout(() => {
+          globalThis.scrollTo({ top: 0, behavior: "smooth" });
+        }, 50);
       } else if (hash === "admin") {
         // Admin sayfası için özel işlem yok, zaten aşağıda kontrol ediliyor
+        setActivityId(null);
       } else if (hash.startsWith("about/")) {
         // About sayfası için section scroll desteği (örn: "about/core-values")
         const sectionId = hash.split("/")[1];
@@ -51,6 +56,10 @@ const App: React.FC = () => {
       } else if (hash) {
         setCurrentPage(hash as PageView);
         setActivityId(null);
+        // Diğer sayfalara navigasyon yapıldığında scroll to top
+        setTimeout(() => {
+          globalThis.scrollTo({ top: 0, behavior: "smooth" });
+        }, 50);
       } else {
         setCurrentPage("home");
         setActivityId(null);
@@ -96,9 +105,15 @@ const App: React.FC = () => {
       case "about":
         return <About lang={lang} />;
       case "activities":
-        return <Activities lang={lang} />;
+        return <Activities lang={lang} currentPage={currentPage} />;
       case "courses":
-        return <Courses lang={lang} setPage={setCurrentPage} />;
+        return (
+          <Courses
+            lang={lang}
+            setPage={setCurrentPage}
+            currentPage={currentPage}
+          />
+        );
       case "donate":
         return <Donate lang={lang} />;
       case "contact":

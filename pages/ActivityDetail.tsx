@@ -32,10 +32,10 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
   onBack,
 }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
-    null
+    null,
   );
   const [activity, setActivity] = useState<Activity | null>(
-    providedActivity || null
+    providedActivity || null,
   );
   const [loading, setLoading] = useState(!providedActivity);
 
@@ -194,7 +194,12 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
       <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-40 transition-all">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center text-slate-600">
           <button
-            onClick={onBack}
+            onClick={() => {
+              globalThis.scrollTo({ top: 0, behavior: "smooth" });
+              setTimeout(() => {
+                onBack();
+              }, 50);
+            }}
             className="group flex items-center gap-2 hover:text-kpf-teal transition-all font-semibold"
           >
             <div className="p-2 rounded-full group-hover:bg-kpf-teal/10 transition-colors">
@@ -240,8 +245,8 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                 {activity.category
                   ? t(`activities_filter_${activity.category}`)
                   : lang === "tr"
-                  ? "Etkinlik"
-                  : "Veranstaltung"}
+                    ? "Etkinlik"
+                    : "Veranstaltung"}
               </div>
               <h1 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
                 {activity.title[lang]}
@@ -325,8 +330,8 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                           ? "Tamamlandı"
                           : "Abgeschlossen"
                         : lang === "tr"
-                        ? "Gelecek Etkinlik"
-                        : "Bevorstehend"}
+                          ? "Gelecek Etkinlik"
+                          : "Bevorstehend"}
                     </p>
                   </div>
                 </div>
@@ -346,11 +351,11 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                       const activityLocation = activity.location;
 
                       const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-                        activityTitle
+                        activityTitle,
                       )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
-                        activityDescription
+                        activityDescription,
                       )}&location=${encodeURIComponent(
-                        activityLocation
+                        activityLocation,
                       )}&sf=true&output=xml`;
 
                       window.open(googleCalendarUrl, "_blank");
@@ -396,12 +401,12 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                       // Fallback: URL'yi clipboard'a kopyala
                       try {
                         await navigator.clipboard.writeText(
-                          window.location.href
+                          window.location.href,
                         );
                         alert(
                           lang === "tr"
                             ? "Etkinlik linki kopyalandı!"
-                            : "Veranstaltungslink kopiert!"
+                            : "Veranstaltungslink kopiert!",
                         );
                       } catch (err) {
                         console.error("Clipboard copy failed:", err);
@@ -485,7 +490,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                   setSelectedImageIndex(
                     selectedImageIndex > 0
                       ? selectedImageIndex - 1
-                      : activity.galleryImages!.length - 1
+                      : activity.galleryImages!.length - 1,
                   )
                 }
               >
@@ -506,7 +511,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                   setSelectedImageIndex(
                     selectedImageIndex < activity.galleryImages!.length - 1
                       ? selectedImageIndex + 1
-                      : 0
+                      : 0,
                   )
                 }
               >

@@ -10,10 +10,12 @@ import {
   AtSign,
   Clock,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Language } from "../types";
 import { TEXTS } from "../constants";
 import { contactInfoApi } from "@/services/api";
+import { contactApi } from "@/services/contactApi";
 
 interface ContactProps {
   lang: Language;
@@ -49,10 +51,24 @@ interface ContactData {
 }
 
 const Contact: React.FC<ContactProps> = ({ lang }) => {
-  const [isSent, setIsSent] = useState(false);
   const [contactData, setContactData] = useState<ContactData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<
+    { type: ""; message: "" } | { type: "success" | "error"; message: string }
+  >({
+    type: "",
+    message: "",
+  });
+  const [formData, setFormData] = useState({
+    anrede: "",
+    name: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
+  });
 
   const t = (key: string) => TEXTS[key][lang];
 
@@ -83,13 +99,105 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Simulate API call
-    console.log("Form submitted");
-    setTimeout(() => {
-      setIsSent(true);
-    }, 500);
+    setIsSubmitting(true);
+    setStatus({ type: "", message: "" });
+
+    // Validation
+    if (formData.name.trim().length < 3 || formData.name.trim().length > 200) {
+      setStatus({
+        type: "error",
+        message:
+          lang === "tr"
+            ? "Ad 3-200 karakter olmalıdır."
+            : "Name must be 3-200 characters.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setStatus({
+        type: "error",
+        message:
+          lang === "tr"
+            ? "Geçerli bir e-mail adresi girin."
+            : "Please enter a valid email.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (
+      formData.subject.trim().length < 3 ||
+      formData.subject.trim().length > 200
+    ) {
+      setStatus({
+        type: "error",
+        message:
+          lang === "tr"
+            ? "Konu 3-200 karakter olmalıdır."
+            : "Subject must be 3-200 characters.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (
+      formData.message.trim().length < 10 ||
+      formData.message.trim().length > 5000
+    ) {
+      setStatus({
+        type: "error",
+        message:
+          lang === "tr"
+            ? "Mesaj 10-5000 karakter olmalıdır."
+            : "Message must be 10-5000 characters.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    const result = await contactApi.submitContactMessage(formData);
+
+    if (result.success) {
+      setStatus({
+        type: "success",
+        message:
+          lang === "tr"
+            ? "Mesajınız başarıyla gönderildi! En kısa sürede size geri dönüş yapacağız."
+            : "Ihre Nachricht wurde erfolgreich versendet! Wir werden uns so schnell wie möglich bei Ihnen melden.",
+      });
+      setFormData({
+        anrede: "",
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+      });
+      setTimeout(() => setStatus({ type: "", message: "" }), 5000);
+    } else {
+      setStatus({
+        type: "error",
+        message:
+          result.error ||
+          (lang === "tr" ? "Bir hata oluştu." : "An error occurred."),
+      });
+    }
+
+    setIsSubmitting(false);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
   };
 
   const formatAddress = (address: Address) => {
@@ -141,21 +249,19 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                     : "Für Fragen oder Anregungen füllen Sie bitte das untenstehende Formular aus."}
                 </p>
 
-                {isSent ? (
+                {status.type === "success" ? (
                   <div className="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
                     <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6 shadow-sm">
                       <CheckCircle size={48} />
                     </div>
                     <h3 className="text-2xl font-bold text-slate-800 mb-2">
-                      {t("contact_success")}
+                      {lang === "tr" ? "Başarılı!" : "Erfolg!"}
                     </h3>
                     <p className="text-slate-500 mb-8 max-w-xs mx-auto">
-                      {lang === "tr"
-                        ? "Mesajınız tarafımıza ulaşmıştır. En kısa sürede size geri dönüş yapacağız."
-                        : "Ihre Nachricht ist bei uns eingegangen. Wir werden uns so schnell wie möglich bei Ihnen melden."}
+                      {status.message}
                     </p>
                     <button
-                      onClick={() => setIsSent(false)}
+                      onClick={() => setStatus({ type: "", message: "" })}
                       className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 px-8 rounded-xl transition-colors"
                     >
                       {lang === "tr"
@@ -165,7 +271,59 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                   </div>
                 ) : (
                   <form className="space-y-8" onSubmit={handleSubmit}>
+                    {status.message && (
+                      <div
+                        className={`p-4 rounded-xl flex items-start gap-3 ${
+                          status.type === "success"
+                            ? "bg-green-50 border border-green-200 text-green-800"
+                            : "bg-red-50 border border-red-200 text-red-800"
+                        }`}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {status.type === "success" ? (
+                            <CheckCircle size={20} />
+                          ) : (
+                            <AlertCircle size={20} />
+                          )}
+                        </div>
+                        <p className="text-sm font-medium">{status.message}</p>
+                      </div>
+                    )}
                     <div className="space-y-8">
+                      <div className="relative group">
+                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
+                          <User size={20} />
+                        </div>
+                        <select
+                          id="anrede"
+                          value={formData.anrede}
+                          onChange={handleChange}
+                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all"
+                          required
+                        >
+                          <option value="">
+                            {lang === "tr" ? "Anrede seçin" : "Anrede wählen"}
+                          </option>
+                          {lang === "tr" ? (
+                            <>
+                              <option value="Sayın">Sayın</option>
+                              <option value="Hanım">Hanım</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="Herr">Herr</option>
+                              <option value="Frau">Frau</option>
+                            </>
+                          )}
+                        </select>
+                        <label
+                          htmlFor="anrede"
+                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal transition-all cursor-text pointer-events-none"
+                        >
+                          {lang === "tr" ? "Anrede" : "Anrede"}
+                        </label>
+                      </div>
+
                       <div className="relative group">
                         <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
                           <User size={20} />
@@ -173,6 +331,8 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                         <input
                           type="text"
                           id="name"
+                          value={formData.name}
+                          onChange={handleChange}
                           className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
                           placeholder={t("contact_form_name")}
                           required
@@ -192,6 +352,8 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                         <input
                           type="email"
                           id="email"
+                          value={formData.email}
+                          onChange={handleChange}
                           className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
                           placeholder={t("contact_form_email")}
                           required
@@ -203,6 +365,51 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                           {t("contact_form_email")}
                         </label>
                       </div>
+
+                      <div className="relative group">
+                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
+                          <Phone size={20} />
+                        </div>
+                        <input
+                          type="tel"
+                          id="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
+                          placeholder={
+                            lang === "tr"
+                              ? "Telefon (isteğe bağlı)"
+                              : "Telefon (optional)"
+                          }
+                        />
+                        <label
+                          htmlFor="phone"
+                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
+                        >
+                          {lang === "tr" ? "Telefon" : "Telefon"}
+                        </label>
+                      </div>
+
+                      <div className="relative group">
+                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
+                          <MessageSquare size={20} />
+                        </div>
+                        <input
+                          type="text"
+                          id="subject"
+                          value={formData.subject}
+                          onChange={handleChange}
+                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
+                          placeholder={lang === "tr" ? "Konu" : "Betreff"}
+                          required
+                        />
+                        <label
+                          htmlFor="subject"
+                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
+                        >
+                          {lang === "tr" ? "Konu" : "Betreff"}
+                        </label>
+                      </div>
                     </div>
 
                     <div className="relative group">
@@ -211,6 +418,8 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                       </div>
                       <textarea
                         id="message"
+                        value={formData.message}
+                        onChange={handleChange}
                         rows={8}
                         className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent resize-none"
                         placeholder={t("contact_form_message")}
@@ -226,13 +435,33 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
 
                     <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-kpf-teal to-teal-800 text-white font-bold py-4 rounded-xl hover:shadow-lg hover:shadow-teal-800/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
+                      disabled={isSubmitting}
+                      className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-3 group active:scale-[0.98] transition-all ${
+                        isSubmitting
+                          ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                          : "bg-gradient-to-r from-kpf-teal to-teal-800 text-white hover:shadow-lg hover:shadow-teal-800/20 hover:-translate-y-0.5"
+                      }`}
                     >
-                      <span className="text-lg">{t("contact_form_send")}</span>
-                      <Send
-                        size={20}
-                        className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"
-                      />
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={20} className="animate-spin" />
+                          <span className="text-lg">
+                            {lang === "tr"
+                              ? "Gönderiliyor..."
+                              : "Wird übermittelt..."}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg">
+                            {t("contact_form_send")}
+                          </span>
+                          <Send
+                            size={20}
+                            className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"
+                          />
+                        </>
+                      )}
                     </button>
                   </form>
                 )}

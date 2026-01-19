@@ -6,13 +6,14 @@ import { Activity, Language, ParticipantForm } from "../types";
 
 interface ActivitiesProps {
   lang: Language;
+  currentPage?: PageView;
 }
 
-const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
+const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
   const [filter, setFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null
+    null,
   );
   const [showParticipationForm, setShowParticipationForm] =
     useState<boolean>(false);
@@ -33,6 +34,13 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
   useEffect(() => {
     loadActivities();
   }, []);
+
+  // Sayfadan çıkıldığında detay modalını kapat
+  useEffect(() => {
+    if (currentPage !== "activities") {
+      setSelectedActivity(null);
+    }
+  }, [currentPage]);
 
   const loadActivities = async () => {
     try {
@@ -110,12 +118,12 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
       console.log(
         `✅ ${formattedActivities.length} aktif etkinlik yüklendi (${
           data.length - formattedActivities.length
-        } pasif etkinlik filtrelendi)`
+        } pasif etkinlik filtrelendi)`,
       );
     } catch (error) {
       console.error(
         "❌ Etkinlikler yüklenemedi, mock data kullanılıyor:",
-        error
+        error,
       );
       // Hata durumunda mock data kullan
       setActivities(MOCK_ACTIVITIES);
@@ -148,7 +156,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
         (a) =>
           a.title[lang].toLowerCase().includes(query) ||
           a.description[lang].toLowerCase().includes(query) ||
-          a.location.toLowerCase().includes(query)
+          a.location.toLowerCase().includes(query),
       );
     }
 
@@ -178,9 +186,9 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
 
     // Create Google Calendar URL
     const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      eventTitle
+      eventTitle,
     )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
-      eventDescription
+      eventDescription,
     )}&location=${encodeURIComponent(eventLocation)}&sf=true&output=xml`;
 
     window.open(googleCalendarUrl, "_blank");
@@ -238,7 +246,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
   };
 
   const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -329,6 +337,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
                 <div
                   className="relative h-64 overflow-hidden cursor-pointer"
                   onClick={() => {
+                    globalThis.scrollTo({ top: 0, behavior: "smooth" });
                     globalThis.location.hash = `activity/${activity.id}`;
                   }}
                 >
@@ -362,6 +371,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => {
+                        globalThis.scrollTo({ top: 0, behavior: "smooth" });
                         globalThis.location.hash = `activity/${activity.id}`;
                       }}
                       className="text-kpf-teal font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all"

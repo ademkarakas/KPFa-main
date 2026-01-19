@@ -64,6 +64,34 @@ const Layout: React.FC<LayoutProps> = ({
     globalThis.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Mobil menüde sayfa değiştirip üste scroll et
+  const handleMobileNavigation = (page: PageView) => {
+    setIsMenuOpen(false);
+    setIsAboutDropdownOpen(false);
+    setIsActivityDropdownOpen(false);
+
+    if (page === "home") {
+      globalThis.location.hash = "";
+    } else {
+      globalThis.location.hash = page;
+    }
+
+    setTimeout(() => {
+      globalThis.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
+  };
+
+  // Navbar yüksekliği (h-24 = 96px) offset'i
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const navbarHeight = 96; // h-24
+      const targetPosition =
+        element.getBoundingClientRect().top + globalThis.scrollY - navbarHeight;
+      globalThis.scrollTo({ top: targetPosition, behavior: "smooth" });
+    }
+  };
+
   const NavLink = ({
     page,
     label,
@@ -75,21 +103,29 @@ const Layout: React.FC<LayoutProps> = ({
   }) => (
     <button
       onClick={() => {
+        setIsMenuOpen(false);
+
+        // Tüm dropdown'ları kapat
+        setIsAboutDropdownOpen(false);
+        setIsActivityDropdownOpen(false);
+
         if (page === "home") {
           globalThis.location.hash = "";
-          // Hash change event'ini manuel tetikle
-          globalThis.dispatchEvent(new HashChangeEvent("hashchange"));
         } else {
           globalThis.location.hash = page;
         }
-        setIsMenuOpen(false);
+
+        // Küçük bir gecikmeyle scroll to top
+        setTimeout(() => {
+          globalThis.scrollTo({ top: 0, behavior: "smooth" });
+        }, 50);
       }}
       className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
         primary
           ? "bg-kpf-red text-white rounded-full hover:bg-red-700 shadow-lg transform hover:-translate-y-0.5 px-6 ml-2"
           : currentPage === page
-          ? "text-kpf-teal"
-          : "text-slate-600 hover:text-kpf-teal"
+            ? "text-kpf-teal"
+            : "text-slate-600 hover:text-kpf-teal"
       }`}
     >
       {label}
@@ -151,7 +187,10 @@ const Layout: React.FC<LayoutProps> = ({
                       ? "text-kpf-teal"
                       : "text-slate-600 hover:text-kpf-teal"
                   }`}
-                  onClick={() => setPage("about")}
+                  onClick={() => {
+                    globalThis.location.hash = "about";
+                    setIsAboutDropdownOpen(false);
+                  }}
                 >
                   {t("nav_about")}{" "}
                   <ChevronDown
@@ -162,7 +201,7 @@ const Layout: React.FC<LayoutProps> = ({
                   />
                 </button>
                 <div
-                  className={`absolute left-0 w-56 pt-2 transition-all duration-300 origin-top ${
+                  className={`absolute left-0 w-56 pt-2 transition-all duration-300 origin-top z-50 ${
                     isAboutDropdownOpen
                       ? "opacity-100 scale-y-100"
                       : "opacity-0 scale-y-0 pointer-events-none"
@@ -170,19 +209,28 @@ const Layout: React.FC<LayoutProps> = ({
                 >
                   <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
                     <button
-                      onClick={() => setPage("about")}
+                      onClick={() => {
+                        globalThis.location.hash = "about";
+                        setIsAboutDropdownOpen(false);
+                      }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors"
                     >
                       {lang === "tr" ? "Hakkımızda" : "Über uns"}
                     </button>
                     <button
-                      onClick={() => setPage("satzung")}
+                      onClick={() => {
+                        globalThis.location.hash = "satzung";
+                        setIsAboutDropdownOpen(false);
+                      }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors border-t border-slate-50"
                     >
                       {lang === "tr" ? "Tüzük" : "Satzung"}
                     </button>
                     <button
-                      onClick={() => setPage("guelen")}
+                      onClick={() => {
+                        globalThis.location.hash = "guelen";
+                        setIsAboutDropdownOpen(false);
+                      }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors border-t border-slate-50"
                     >
                       {lang === "tr" ? "Gülen Hareketi" : "Über die Bewegung"}
@@ -203,7 +251,10 @@ const Layout: React.FC<LayoutProps> = ({
                       ? "text-kpf-teal"
                       : "text-slate-600 hover:text-kpf-teal"
                   }`}
-                  onClick={() => setPage("activities")}
+                  onClick={() => {
+                    globalThis.location.hash = "activities";
+                    setIsActivityDropdownOpen(false);
+                  }}
                 >
                   {t("nav_activities")}{" "}
                   <ChevronDown
@@ -222,13 +273,19 @@ const Layout: React.FC<LayoutProps> = ({
                 >
                   <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
                     <button
-                      onClick={() => setPage("activities")}
+                      onClick={() => {
+                        globalThis.location.hash = "activities";
+                        setIsActivityDropdownOpen(false);
+                      }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors"
                     >
                       {t("nav_activities_all")}
                     </button>
                     <button
-                      onClick={() => setPage("teegespraeche")}
+                      onClick={() => {
+                        globalThis.location.hash = "teegespraeche";
+                        setIsActivityDropdownOpen(false);
+                      }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors border-t border-slate-50"
                     >
                       {t("nav_teegespraeche")}
@@ -344,11 +401,11 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="lg:hidden flex items-center gap-4 ml-auto">
+            <div className="lg:hidden flex items-center gap-0.1 ml-auto">
               {/* Mobile Language Selector */}
               <button
                 onClick={() => setLang(lang === "tr" ? "de" : "tr")}
-                className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1.5 hover:bg-slate-50 transition-colors"
                 aria-label="Change language"
               >
                 <img
@@ -376,10 +433,7 @@ const Layout: React.FC<LayoutProps> = ({
             <div className="lg:hidden border-t border-slate-200 bg-white">
               <div className="flex flex-col space-y-2 px-4 py-4">
                 <button
-                  onClick={() => {
-                    setPage("home");
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => handleMobileNavigation("home")}
                   className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
                     currentPage === "home"
                       ? "bg-kpf-teal/10 text-kpf-teal"
@@ -410,28 +464,19 @@ const Layout: React.FC<LayoutProps> = ({
                   {isAboutDropdownOpen && (
                     <div className="pl-4 space-y-2 mt-2">
                       <button
-                        onClick={() => {
-                          setPage("about");
-                          setIsMenuOpen(false);
-                        }}
+                        onClick={() => handleMobileNavigation("about")}
                         className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
                       >
                         {lang === "tr" ? "Hakkımızda" : "Über uns"}
                       </button>
                       <button
-                        onClick={() => {
-                          setPage("satzung");
-                          setIsMenuOpen(false);
-                        }}
+                        onClick={() => handleMobileNavigation("satzung")}
                         className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
                       >
                         {lang === "tr" ? "Tüzük" : "Satzung"}
                       </button>
                       <button
-                        onClick={() => {
-                          setPage("guelen");
-                          setIsMenuOpen(false);
-                        }}
+                        onClick={() => handleMobileNavigation("guelen")}
                         className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
                       >
                         {lang === "tr" ? "Gülen Hareketi" : "Über die Bewegung"}
@@ -463,19 +508,13 @@ const Layout: React.FC<LayoutProps> = ({
                   {isActivityDropdownOpen && (
                     <div className="pl-4 space-y-2 mt-2">
                       <button
-                        onClick={() => {
-                          setPage("activities");
-                          setIsMenuOpen(false);
-                        }}
+                        onClick={() => handleMobileNavigation("activities")}
                         className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
                       >
                         {t("nav_activities_all")}
                       </button>
                       <button
-                        onClick={() => {
-                          setPage("teegespraeche");
-                          setIsMenuOpen(false);
-                        }}
+                        onClick={() => handleMobileNavigation("teegespraeche")}
                         className="block w-full text-left px-4 py-2 text-slate-600 hover:text-kpf-teal hover:bg-slate-50 rounded transition-colors"
                       >
                         {t("nav_teegespraeche")}
@@ -485,10 +524,7 @@ const Layout: React.FC<LayoutProps> = ({
                 </div>
 
                 <button
-                  onClick={() => {
-                    setPage("courses");
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => handleMobileNavigation("courses")}
                   className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
                     currentPage === "courses"
                       ? "bg-kpf-teal/10 text-kpf-teal"
@@ -499,10 +535,7 @@ const Layout: React.FC<LayoutProps> = ({
                 </button>
 
                 <button
-                  onClick={() => {
-                    setPage("volunteer");
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => handleMobileNavigation("volunteer")}
                   className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
                     currentPage === "volunteer"
                       ? "bg-kpf-teal/10 text-kpf-teal"
@@ -513,10 +546,7 @@ const Layout: React.FC<LayoutProps> = ({
                 </button>
 
                 <button
-                  onClick={() => {
-                    setPage("contact");
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => handleMobileNavigation("contact")}
                   className={`text-left px-4 py-3 rounded-lg transition-colors font-semibold ${
                     currentPage === "contact"
                       ? "bg-kpf-teal/10 text-kpf-teal"
@@ -529,10 +559,7 @@ const Layout: React.FC<LayoutProps> = ({
                 <div className="my-2 border-t border-slate-200"></div>
 
                 <button
-                  onClick={() => {
-                    setPage("donate");
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => handleMobileNavigation("donate")}
                   className={`text-left px-6 py-3 rounded-full font-semibold transition-all ${
                     currentPage === "donate"
                       ? "bg-kpf-teal text-white"

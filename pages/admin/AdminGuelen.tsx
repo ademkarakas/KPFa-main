@@ -38,11 +38,6 @@ const QuillEditor = ({
         },
       });
 
-      // Enter tuşu yeni paragraf oluştur
-      quill.on("key-bind", {
-        key: "Enter",
-      });
-
       quill.on("text-change", () => {
         if (!isUpdating.current) {
           let html = quill.root.innerHTML;
@@ -175,7 +170,7 @@ const AdminGuelen: React.FC = () => {
       GuelenContent,
       "philosophy" | "dialog" | "network" | "spiritual" | "vision"
     >,
-    value: any
+    value: any,
   ) => {
     if (!data) return;
     setData({ ...data, [field]: value });
@@ -184,7 +179,7 @@ const AdminGuelen: React.FC = () => {
   const handleSectionChange = (
     sectionKey: "philosophy" | "dialog" | "network" | "spiritual" | "vision",
     field: keyof GuelenSection,
-    value: any
+    value: any,
   ) => {
     if (!data) return;
     setData({
@@ -270,14 +265,14 @@ const AdminGuelen: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
       if (!res.ok) throw new Error("Kaydetme başarısız");
       alert("Gülen Hareketi sayfası başarıyla güncellendi!");
     } catch (err) {
       alert(
         "Kaydetme başarısız: " +
-          (err instanceof Error ? err.message : "Bilinmeyen hata")
+          (err instanceof Error ? err.message : "Bilinmeyen hata"),
       );
     } finally {
       setSaving(false);
