@@ -183,7 +183,7 @@ ${iban}
       </section>
 
       {/* --- FEATURE CARDS --- */}
-      <section className="py-12 -mt-6 relative z-20">
+      <section className="py-12 -mt-4 relative z-20">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {features.map((item, index) => (

@@ -50,7 +50,7 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
         // if (!token) throw new Error("Token yok");
 
         const res = await fetch(
-          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d"
+          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d",
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json: VolunteerData = await res.json();
@@ -181,6 +181,7 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
             </p>
             <button
               onClick={() => {
+                window.scrollTo(0, 0);
                 if (setPage) setPage("volunteer-form");
               }}
               className="bg-white text-kpf-dark px-8 py-3 rounded-full font-bold hover:bg-dark-50 transition-colors cursor-pointer"

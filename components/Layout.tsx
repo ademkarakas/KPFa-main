@@ -7,7 +7,6 @@ import {
   Twitter,
   Mail,
   MapPin,
-  Globe,
   ChevronDown,
   ChevronUp,
   Heart,
@@ -79,17 +78,6 @@ const Layout: React.FC<LayoutProps> = ({
     setTimeout(() => {
       globalThis.scrollTo({ top: 0, behavior: "smooth" });
     }, 50);
-  };
-
-  // Navbar yüksekliği (h-24 = 96px) offset'i
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      const navbarHeight = 96; // h-24
-      const targetPosition =
-        element.getBoundingClientRect().top + globalThis.scrollY - navbarHeight;
-      globalThis.scrollTo({ top: targetPosition, behavior: "smooth" });
-    }
   };
 
   const NavLink = ({

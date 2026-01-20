@@ -54,29 +54,21 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Hero Banner */}
-      <div className="bg-kpf-teal text-white py-20 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <img
-            src={
-              currentEvent?.imageUrl ||
-              "https://picsum.photos/1920/600?random=tea"
-            }
-            alt="Teegespräche Background"
-            className="w-full h-full object-cover"
-          />
+      <div className="bg-gradient-to-r from-kpf-teal to-teal-700 text-white py-16 relative overflow-hidden">
+        <div className="absolute top-0 right-0 opacity-10 pointer-events-none">
+          <Coffee size={300} strokeWidth={1} />
         </div>
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-5 py-2 text-sm font-bold mb-6 border border-white/30 animate-fade-in-down">
-            <Globe size={16} /> UNESCO Intangible Cultural Heritage
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="flex items-center gap-4 mb-6">
+            <Globe className="text-white flex-shrink-0" size={40} />
+            <h1 className="text-3xl md:text-5xl font-serif font-bold">
+              {lang === "tr" ? currentEvent?.titleTr : currentEvent?.titleDe}
+            </h1>
           </div>
-          <h1 className="text-5xl font-serif font-bold mb-4 animate-fade-in-up">
-            {lang === "tr"
-              ? currentEvent?.titleTr || t("teegespraeche_title")
-              : currentEvent?.titleDe || t("teegespraeche_title")}
-          </h1>
-          <p className="text-2xl text-teal-100 max-w-2xl mx-auto animate-fade-in-up delay-100">
+          <p className="text-teal-100 text-lg max-w-2xl mb-6">
             {lang === "tr" ? currentEvent?.introTr : currentEvent?.introDe}
           </p>
+          <div className="w-24 h-1.5 bg-white/30 rounded-full"></div>
         </div>
       </div>
 
@@ -125,8 +117,8 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
               </h2>
               <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-line text-justify mb-8">
                 {lang === "tr"
-                  ? currentEvent?.heritageTextTr || t("teegespraeche_desc")
-                  : currentEvent?.heritageTextDe || t("teegespraeche_desc")}
+                  ? currentEvent?.heritageTextTr
+                  : currentEvent?.heritageTextDe}
               </p>
 
               {/* Registration Section */}
@@ -139,10 +131,8 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
                 </h4>
                 <p className="text-teal-800 mb-6 text-lg">
                   {lang === "tr"
-                    ? currentEvent?.participationTextTr ||
-                      t("teegespraeche_registration")
-                    : currentEvent?.participationTextDe ||
-                      t("teegespraeche_registration")}
+                    ? currentEvent?.participationTextTr
+                    : currentEvent?.participationTextDe}
                 </p>
 
                 <div className="bg-white p-4 rounded-xl border border-teal-100 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -150,7 +140,7 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
                     <Mail size={20} className="flex-shrink-0" />
                     <a
                       href={`mailto:${contactEmail}`}
-                      className="hover:underline"
+                      className="hover:underline text-sm font-semibold"
                     >
                       {contactEmail}
                     </a>

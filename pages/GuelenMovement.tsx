@@ -171,7 +171,7 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
           </section>
 
           {/* Dialog */}
-          <section className="space-y-6">
+          <section className="bg-gradient-to-br from-violet-50 to-white p-8 rounded-2xl border-l-4 border-violet-500">
             <h2 className="text-3xl font-bold text-kpf-dark">
               {isGerman ? data.dialogTitleDe : data.dialogTitleTr}
             </h2>
@@ -199,7 +199,7 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
           </section>
 
           {/* Spiritual */}
-          <section className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl border border-blue-200">
+          <section className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl border-l-4 border-blue-500">
             <h2 className="text-3xl font-bold text-kpf-dark mb-8">
               {isGerman ? data.spiritualTitleDe : data.spiritualTitleTr}
             </h2>

@@ -18,7 +18,6 @@ interface Translation {
   key: string;
   turkish: string;
   german: string;
-  english: string;
   section: string;
   createdAt?: string;
   updatedAt?: string;
@@ -56,7 +55,6 @@ const AdminTranslations: React.FC = () => {
     key: "",
     turkish: "",
     german: "",
-    english: "",
     section: "common",
   };
 
@@ -75,7 +73,17 @@ const AdminTranslations: React.FC = () => {
       setTranslations(data);
     } catch (error) {
       console.error("Çeviriler yüklenirken hata:", error);
-      alert("Çeviriler yüklenemedi!");
+      // Fallback: constants.ts'deki key'leri yükle
+      const fallbackTranslations: Translation[] = Object.entries(TEXTS).map(
+        ([key, value]) => ({
+          id: key,
+          key: key,
+          turkish: value.tr || "",
+          german: value.de || "",
+          section: "common",
+        }),
+      );
+      setTranslations(fallbackTranslations);
     } finally {
       setLoading(false);
     }
@@ -96,8 +104,7 @@ const AdminTranslations: React.FC = () => {
         (t) =>
           t.key.toLowerCase().includes(search) ||
           t.turkish.toLowerCase().includes(search) ||
-          t.german.toLowerCase().includes(search) ||
-          t.english.toLowerCase().includes(search)
+          t.german.toLowerCase().includes(search),
       );
     }
 
@@ -114,7 +121,6 @@ const AdminTranslations: React.FC = () => {
         await localizationApi.update(editingTranslation.id, {
           turkish: editingTranslation.turkish,
           german: editingTranslation.german,
-          english: editingTranslation.english,
         });
         alert("Çeviri başarıyla güncellendi!");
       } else {
@@ -194,7 +200,7 @@ const AdminTranslations: React.FC = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Key, Turkish, German, English..."
+                placeholder="Key, Turkish, German..."
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
               />
             </div>
@@ -339,26 +345,6 @@ const AdminTranslations: React.FC = () => {
               />
             </div>
 
-            {/* English */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                🇬🇧 English <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={editingTranslation.english}
-                onChange={(e) =>
-                  setEditingTranslation({
-                    ...editingTranslation,
-                    english: e.target.value,
-                  })
-                }
-                required
-                rows={3}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                placeholder="English translation..."
-              />
-            </div>
-
             {/* Buttons */}
             <div className="flex gap-4">
               <button
@@ -403,9 +389,6 @@ const AdminTranslations: React.FC = () => {
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                     🇩🇪 Deutsch
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    🇬🇧 English
-                  </th>
                   <th className="px-6 py-4 text-right text-xs font-bold text-slate-700 uppercase tracking-wider">
                     İşlemler
                   </th>
@@ -430,9 +413,6 @@ const AdminTranslations: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700 max-w-xs truncate">
                       {translation.german}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-700 max-w-xs truncate">
-                      {translation.english}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">

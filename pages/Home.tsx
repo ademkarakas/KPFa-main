@@ -156,7 +156,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
         // HTML taglarını temizle (p, br vs.)
         const stripHtml = (html: string): string => {
           if (!html) return "";
-          return html.replace(/<[^>]*>/g, "").trim();
+          return html.replaceAll(/<[^>]*>/g, "").trim();
         };
 
         // Backend'den gelen activities'i frontend formatına çevir
@@ -178,7 +178,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             },
             dateISO: item.date || "",
             location: formatAddress(item.address),
-            imageUrl: item.imageUrl || "",
+            imageUrl: item.imageSource || item.imageUrl || "",
             category: item.category || "Etkinlik",
             videoUrl: item.videoUrl || "",
             galleryImages: item.galleryImages || [],
@@ -277,7 +277,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               ? homeData.hero.descriptionTr
               : homeData.hero.descriptionDe) && (
               <p
-                className="text-lg text-slate-400 mb-10 leading-relaxed max-w-xl animate-fade-in-up delay-150"
+                className="text-lg text-slate-400 mb-3 md:mb-10 leading-relaxed max-w-xl animate-fade-in-up delay-150"
                 dangerouslySetInnerHTML={{
                   __html:
                     lang === "tr"
@@ -286,17 +286,18 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 }}
               />
             )}
-            <div className="flex flex-wrap gap-2 sm:gap-4 animate-fade-in-up delay-200">
+            <div className="flex flex-row gap-2 sm:gap-4 animate-fade-in-up delay-200">
               <button
                 onClick={() => setPage("activities")}
                 className="
       bg-kpf-teal hover:bg-kpf-teal text-white
-      px-4 py-2 sm:px-8 sm:py-4
+      px-2 py-1 sm:px-6 sm:py-3
       text-xs sm:text-base
       rounded-lg sm:rounded-2xl
       font-bold transition-all
-      flex items-center gap-1 sm:gap-2
+      flex items-center justify-center gap-1 sm:gap-2
       group shadow-lg shadow-red-900/20
+      whitespace-nowrap
     "
               >
                 {lang === "tr"
@@ -313,10 +314,12 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 className="
       bg-white/10 hover:bg-white/20 backdrop-blur-md
       text-white border border-white/30
-      px-4 py-2 sm:px-8 sm:py-4
+      px-2 py-1 sm:px-6 sm:py-3
       text-xs sm:text-base
       rounded-lg sm:rounded-2xl
       font-bold transition-all
+      flex items-center justify-center
+      whitespace-nowrap
     "
               >
                 {lang === "tr"
@@ -485,7 +488,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className="w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 border-white/30 hover:border-white hover:scale-105 transition-all"

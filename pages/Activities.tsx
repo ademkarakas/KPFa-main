@@ -1,12 +1,11 @@
 import { ArrowRight, Calendar, MapPin, Search } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
-import { MOCK_ACTIVITIES, TEXTS } from "../constants";
+import { TEXTS } from "../constants";
 import { activitiesApi } from "../services/api";
 import { Activity, Language, ParticipantForm } from "../types";
 
 interface ActivitiesProps {
   lang: Language;
-  currentPage?: PageView;
 }
 
 const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
@@ -15,16 +14,15 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null,
   );
-  const [showParticipationForm, setShowParticipationForm] =
-    useState<boolean>(false);
+  const [setShowParticipationForm] = useState<boolean>(false);
   const [formData, setFormData] = useState<ParticipantForm>({
     name: "",
     email: "",
     phone: "",
     message: "",
   });
-  const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
-  const [formSuccess, setFormSuccess] = useState<boolean>(false);
+  const [setFormSubmitting] = useState<boolean>(false);
+  const [setFormSuccess] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,12 +44,6 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
     try {
       setLoading(true);
       const data = await activitiesApi.getAll(false); // Sadece aktif olanlar
-
-      if (!data || data.length === 0) {
-        console.warn("API'den boş veri döndü, mock data kullanılıyor");
-        setActivities(MOCK_ACTIVITIES);
-        return;
-      }
 
       // Backend'den gelen verileri frontend formatına çevir
       const formattedActivities: Activity[] = data
@@ -107,7 +99,11 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
             },
             dateISO: item.date || "",
             location: formatAddress(item.address),
-            imageUrl: item.imageUrl || "",
+            imageUrl:
+              item.imageUrl ||
+              (item.imageBase64
+                ? `data:image/jpeg;base64,${item.imageBase64}`
+                : item.imageSource || ""),
             category: item.category || "Etkinlik",
             videoUrl: item.videoUrl || "",
             galleryImages: item.galleryImages || [],
@@ -120,13 +116,18 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
           data.length - formattedActivities.length
         } pasif etkinlik filtrelendi)`,
       );
+      // Debug: Galeri resimlerini kontrol et
+      const debugActivities = formattedActivities.filter(
+        (a) => a.galleryImages && a.galleryImages.length > 0,
+      );
+      if (debugActivities.length > 0) {
+        console.log("📸 Galeri resimleri:", debugActivities[0].galleryImages);
+      }
     } catch (error) {
       console.error(
         "❌ Etkinlikler yüklenemedi, mock data kullanılıyor:",
         error,
       );
-      // Hata durumunda mock data kullan
-      setActivities(MOCK_ACTIVITIES);
     } finally {
       setLoading(false);
     }
@@ -243,13 +244,6 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
     } finally {
       setFormSubmitting(false);
     }
-  };
-
-  const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Main render - detail page routing App.tsx'de yapılıyor

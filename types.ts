@@ -4,6 +4,12 @@ export interface Translation {
   [key: string]: string;
 }
 
+export interface GalleryImageDto {
+  url: string | null;
+  base64Data: string | null;
+  fileName: string | null;
+}
+
 export interface Activity {
   id: string;
   title: Translation;
@@ -14,7 +20,7 @@ export interface Activity {
   location: string;
   category: "music" | "art" | "education" | "social";
   imageUrl: string;
-  galleryImages?: string[]; // Galeri fotoğrafları
+  galleryImages?: GalleryImageDto[]; // Galeri fotoğrafları
   videoUrl?: string; // Video URL (opsiyonel)
 }
 

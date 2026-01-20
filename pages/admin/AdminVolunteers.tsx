@@ -47,7 +47,7 @@ const AdminVolunteers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVolunteer, setSelectedVolunteer] = useState<any | null>(null);
   const [volunteerPage, setVolunteerPage] = useState<VolunteerData | null>(
-    null
+    null,
   );
   const { language } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
@@ -60,13 +60,18 @@ const AdminVolunteers: React.FC = () => {
   // Volunteer sayfa başlığı ve açıklaması için fetch
   const fetchVolunteerPage = async () => {
     try {
-      const res = await fetch(
-        "https://localhost:7189/api/ValueItems/6620cb16-c787-486c-920a-6d559d12a6fa"
-      );
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch("https://localhost:7189/api/VolunteerPage", {
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       if (!res.ok) throw new Error("Failed to fetch");
       const json: VolunteerData = await res.json();
       setVolunteerPage(json);
     } catch (err) {
+      console.error("Gönüllü sayfa verisi yüklenemedi:", err);
       setVolunteerPage(null);
     }
   };
@@ -78,7 +83,7 @@ const AdminVolunteers: React.FC = () => {
       // Tarihe göre sırala (en yeni önce)
       const sorted = data.sort(
         (a: any, b: any) =>
-          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
       );
       setVolunteers(sorted);
     } catch (error: any) {
@@ -92,9 +97,9 @@ const AdminVolunteers: React.FC = () => {
 
   const filteredVolunteers = volunteers.filter(
     (v) =>
-      v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.interests.toLowerCase().includes(searchQuery.toLowerCase())
+      (v.fullName?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (v.email?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (v.message?.toLowerCase() || "").includes(searchQuery.toLowerCase()),
   );
 
   const formatDate = (dateString: string) => {
@@ -175,7 +180,7 @@ const AdminVolunteers: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-800">
-                      {volunteer.name}
+                      {volunteer.fullName}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <Clock size={14} />
@@ -183,9 +188,6 @@ const AdminVolunteers: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-                  {volunteer.interests}
-                </span>
               </div>
 
               <div className="space-y-2 text-sm">
@@ -193,10 +195,10 @@ const AdminVolunteers: React.FC = () => {
                   <Mail size={16} />
                   <span>{volunteer.email}</span>
                 </div>
-                {volunteer.phone && (
+                {volunteer.phoneNumber && (
                   <div className="flex items-center gap-2 text-slate-600">
                     <Phone size={16} />
-                    <span>{volunteer.phone}</span>
+                    <span>{volunteer.phoneNumber}</span>
                   </div>
                 )}
                 {volunteer.message && (
@@ -239,7 +241,7 @@ const AdminVolunteers: React.FC = () => {
                     <div>
                       <p className="text-sm text-slate-500">Ad Soyad</p>
                       <p className="font-semibold text-slate-800">
-                        {selectedVolunteer.name}
+                        {selectedVolunteer.fullName}
                       </p>
                     </div>
                   </div>
@@ -255,16 +257,16 @@ const AdminVolunteers: React.FC = () => {
                       </a>
                     </div>
                   </div>
-                  {selectedVolunteer.phone && (
+                  {selectedVolunteer.phoneNumber && (
                     <div className="flex items-center gap-3">
                       <Phone className="text-slate-400" size={20} />
                       <div>
                         <p className="text-sm text-slate-500">Telefon</p>
                         <a
-                          href={`tel:${selectedVolunteer.phone}`}
+                          href={`tel:${selectedVolunteer.phoneNumber}`}
                           className="font-semibold text-kpf-teal hover:underline"
                         >
-                          {selectedVolunteer.phone}
+                          {selectedVolunteer.phoneNumber}
                         </a>
                       </div>
                     </div>
@@ -281,21 +283,11 @@ const AdminVolunteers: React.FC = () => {
                 </div>
               </div>
 
-              {/* İlgi Alanı */}
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-3">
-                  İlgi Alanı
-                </h3>
-                <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 font-semibold rounded-lg">
-                  {selectedVolunteer.interests}
-                </span>
-              </div>
-
               {/* Mesaj */}
               {selectedVolunteer.message && (
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 mb-3">
-                    Mesaj
+                    Mesaj / Başvuru
                   </h3>
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <p className="text-slate-700 whitespace-pre-wrap">
@@ -314,9 +306,9 @@ const AdminVolunteers: React.FC = () => {
                   <Mail size={20} />
                   E-Mail Gönder
                 </a>
-                {selectedVolunteer.phone && (
+                {selectedVolunteer.phoneNumber && (
                   <a
-                    href={`tel:${selectedVolunteer.phone}`}
+                    href={`tel:${selectedVolunteer.phoneNumber}`}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-semibold"
                   >
                     <Phone size={20} />

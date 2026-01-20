@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Heart, Save, Languages, Info, CheckCircle, List } from "lucide-react";
+import { Heart, Save, Languages, CheckCircle, List } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
@@ -120,7 +120,7 @@ const AdminVolunteerPage: React.FC = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d"
+          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d",
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json: any = await res.json();
@@ -178,7 +178,7 @@ const AdminVolunteerPage: React.FC = () => {
       "nameAndPurpose" | "why" | "who" | "how"
     >,
     field: keyof VolunteerSection,
-    value: any
+    value: any,
   ) => {
     if (!data) return;
     setData({ ...data, [sectionKey]: { ...data[sectionKey], [field]: value } });
@@ -191,7 +191,7 @@ const AdminVolunteerPage: React.FC = () => {
     >,
     iidx: number,
     field: keyof VolunteerSectionItem,
-    value: any
+    value: any,
   ) => {
     if (!data) return;
     const updatedItems = [...data[sectionKey].items];
@@ -221,14 +221,14 @@ const AdminVolunteerPage: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(data),
-        }
+        },
       );
       if (!res.ok) throw new Error("Kaydetme başarısız");
       alert("Gönüllü Ol sayfası başarıyla güncellendi!");
     } catch (err) {
       alert(
         "Kaydetme başarısız: " +
-          (err instanceof Error ? err.message : "Bilinmeyen hata")
+          (err instanceof Error ? err.message : "Bilinmeyen hata"),
       );
     } finally {
       setSaving(false);
@@ -423,7 +423,7 @@ const AdminVolunteerPage: React.FC = () => {
                                 key,
                                 iidx,
                                 "icon",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-12 h-12 text-center rounded-xl bg-white border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-kpf-red"
@@ -438,7 +438,7 @@ const AdminVolunteerPage: React.FC = () => {
                                   key,
                                   iidx,
                                   "titleTr",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="w-full px-2 py-1 bg-white rounded-lg text-sm border-none shadow-sm"
@@ -452,7 +452,7 @@ const AdminVolunteerPage: React.FC = () => {
                                   key,
                                   iidx,
                                   "titleDe",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="w-full px-2 py-1 bg-white rounded-lg text-sm border-none shadow-sm"

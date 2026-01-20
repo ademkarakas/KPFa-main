@@ -112,8 +112,11 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             de: formatDate(foundActivity.date, "de"),
           },
           location: formatAddress(foundActivity.address) || "TBD",
-          imageUrl: foundActivity.imageUrl || "/api/placeholder/800/600",
-          galleryImages: foundActivity.galleryUrls || [],
+          imageUrl:
+            foundActivity.imageSource ||
+            foundActivity.imageUrl ||
+            "/api/placeholder/800/600",
+          galleryImages: foundActivity.galleryImages || [],
           videoUrl: foundActivity.videoUrl || "",
           dateISO: foundActivity.date,
           category: foundActivity.category || "social",
@@ -344,7 +347,9 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                       const activityTitle = activity.title[lang];
                       const dateISO = activity.dateISO;
                       // ISO formatını YYYYMMDD'ye çevir
-                      const dateOnly = dateISO.split("T")[0].replace(/-/g, "");
+                      const dateOnly = dateISO
+                        .split("T")[0]
+                        .replaceAll(/-/g, "");
                       const startTime = `${dateOnly}T100000Z`;
                       const endTime = `${dateOnly}T120000Z`;
                       const activityDescription = activity.description[lang];
@@ -388,7 +393,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                     const shareData = {
                       title: activity.title[lang],
                       text: activity.description[lang],
-                      url: window.location.href,
+                      url: globalThis.location.href,
                     };
 
                     if (navigator.share) {
@@ -401,7 +406,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                       // Fallback: URL'yi clipboard'a kopyala
                       try {
                         await navigator.clipboard.writeText(
-                          window.location.href,
+                          globalThis.location.href,
                         );
                         alert(
                           lang === "tr"
@@ -442,25 +447,37 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {activity.galleryImages.map((imageUrl, index) => (
-                <motion.div
-                  key={index}
-                  whileHover={{ y: -8 }}
-                  className="relative aspect-[4/5] rounded-[2rem] overflow-hidden cursor-pointer group shadow-md"
-                  onClick={() => setSelectedImageIndex(index)}
-                >
-                  <img
-                    src={imageUrl}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    alt="Gallery item"
-                  />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="bg-white/20 backdrop-blur-md p-4 rounded-full border border-white/30">
-                      <Play size={24} className="text-white fill-white" />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+              {activity.galleryImages.map((image, index) => {
+                const imageSrc = image.url
+                  ? image.url
+                  : image.base64Data
+                    ? `data:image/jpeg;base64,${image.base64Data}`
+                    : null;
+
+                return (
+                  <motion.div
+                    key={index}
+                    whileHover={{ y: -8 }}
+                    className="relative aspect-[4/5] rounded-[2rem] overflow-hidden cursor-pointer group shadow-md"
+                    onClick={() => setSelectedImageIndex(index)}
+                  >
+                    {imageSrc && (
+                      <>
+                        <img
+                          src={imageSrc}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          alt="Gallery item"
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-white/20 backdrop-blur-md p-4 rounded-full border border-white/30">
+                            <Play size={24} className="text-white fill-white" />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </section>
         )}
@@ -497,13 +514,23 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                 <ChevronLeft size={48} strokeWidth={1} />
               </button>
 
-              <motion.img
-                key={selectedImageIndex}
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                src={activity.galleryImages[selectedImageIndex]}
-                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
-              />
+              {selectedImageIndex !== null &&
+                activity.galleryImages[selectedImageIndex] && (
+                  <motion.img
+                    key={selectedImageIndex}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    src={(() => {
+                      const image = activity.galleryImages[selectedImageIndex];
+                      return image.url
+                        ? image.url
+                        : image.base64Data
+                          ? `data:image/jpeg;base64,${image.base64Data}`
+                          : "";
+                    })()}
+                    className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                  />
+                )}
 
               <button
                 className="absolute -right-4 md:-right-12 p-4 text-white hover:text-kpf-teal transition-colors"

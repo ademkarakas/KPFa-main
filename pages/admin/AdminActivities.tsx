@@ -13,7 +13,7 @@ import {
   CheckCircle,
   Languages,
 } from "lucide-react";
-import { activitiesApi, uploadApi } from "../../services/api";
+import { activitiesApi } from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
 import Quill from "quill";
@@ -87,6 +87,12 @@ const QuillEditor = ({
   );
 };
 
+interface GalleryImage {
+  url: string | null;
+  base64Data: string | null;
+  fileName: string | null;
+}
+
 interface ActivityFormData {
   titleTr: string;
   titleDe: string;
@@ -105,9 +111,11 @@ interface ActivityFormData {
     country?: string;
   };
   category: string;
-  imageUrl: string;
+  imageUrl: string | null;
+  imageBase64: string | null;
+  imageFileName: string | null;
   videoUrl: string;
-  galleryImages: string[];
+  galleryImages: GalleryImage[];
   isActive: boolean;
 }
 
@@ -130,7 +138,7 @@ const AdminActivities: React.FC = () => {
 
   const showNotification = (
     type: "success" | "error" | "info",
-    message: string
+    message: string,
   ) => {
     setNotification({ show: true, type, message });
     setTimeout(() => {
@@ -138,6 +146,7 @@ const AdminActivities: React.FC = () => {
     }, 3000);
   };
 
+  const [galleryUrlInput, setGalleryUrlInput] = useState("");
   const [formData, setFormData] = useState<ActivityFormData>({
     titleTr: "",
     titleDe: "",
@@ -149,7 +158,9 @@ const AdminActivities: React.FC = () => {
     location: "",
     address: undefined,
     category: "music",
-    imageUrl: "",
+    imageUrl: null,
+    imageBase64: null,
+    imageFileName: null,
     videoUrl: "",
     galleryImages: [],
     isActive: true,
@@ -171,7 +182,7 @@ const AdminActivities: React.FC = () => {
         "error",
         language === "tr"
           ? "Etkinlikler yüklenemedi!"
-          : "Aktivitäten konnten nicht geladen werden!"
+          : "Aktivitäten konnten nicht geladen werden!",
       );
     } finally {
       setLoading(false);
@@ -184,46 +195,220 @@ const AdminActivities: React.FC = () => {
 
     try {
       setUploadingImage(true);
-      const imageUrl = await uploadApi.uploadFile(file);
-      setFormData({ ...formData, imageUrl });
+
+      // Use same compression as gallery images for consistency
+      const compressed = await convertFileToBase64(file);
+
+      setFormData({
+        ...formData,
+        imageBase64: compressed.base64Data,
+        imageFileName: compressed.fileName,
+        imageUrl: null, // Clear URL when using Base64
+      });
+
+      const sizeKB = (compressed.base64Data.length * 0.75) / 1024;
       showNotification(
         "success",
         language === "tr"
-          ? "Resim başarıyla yüklendi!"
-          : "Bild erfolgreich hochgeladen!"
+          ? `Resim başarıyla yüklendi! (${sizeKB.toFixed(0)}KB)`
+          : `Bild erfolgreich hochgeladen! (${sizeKB.toFixed(0)}KB)`,
       );
     } catch (error) {
       console.error("Resim yüklenirken hata:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "Resim yüklenemedi!"
-          : "Bild konnte nicht hochgeladen werden!"
-      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : language === "tr"
+            ? "Resim yüklenemedi!"
+            : "Bild konnte nicht hochgeladen werden!";
+      showNotification("error", errorMessage);
     } finally {
       setUploadingImage(false);
     }
   };
 
+  // Compress image using canvas
+  const compressImage = (
+    file: File,
+    maxWidth: number = 1200,
+    maxHeight: number = 1200,
+    quality: number = 0.7,
+  ): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+
+            // Calculate new dimensions
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+            }
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  resolve(blob);
+                } else {
+                  reject(new Error("Canvas compression failed"));
+                }
+              },
+              "image/jpeg",
+              quality,
+            );
+          } catch (error) {
+            reject(error);
+          }
+        };
+        img.onerror = () => reject(new Error("Image load failed"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const convertFileToBase64 = async (file: File): Promise<GalleryImage> => {
+    // Validate file size (max 5MB before compression)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(
+        language === "tr"
+          ? `Dosya çok büyük! Maksimum: 5MB, Mevcut: ${(file.size / 1024 / 1024).toFixed(2)}MB`
+          : `Datei zu groß! Maximum: 5MB, Aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      );
+    }
+
+    try {
+      const compressedBlob = await compressImage(file, 1200, 1200, 0.7);
+      return new Promise<GalleryImage>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const dataUrl = reader.result as string;
+            const base64String = dataUrl.split(",")[1];
+
+            // Check base64 size (max 2MB)
+            const base64Size = base64String.length * 0.75; // Approximate size in bytes
+            const MAX_BASE64_SIZE = 2 * 1024 * 1024;
+            if (base64Size > MAX_BASE64_SIZE) {
+              reject(
+                new Error(
+                  language === "tr"
+                    ? "Sıkıştırılan resim çok büyük! Daha düşük çözünürlüklü bir resim kullanın."
+                    : "Komprimiertes Bild zu groß! Bitte verwenden Sie ein Bild mit niedrigerer Auflösung.",
+                ),
+              );
+              return;
+            }
+
+            resolve({
+              url: null,
+              base64Data: base64String,
+              fileName: file.name,
+            });
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(compressedBlob);
+      });
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const handleGalleryUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     try {
       setUploadingImage(true);
-      const uploadPromises = Array.from(files).map((file: File) =>
-        uploadApi.uploadFile(file)
-      );
-      const uploadedUrls = await Promise.all(uploadPromises);
-      setFormData({
-        ...formData,
-        galleryImages: [...formData.galleryImages, ...uploadedUrls],
-      });
+
+      // Max 10 gallery images total
+      const MAX_GALLERY_IMAGES = 10;
+      const currentGalleryCount = formData.galleryImages.length;
+      const remainingSlots = MAX_GALLERY_IMAGES - currentGalleryCount;
+
+      if (remainingSlots <= 0) {
+        showNotification(
+          "error",
+          language === "tr"
+            ? `Maksimum galeri resim sayısına ulaştınız! (${MAX_GALLERY_IMAGES} max)`
+            : `Sie haben das Maximum an Galeriebildern erreicht! (${MAX_GALLERY_IMAGES} max)`,
+        );
+        return;
+      }
+
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      const processedItems: GalleryImage[] = [];
+      const errors: string[] = [];
+
+      for (const fileItem of filesToProcess) {
+        try {
+          const file = fileItem as File;
+          const item = await convertFileToBase64(file);
+          processedItems.push(item);
+        } catch (fileError) {
+          const errorMsg =
+            fileError instanceof Error ? fileError.message : "Unknown error";
+          const file = fileItem as File;
+          errors.push(`${file.name}: ${errorMsg}`);
+        }
+      }
+
+      if (processedItems.length > 0) {
+        setFormData({
+          ...formData,
+          galleryImages: [...formData.galleryImages, ...processedItems],
+        });
+
+        showNotification(
+          "success",
+          language === "tr"
+            ? `${processedItems.length} resim başarıyla yüklendi!`
+            : `${processedItems.length} Bilder erfolgreich hochgeladen!`,
+        );
+      }
+
+      if (errors.length > 0) {
+        showNotification(
+          "error",
+          language === "tr"
+            ? `${errors.length} resim yüklenemedi: ${errors.join(", ")}`
+            : `${errors.length} Bilder konnten nicht hochgeladen werden: ${errors.join(", ")}`,
+        );
+      }
     } catch (error) {
       console.error("Galeri resimleri yüklenirken hata:", error);
-      alert("Galeri resimleri yüklenemedi!");
+      showNotification(
+        "error",
+        language === "tr"
+          ? "Galeri resimleri yüklenemedi!"
+          : "Galeriebilder konnten nicht hochgeladen werden!",
+      );
     } finally {
       setUploadingImage(false);
     }
@@ -259,6 +444,11 @@ const AdminActivities: React.FC = () => {
           }
         : null;
 
+      // Filter out empty gallery images (those with all null values)
+      let validGalleryImages = formData.galleryImages.filter(
+        (img) => img.url || img.base64Data,
+      );
+
       const dto = {
         ...(editingId && { id: editingId }), // Edit modunda ID ekle
         titleTr: formData.titleTr,
@@ -270,11 +460,32 @@ const AdminActivities: React.FC = () => {
         date: formData.date,
         address: addressDto, // Backend'in beklediği PascalCase formatında
         category: formData.category,
-        imageUrl: formData.imageUrl,
+        // Sadece Base64 VEYA URL'i gönder, ikisini birden değil
+        imageUrl: formData.imageBase64 ? null : formData.imageUrl || null,
+        imageBase64: formData.imageBase64 || null,
+        imageFileName: formData.imageBase64 ? formData.imageFileName : null,
         videoUrl: formData.videoUrl || null,
-        galleryImages: formData.galleryImages,
+        // Yeni format: Galeri resimleri GalleryImage nesneleri olarak gönder (sadece geçerli olanlar)
+        galleryImages: validGalleryImages.map((img) => ({
+          url: img.url || null,
+          base64Data: img.base64Data || null,
+          fileName: img.fileName || null,
+        })),
         isActive: formData.isActive,
       };
+
+      // Check approximate payload size to prevent header size errors
+      const payloadSize = JSON.stringify(dto).length;
+      const MAX_PAYLOAD_SIZE = 20 * 1024 * 1024; // 20MB
+      if (payloadSize > MAX_PAYLOAD_SIZE) {
+        showNotification(
+          "error",
+          language === "tr"
+            ? `Payload çok büyük! (${(payloadSize / 1024 / 1024).toFixed(2)}MB). Daha az resim kullanın veya daha düşük çözünürlüklü resimler seçin.`
+            : `Payload zu groß! (${(payloadSize / 1024 / 1024).toFixed(2)}MB). Verwenden Sie weniger oder kleinere Bilder.`,
+        );
+        return;
+      }
 
       if (editingId) {
         await activitiesApi.update(editingId, dto);
@@ -282,7 +493,7 @@ const AdminActivities: React.FC = () => {
           "success",
           language === "tr"
             ? "✓ Etkinlik başarıyla güncellendi!"
-            : "✓ Aktivität erfolgreich aktualisiert!"
+            : "✓ Aktivität erfolgreich aktualisiert!",
         );
       } else {
         await activitiesApi.create(dto);
@@ -290,7 +501,7 @@ const AdminActivities: React.FC = () => {
           "success",
           language === "tr"
             ? "✓ Yeni etkinlik oluşturuldu!"
-            : "✓ Neue Aktivität erstellt!"
+            : "✓ Neue Aktivität erstellt!",
         );
       }
 
@@ -300,13 +511,16 @@ const AdminActivities: React.FC = () => {
       console.error("Kayıt hatası:", error);
       showNotification(
         "error",
-        language === "tr" ? "❌ İşlem başarısız!" : "❌ Vorgang fehlgeschlagen!"
+        language === "tr"
+          ? "❌ İşlem başarısız!"
+          : "❌ Vorgang fehlgeschlagen!",
       );
     }
   };
 
   const handleEdit = (activity: any) => {
     // Backend'den gelen tarihi aynen kullan (YYYY-MM-DD formatında)
+    // galleryImages Backend'den gelen GalleryImageDto nesneleri (tip dönüştürme gerekli değil)
     setFormData({
       titleTr: activity.titleTr,
       titleDe: activity.titleDe,
@@ -318,7 +532,14 @@ const AdminActivities: React.FC = () => {
       location: activity.location,
       address: activity.address, // Orijinal address objesini sakla
       category: activity.category,
-      imageUrl: activity.imageUrl,
+      // Ön izleme için: URL varsa URL'yi, Base64 varsa Base64'ü yükle
+      imageUrl: activity.imageUrl?.startsWith("data:")
+        ? null
+        : activity.imageUrl || null,
+      imageBase64: activity.imageBase64?.startsWith("data:")
+        ? activity.imageBase64.replace("data:image/jpeg;base64,", "")
+        : activity.imageBase64 || null,
+      imageFileName: activity.imageFileName || null,
       videoUrl: activity.videoUrl || "",
       galleryImages: activity.galleryImages || [],
       isActive: activity.isActive,
@@ -332,7 +553,7 @@ const AdminActivities: React.FC = () => {
       !confirm(
         language === "tr"
           ? "Bu etkinliği silmek istediğinizden emin misiniz?"
-          : "Sind Sie sicher, dass Sie diese Aktivität löschen möchten?"
+          : "Sind Sie sicher, dass Sie diese Aktivität löschen möchten?",
       )
     )
       return;
@@ -342,7 +563,7 @@ const AdminActivities: React.FC = () => {
       await loadActivities();
       showNotification(
         "success",
-        language === "tr" ? "✓ Etkinlik silindi!" : "✓ Aktivität gelöscht!"
+        language === "tr" ? "✓ Etkinlik silindi!" : "✓ Aktivität gelöscht!",
       );
     } catch (error) {
       console.error("Silme hatası:", error);
@@ -350,7 +571,7 @@ const AdminActivities: React.FC = () => {
         "error",
         language === "tr"
           ? "❌ Silme işlemi başarısız!"
-          : "❌ Löschvorgang fehlgeschlagen!"
+          : "❌ Löschvorgang fehlgeschlagen!",
       );
     }
   };
@@ -365,7 +586,7 @@ const AdminActivities: React.FC = () => {
           "error",
           language === "tr"
             ? "❌ Etkinlik bulunamadı!"
-            : "❌ Aktivität nicht gefunden!"
+            : "❌ Aktivität nicht gefunden!",
         );
         return;
       }
@@ -396,7 +617,14 @@ const AdminActivities: React.FC = () => {
         category: activity.category,
         imageUrl: activity.imageUrl,
         videoUrl: activity.videoUrl || null,
-        galleryImages: activity.galleryImages,
+        // WICHTIG: Bei UPDATE - nur URL-Galerien senden, keine Base64!
+        galleryImages: (activity.galleryImages || [])
+          .filter((img: any) => img.url) // Nur URLs für Updates
+          .map((img: any) => ({
+            url: img.url || null,
+            base64Data: null, // Base64 für Updates nicht unterstützt
+            fileName: null,
+          })),
         isActive: !currentStatus,
       };
 
@@ -411,8 +639,8 @@ const AdminActivities: React.FC = () => {
             ? "✓ Etkinlik aktif hale getirildi!"
             : "✓ Aktivität aktiviert!"
           : language === "tr"
-          ? "✓ Etkinlik pasif hale getirildi!"
-          : "✓ Aktivität deaktiviert!"
+            ? "✓ Etkinlik pasif hale getirildi!"
+            : "✓ Aktivität deaktiviert!",
       );
     } catch (error) {
       console.error("Durum değiştirme hatası detayı:", error);
@@ -420,7 +648,7 @@ const AdminActivities: React.FC = () => {
         "error",
         language === "tr"
           ? "❌ Durum değişirilemedi!"
-          : "❌ Status konnte nicht geändert werden!"
+          : "❌ Status konnte nicht geändert werden!",
       );
     }
   };
@@ -437,7 +665,9 @@ const AdminActivities: React.FC = () => {
       location: "",
       address: undefined,
       category: "music",
-      imageUrl: "",
+      imageUrl: null,
+      imageBase64: null,
+      imageFileName: null,
       videoUrl: "",
       galleryImages: [],
       isActive: true,
@@ -450,7 +680,7 @@ const AdminActivities: React.FC = () => {
     (a) =>
       a.titleTr.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.titleDe.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.location.toLowerCase().includes(searchQuery.toLowerCase())
+      a.location.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const formatAdminActivity = (item: any) => {
@@ -507,7 +737,9 @@ const AdminActivities: React.FC = () => {
       address: convertAddress(item.address), // PascalCase -> camelCase
 
       category: item.category || "music",
-      imageUrl: item.imageUrl || "",
+      imageUrl: item.imageSource || item.imageUrl || null,
+      imageBase64: null,
+      imageFileName: null,
       videoUrl: item.videoUrl || "",
       galleryImages: item.galleryImages || [],
       isActive: item.isActive ?? true,
@@ -709,8 +941,8 @@ const AdminActivities: React.FC = () => {
                             ? "Pasif yap"
                             : "Aktif yap"
                           : activity.isActive
-                          ? "Deaktivieren"
-                          : "Aktivieren"
+                            ? "Deaktivieren"
+                            : "Aktivieren"
                       }
                     >
                       {activity.isActive ? (
@@ -755,578 +987,676 @@ const AdminActivities: React.FC = () => {
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-white rounded-[2.5rem] w-full max-w-6xl max-h-[90vh] overflow-y-auto my-8 shadow-2xl border border-slate-100">
               {/* Üst Bar - AdminVolunteerPage tarzı */}
-              <div className="sticky top-0 bg-white/90 backdrop-blur-md p-6 rounded-t-[2.5rem] border-b border-slate-100 flex items-center justify-between z-10">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-kpf-teal/10 rounded-2xl">
-                    <Calendar className="text-kpf-teal" size={28} />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-black text-slate-800">
-                      {editingId
-                        ? language === "tr"
-                          ? "Etkinlik Düzenle"
-                          : "Aktivität bearbeiten"
-                        : language === "tr"
-                        ? "Yeni Etkinlik Oluştur"
-                        : "Neue Aktivität erstellen"}
-                    </h1>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                      <CheckCircle size={10} className="text-green-500" />
-                      {language === "tr"
-                        ? "Tüm alanları doldurun"
-                        : "Füllen Sie alle Felder aus"}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors"
-                >
-                  <X size={24} className="text-slate-500" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-8 lg:p-12 space-y-10">
-                {/* Başlık Bölümü */}
-                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                  <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    {/* Türkçe */}
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
-                        <Languages size={20} />
-                        <span className="font-bold text-xs uppercase tracking-widest">
-                          Türkçe (TR) İçerik
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={formData.titleTr}
-                        onChange={(e) =>
-                          setFormData({ ...formData, titleTr: e.target.value })
-                        }
-                        placeholder="Etkinlik Başlığı *"
-                        className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
-                      />
-                      <div className="pt-4 border-t border-slate-50">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Kısa Açıklama *
-                        </span>
-                        <textarea
-                          required
-                          rows={3}
-                          value={formData.descriptionTr}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              descriptionTr: e.target.value,
-                            })
-                          }
-                          placeholder="Etkinlik hakkında kısa açıklama..."
-                          className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
-                        />
-                      </div>
-                      <div className="pt-4 border-t border-slate-50">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Detaylı İçerik
-                        </span>
-                        <QuillEditor
-                          value={formData.detailedContentTr}
-                          onChange={(val) =>
-                            setFormData({ ...formData, detailedContentTr: val })
-                          }
-                          placeholder="Detay sayfasında gösterilecek içerik..."
-                        />
-                      </div>
+              <form onSubmit={handleSubmit} className="contents">
+                <div className="sticky top-0 bg-white/90 backdrop-blur-md p-6 rounded-t-[2.5rem] border-b border-slate-100 flex items-center justify-between z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+                      <Calendar className="text-kpf-teal" size={28} />
                     </div>
-
-                    {/* Almanca */}
-                    <div className="space-y-6 lg:border-l lg:border-slate-50 lg:pl-12">
-                      <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
-                        <Languages size={20} />
-                        <span className="font-bold text-xs uppercase tracking-widest">
-                          Almanca (DE) İçerik
-                        </span>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={formData.titleDe}
-                        onChange={(e) =>
-                          setFormData({ ...formData, titleDe: e.target.value })
-                        }
-                        placeholder="Aktivität Titel *"
-                        className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
-                      />
-                      <div className="pt-4 border-t border-slate-50">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Kurzbeschreibung *
-                        </span>
-                        <textarea
-                          required
-                          rows={3}
-                          value={formData.descriptionDe}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              descriptionDe: e.target.value,
-                            })
-                          }
-                          placeholder="Kurze Beschreibung der Aktivität..."
-                          className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
-                        />
-                      </div>
-                      <div className="pt-4 border-t border-slate-50">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Detaillierter Inhalt
-                        </span>
-                        <QuillEditor
-                          value={formData.detailedContentDe}
-                          onChange={(val) =>
-                            setFormData({ ...formData, detailedContentDe: val })
-                          }
-                          placeholder="Inhalt für Detailseite..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tarih ve Kategori */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
-                      <Calendar size={14} className="text-kpf-teal" />
-                      {language === "tr"
-                        ? "Etkinlik Tarihi"
-                        : "Aktivitätsdatum"}{" "}
-                      *
-                    </span>
-                    <input
-                      type="date"
-                      required
-                      value={formData.date}
-                      onChange={(e) =>
-                        setFormData({ ...formData, date: e.target.value })
-                      }
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
-                    />
-                  </div>
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">
-                      {language === "tr" ? "Kategori" : "Kategorie"} *
-                    </span>
-                    <select
-                      required
-                      value={formData.category}
-                      onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
-                      }
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
-                    >
-                      <option value="music">🎵 Müzik / Musik</option>
-                      <option value="art">🎨 Sanat / Kunst</option>
-                      <option value="education">📚 Eğitim / Bildung</option>
-                      <option value="culture">🌍 Kültür / Kultur</option>
-                      <option value="sport">⚽ Spor / Sport</option>
-                      <option value="social">🤝 Sosyal / Sozial</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Adres Bilgileri */}
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-                  <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <MapPin size={20} className="text-kpf-teal" />
-                    {language === "tr"
-                      ? "📍 Adres Bilgileri"
-                      : "📍 Adressinformationen"}
-                  </h3>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Sokak */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Sokak" : "Straße"} *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.address?.street || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address,
-                              street: e.target.value,
-                            },
-                            location: `${e.target.value}${
-                              formData.address?.houseNo
-                                ? " " + formData.address.houseNo
-                                : ""
-                            }, ${formData.address?.zipCode || ""} ${
-                              formData.address?.city || ""
-                            }`.trim(),
-                          })
-                        }
-                        placeholder={
-                          language === "tr"
-                            ? "örn: Rheinstraße"
-                            : "z.B: Rheinstraße"
-                        }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                      />
-                    </div>
-
-                    {/* Ev Numarası */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Ev No" : "Hausnummer"}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.address?.houseNo || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address,
-                              houseNo: e.target.value,
-                            },
-                            location: `${formData.address?.street || ""} ${
-                              e.target.value
-                            }, ${formData.address?.zipCode || ""} ${
-                              formData.address?.city || ""
-                            }`.trim(),
-                          })
-                        }
-                        placeholder={language === "tr" ? "örn: 45" : "z.B: 45"}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                      />
-                    </div>
-
-                    {/* Posta Kodu */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Posta Kodu" : "Postleitzahl"} *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.address?.zipCode || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address,
-                              zipCode: e.target.value,
-                            },
-                            location: `${formData.address?.street || ""} ${
-                              formData.address?.houseNo || ""
-                            }, ${e.target.value} ${
-                              formData.address?.city || ""
-                            }`.trim(),
-                          })
-                        }
-                        placeholder={
-                          language === "tr" ? "örn: 64283" : "z.B: 64283"
-                        }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                      />
-                    </div>
-
-                    {/* Şehir */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Şehir" : "Stadt"} *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.address?.city || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address,
-                              city: e.target.value,
-                            },
-                            location: `${formData.address?.street || ""} ${
-                              formData.address?.houseNo || ""
-                            }, ${formData.address?.zipCode || ""} ${
-                              e.target.value
-                            }`.trim(),
-                          })
-                        }
-                        placeholder={
-                          language === "tr"
-                            ? "örn: Darmstadt"
-                            : "z.B: Darmstadt"
-                        }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                      />
-                    </div>
-
-                    {/* Eyalet */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Eyalet" : "Bundesland"}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.address?.state || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address,
-                              state: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder={
-                          language === "tr" ? "örn: Hessen" : "z.B: Hessen"
-                        }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                      />
-                    </div>
-
-                    {/* Ülke */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Ülke" : "Land"} *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.address?.country || "Deutschland"}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            address: {
-                              ...formData.address,
-                              country: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder={
-                          language === "tr"
-                            ? "örn: Deutschland"
-                            : "z.B: Deutschland"
-                        }
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-500 mt-3 bg-white/50 p-3 rounded-lg">
-                    💡{" "}
-                    {language === "tr"
-                      ? "Adres bilgileri otomatik olarak birleştirilerek görüntülenir"
-                      : "Adressinformationen werden automatisch kombiniert angezeigt"}
-                  </p>
-                </div>
-
-                {/* Ana Resim */}
-                <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-red/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    📷 {language === "tr" ? "Ana Kapak Resmi" : "Hauptbild"} *
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploadingImage}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-kpf-teal/80 file:cursor-pointer"
-                  />
-                  {formData.imageUrl && (
-                    <div className="mt-4 relative">
-                      <img
-                        src={formData.imageUrl}
-                        alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg shadow-md"
-                      />
-                      <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        ✓ {language === "tr" ? "Yüklendi" : "Hochgeladen"}
-                      </div>
-                    </div>
-                  )}
-                  {uploadingImage && (
-                    <div className="mt-3 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-4 border-kpf-teal"></div>
-                      <p className="text-sm text-slate-600 mt-2">
+                      <h1 className="text-xl font-black text-slate-800">
+                        {editingId
+                          ? language === "tr"
+                            ? "Etkinlik Düzenle"
+                            : "Aktivität bearbeiten"
+                          : language === "tr"
+                            ? "Yeni Etkinlik Oluştur"
+                            : "Neue Aktivität erstellen"}
+                      </h1>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <CheckCircle size={10} className="text-green-500" />
                         {language === "tr"
-                          ? "Yükleniyor..."
-                          : "Wird hochgeladen..."}
+                          ? "Tüm alanları doldurun"
+                          : "Füllen Sie alle Felder aus"}
                       </p>
                     </div>
-                  )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="submit"
+                      disabled={
+                        uploadingImage ||
+                        !formData.titleTr ||
+                        !formData.titleDe ||
+                        !formData.descriptionTr ||
+                        !formData.descriptionDe
+                      }
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-kpf-teal to-blue-600 text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                    >
+                      <Save size={20} />
+                      <span className="hidden sm:inline">
+                        {language === "tr"
+                          ? "Sitede Yayınla"
+                          : "Auf der Website veröffentlichen"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="p-3 hover:bg-slate-100 rounded-2xl transition-colors"
+                    >
+                      <X size={24} className="text-slate-500" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Video URL */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🎬{" "}
-                    {language === "tr"
-                      ? "Video URL (Opsiyonel)"
-                      : "Video URL (Optional)"}
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.videoUrl}
-                    onChange={(e) =>
-                      setFormData({ ...formData, videoUrl: e.target.value })
-                    }
-                    placeholder={
-                      language === "tr"
-                        ? "https://youtube.com/watch?v=... veya Vimeo URL"
-                        : "https://youtube.com/watch?v=... oder Vimeo URL"
-                    }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    {language === "tr"
-                      ? "YouTube veya Vimeo video bağlantısı ekleyebilirsiniz"
-                      : "Sie können YouTube- oder Vimeo-Videolinks hinzufügen"}
-                  </p>
-                </div>
-
-                {/* Galeri */}
-                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    🖼️{" "}
-                    {language === "tr"
-                      ? "Galeri Resimleri (Çoklu Seçim)"
-                      : "Galerie-Bilder (Mehrfachauswahl)"}
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleGalleryUpload}
-                    disabled={uploadingImage}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-red file:text-white hover:file:bg-red-700 file:cursor-pointer"
-                  />
-                  <p className="text-xs text-slate-500 mt-2">
-                    {language === "tr"
-                      ? "Birden fazla resim seçebilirsiniz. Her resmi silmek için üzerindeki X'e tıklayın."
-                      : "Sie können mehrere Bilder auswählen. Klicken Sie auf X, um ein Bild zu entfernen."}
-                  </p>
-                  {formData.galleryImages.length > 0 && (
-                    <div className="mt-4 grid grid-cols-3 md:grid-cols-4 gap-3">
-                      {formData.galleryImages.map((url, index) => (
-                        <div
-                          key={`gallery-${index}-${url.substring(
-                            url.length - 10
-                          )}`}
-                          className="relative group"
-                        >
-                          <img
-                            src={url}
-                            alt={`Gallery ${index + 1}`}
-                            className="h-24 w-full object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+                <div className="p-8 lg:p-12 space-y-10">
+                  <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+                      {/* Türkçe */}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
+                          <Languages size={20} />
+                          <span className="font-bold text-xs uppercase tracking-widest">
+                            Türkçe (TR) İçerik
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={formData.titleTr}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              titleTr: e.target.value,
+                            })
+                          }
+                          placeholder="Etkinlik Başlığı *"
+                          className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
+                        />
+                        <div className="pt-4 border-t border-slate-50">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
+                            Kısa Açıklama *
+                          </span>
+                          <textarea
+                            required
+                            rows={3}
+                            value={formData.descriptionTr}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                descriptionTr: e.target.value,
+                              })
+                            }
+                            placeholder="Etkinlik hakkında kısa açıklama..."
+                            className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
                           />
+                        </div>
+                        <div className="pt-4 border-t border-slate-50">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
+                            Detaylı İçerik
+                          </span>
+                          <QuillEditor
+                            value={formData.detailedContentTr}
+                            onChange={(val) =>
+                              setFormData({
+                                ...formData,
+                                detailedContentTr: val,
+                              })
+                            }
+                            placeholder="Detay sayfasında gösterilecek içerik..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Almanca */}
+                      <div className="space-y-6 lg:border-l lg:border-slate-50 lg:pl-12">
+                        <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
+                          <Languages size={20} />
+                          <span className="font-bold text-xs uppercase tracking-widest">
+                            Almanca (DE) İçerik
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={formData.titleDe}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              titleDe: e.target.value,
+                            })
+                          }
+                          placeholder="Aktivität Titel *"
+                          className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
+                        />
+                        <div className="pt-4 border-t border-slate-50">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
+                            Kurzbeschreibung *
+                          </span>
+                          <textarea
+                            required
+                            rows={3}
+                            value={formData.descriptionDe}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                descriptionDe: e.target.value,
+                              })
+                            }
+                            placeholder="Kurze Beschreibung der Aktivität..."
+                            className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
+                          />
+                        </div>
+                        <div className="pt-4 border-t border-slate-50">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
+                            Detaillierter Inhalt
+                          </span>
+                          <QuillEditor
+                            value={formData.detailedContentDe}
+                            onChange={(val) =>
+                              setFormData({
+                                ...formData,
+                                detailedContentDe: val,
+                              })
+                            }
+                            placeholder="Inhalt für Detailseite..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tarih ve Kategori */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
+                        <Calendar size={14} className="text-kpf-teal" />
+                        {language === "tr"
+                          ? "Etkinlik Tarihi"
+                          : "Aktivitätsdatum"}{" "}
+                        *
+                      </span>
+                      <input
+                        type="date"
+                        required
+                        value={formData.date}
+                        onChange={(e) =>
+                          setFormData({ ...formData, date: e.target.value })
+                        }
+                        className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
+                      />
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">
+                        {language === "tr" ? "Kategori" : "Kategorie"} *
+                      </span>
+                      <select
+                        required
+                        value={formData.category}
+                        onChange={(e) =>
+                          setFormData({ ...formData, category: e.target.value })
+                        }
+                        className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
+                      >
+                        <option value="music">🎵 Müzik / Musik</option>
+                        <option value="art">🎨 Sanat / Kunst</option>
+                        <option value="education">📚 Eğitim / Bildung</option>
+                        <option value="culture">🌍 Kültür / Kultur</option>
+                        <option value="sport">⚽ Spor / Sport</option>
+                        <option value="social">🤝 Sosyal / Sozial</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Adres Bilgileri */}
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                      <MapPin size={20} className="text-kpf-teal" />
+                      {language === "tr"
+                        ? "📍 Adres Bilgileri"
+                        : "📍 Adressinformationen"}
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Sokak */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          {language === "tr" ? "Sokak" : "Straße"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.address?.street || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                street: e.target.value,
+                              },
+                              location: `${e.target.value}${
+                                formData.address?.houseNo
+                                  ? " " + formData.address.houseNo
+                                  : ""
+                              }, ${formData.address?.zipCode || ""} ${
+                                formData.address?.city || ""
+                              }`.trim(),
+                            })
+                          }
+                          placeholder={
+                            language === "tr"
+                              ? "örn: Rheinstraße"
+                              : "z.B: Rheinstraße"
+                          }
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                        />
+                      </div>
+
+                      {/* Ev Numarası */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          {language === "tr" ? "Ev No" : "Hausnummer"}
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.address?.houseNo || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                houseNo: e.target.value,
+                              },
+                              location: `${formData.address?.street || ""} ${
+                                e.target.value
+                              }, ${formData.address?.zipCode || ""} ${
+                                formData.address?.city || ""
+                              }`.trim(),
+                            })
+                          }
+                          placeholder={
+                            language === "tr" ? "örn: 45" : "z.B: 45"
+                          }
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                        />
+                      </div>
+
+                      {/* Posta Kodu */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          {language === "tr" ? "Posta Kodu" : "Postleitzahl"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.address?.zipCode || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                zipCode: e.target.value,
+                              },
+                              location: `${formData.address?.street || ""} ${
+                                formData.address?.houseNo || ""
+                              }, ${e.target.value} ${
+                                formData.address?.city || ""
+                              }`.trim(),
+                            })
+                          }
+                          placeholder={
+                            language === "tr" ? "örn: 64283" : "z.B: 64283"
+                          }
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                        />
+                      </div>
+
+                      {/* Şehir */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          {language === "tr" ? "Şehir" : "Stadt"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.address?.city || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                city: e.target.value,
+                              },
+                              location: `${formData.address?.street || ""} ${
+                                formData.address?.houseNo || ""
+                              }, ${formData.address?.zipCode || ""} ${
+                                e.target.value
+                              }`.trim(),
+                            })
+                          }
+                          placeholder={
+                            language === "tr"
+                              ? "örn: Darmstadt"
+                              : "z.B: Darmstadt"
+                          }
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                        />
+                      </div>
+
+                      {/* Eyalet */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          {language === "tr" ? "Eyalet" : "Bundesland"}
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.address?.state || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                state: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder={
+                            language === "tr" ? "örn: Hessen" : "z.B: Hessen"
+                          }
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                        />
+                      </div>
+
+                      {/* Ülke */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          {language === "tr" ? "Ülke" : "Land"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.address?.country || "Deutschland"}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              address: {
+                                ...formData.address,
+                                country: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder={
+                            language === "tr"
+                              ? "örn: Deutschland"
+                              : "z.B: Deutschland"
+                          }
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-500 mt-3 bg-white/50 p-3 rounded-lg">
+                      💡{" "}
+                      {language === "tr"
+                        ? "Adres bilgileri otomatik olarak birleştirilerek görüntülenir"
+                        : "Adressinformationen werden automatisch kombiniert angezeigt"}
+                    </p>
+                  </div>
+
+                  {/* Ana Resim */}
+                  <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-red/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
+                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                      📷 {language === "tr" ? "Ana Kapak Resmi" : "Hauptbild"} *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-kpf-teal/80 file:cursor-pointer"
+                    />
+                    {(formData.imageUrl || formData.imageBase64) && (
+                      <div className="mt-4 space-y-3">
+                        <div className="relative">
+                          <img
+                            src={
+                              formData.imageBase64
+                                ? `data:image/jpeg;base64,${formData.imageBase64}`
+                                : formData.imageUrl
+                            }
+                            alt="Preview"
+                            className="w-full h-48 object-cover rounded-lg shadow-md"
+                          />
+                          <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                            ✓ {language === "tr" ? "Yüklendi" : "Hochgeladen"}
+                          </div>
                           <button
                             type="button"
                             onClick={() =>
                               setFormData({
                                 ...formData,
-                                galleryImages: formData.galleryImages.filter(
-                                  (_, i) => i !== index
-                                ),
+                                imageUrl: null,
+                                imageBase64: null,
+                                imageFileName: null,
                               })
                             }
-                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-all opacity-0 group-hover:opacity-100"
-                            title={language === "tr" ? "Sil" : "Löschen"}
+                            className="absolute top-2 left-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
                           >
-                            <X size={14} />
+                            ✕ {language === "tr" ? "Sil" : "Löschen"}
                           </button>
-                          <div className="absolute bottom-1 right-1 bg-black/60 text-white px-2 py-0.5 rounded text-xs">
-                            #{index + 1}
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                    {uploadingImage && (
+                      <div className="mt-3 text-center">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-4 border-kpf-teal"></div>
+                        <p className="text-sm text-slate-600 mt-2">
+                          {language === "tr"
+                            ? "Yükleniyor..."
+                            : "Wird hochgeladen..."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Aktif/Pasif */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label
-                        htmlFor="isActive"
-                        className="text-base font-bold text-slate-800 flex items-center gap-2 cursor-pointer"
-                      >
-                        {formData.isActive ? (
-                          <Eye size={20} className="text-green-600" />
-                        ) : (
-                          <EyeOff size={20} className="text-slate-400" />
-                        )}
-                        {language === "tr"
-                          ? "Yayın Durumu"
-                          : "Veröffentlichungsstatus"}
-                      </label>
-                      <p className="text-sm text-slate-600 mt-1">
-                        {language === "tr"
-                          ? "Etkinlik web sitesinde görünsün mü?"
-                          : "Soll die Aktivität auf der Website sichtbar sein?"}
-                      </p>
-                    </div>
-                    <div className="relative">
+                  {/* Video URL */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      🎬{" "}
+                      {language === "tr"
+                        ? "Video URL (Opsiyonel)"
+                        : "Video URL (Optional)"}
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.videoUrl}
+                      onChange={(e) =>
+                        setFormData({ ...formData, videoUrl: e.target.value })
+                      }
+                      placeholder={
+                        language === "tr"
+                          ? "https://youtube.com/watch?v=... veya Vimeo URL"
+                          : "https://youtube.com/watch?v=... oder Vimeo URL"
+                      }
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      {language === "tr"
+                        ? "YouTube veya Vimeo video bağlantısı ekleyebilirsiniz"
+                        : "Sie können YouTube- oder Vimeo-Videolinks hinzufügen"}
+                    </p>
+                  </div>
+
+                  {/* Galeri */}
+                  <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                      🖼️{" "}
+                      {language === "tr"
+                        ? "Galeri Resimleri (URL veya Yükle)"
+                        : "Galerie-Bilder (URL oder Upload)"}
+                    </label>
+
+                    {/* Gallery URL Input */}
+                    <div className="mb-4 flex gap-2">
                       <input
-                        type="checkbox"
-                        id="isActive"
-                        checked={formData.isActive}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            isActive: e.target.checked,
-                          })
+                        type="url"
+                        value={galleryUrlInput}
+                        onChange={(e) => setGalleryUrlInput(e.target.value)}
+                        placeholder={
+                          language === "tr"
+                            ? "Resim URL'sini yapıştırın... (https://...)"
+                            : "Bild-URL einfügen... (https://...)"
                         }
-                        className="sr-only peer"
+                        className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
-                      <div className="w-16 h-8 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kpf-teal/30 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-green-500 cursor-pointer"></div>
-                      <span className="absolute top-1.5 left-2 text-xs font-bold text-white pointer-events-none">
-                        {formData.isActive
-                          ? language === "tr"
-                            ? "AÇIK"
-                            : "AN"
-                          : language === "tr"
-                          ? "KAPALI"
-                          : "AUS"}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            galleryUrlInput.trim() &&
+                            galleryUrlInput.startsWith("http")
+                          ) {
+                            setFormData({
+                              ...formData,
+                              galleryImages: [
+                                ...formData.galleryImages,
+                                {
+                                  url: galleryUrlInput.trim(),
+                                  base64Data: null,
+                                  fileName: null,
+                                },
+                              ],
+                            });
+                            setGalleryUrlInput("");
+                            showNotification(
+                              "success",
+                              language === "tr"
+                                ? "Resim URL'si başarıyla eklendi!"
+                                : "Bild-URL erfolgreich hinzugefügt!",
+                            );
+                          } else {
+                            showNotification(
+                              "error",
+                              language === "tr"
+                                ? "Lütfen geçerli bir URL girin!"
+                                : "Bitte geben Sie eine gültige URL ein!",
+                            );
+                          }
+                        }}
+                        className="px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition font-medium"
+                      >
+                        {language === "tr" ? "Ekle" : "Hinzufügen"}
+                      </button>
+                    </div>
+
+                    {/* File Upload */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleGalleryUpload}
+                      disabled={uploadingImage}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-red file:text-white hover:file:bg-red-700 file:cursor-pointer"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      {language === "tr"
+                        ? "Birden fazla resim seçebilirsiniz. Her resmi silmek için üzerindeki X'e tıklayın."
+                        : "Sie können mehrere Bilder auswählen. Klicken Sie auf X, um ein Bild zu entfernen."}
+                    </p>
+                    {formData.galleryImages.length > 0 && (
+                      <div className="mt-4 grid grid-cols-3 md:grid-cols-4 gap-3">
+                        {formData.galleryImages.map((img, index) => {
+                          const displayUrl = img.url || img.base64Data;
+                          const imageId =
+                            img.url || img.fileName || `img-${index}`;
+                          // Base64 Bilder müssen das data: URI-Schema verwenden
+                          const imageSrc = img.url
+                            ? img.url
+                            : `data:image/jpeg;base64,${img.base64Data}`;
+                          return (
+                            <div
+                              key={`gallery-${index}-${imageId.substring(
+                                Math.max(0, imageId.length - 10),
+                              )}`}
+                              className="relative group"
+                            >
+                              {displayUrl && (
+                                <>
+                                  <img
+                                    src={imageSrc}
+                                    alt={`Gallery ${index + 1}`}
+                                    className="h-24 w-full object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFormData({
+                                        ...formData,
+                                        galleryImages:
+                                          formData.galleryImages.filter(
+                                            (_, i) => i !== index,
+                                          ),
+                                      })
+                                    }
+                                    className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                                    title={
+                                      language === "tr" ? "Sil" : "Löschen"
+                                    }
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                  <div className="absolute bottom-1 right-1 bg-black/60 text-white px-2 py-0.5 rounded text-xs">
+                                    {img.base64Data ? "📤" : "🔗"} #{index + 1}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Aktif/Pasif */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label
+                          htmlFor="isActive"
+                          className="text-base font-bold text-slate-800 flex items-center gap-2 cursor-pointer"
+                        >
+                          {formData.isActive ? (
+                            <Eye size={20} className="text-green-600" />
+                          ) : (
+                            <EyeOff size={20} className="text-slate-400" />
+                          )}
+                          {language === "tr"
+                            ? "Yayın Durumu"
+                            : "Veröffentlichungsstatus"}
+                        </label>
+                        <p className="text-sm text-slate-600 mt-1">
+                          {language === "tr"
+                            ? "Etkinlik web sitesinde görünsün mü?"
+                            : "Soll die Aktivität auf der Website sichtbar sein?"}
+                        </p>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          id="isActive"
+                          checked={formData.isActive}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              isActive: e.target.checked,
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-16 h-8 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kpf-teal/30 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-green-500 cursor-pointer"></div>
+                        <span className="absolute top-1.5 left-2 text-xs font-bold text-white pointer-events-none">
+                          {formData.isActive
+                            ? language === "tr"
+                              ? "AÇIK"
+                              : "AN"
+                            : language === "tr"
+                              ? "KAPALI"
+                              : "AUS"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-4 pt-6 border-t-2 border-slate-200">
-                  <button
-                    type="submit"
-                    disabled={uploadingImage || !formData.imageUrl}
-                    className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-kpf-teal to-blue-600 text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg"
-                  >
-                    <Save size={22} />
-                    <span>
-                      {editingId
-                        ? language === "tr"
-                          ? "✓ Değişiklikleri Kaydet"
-                          : "✓ Änderungen speichern"
-                        : language === "tr"
-                        ? "✓ Etkinliği Oluştur"
-                        : "✓ Aktivität erstellen"}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="px-8 py-4 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold text-lg flex items-center gap-2"
-                  >
-                    <X size={20} />
-                    {language === "tr" ? "İptal" : "Abbrechen"}
-                  </button>
                 </div>
               </form>
             </div>
@@ -1343,8 +1673,8 @@ const AdminActivities: React.FC = () => {
                 notification.type === "success"
                   ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 text-green-800"
                   : notification.type === "error"
-                  ? "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800"
-                  : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800"
+                    ? "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800"
+                    : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800"
               }
             `}
             >

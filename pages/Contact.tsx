@@ -55,6 +55,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [status, setStatus] = useState<
     { type: ""; message: "" } | { type: "success" | "error"; message: string }
   >({
@@ -105,13 +106,25 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
     setStatus({ type: "", message: "" });
 
     // Validation
-    if (formData.name.trim().length < 3 || formData.name.trim().length > 200) {
+    if (!formData.anrede || formData.anrede.trim() === "") {
       setStatus({
         type: "error",
         message:
           lang === "tr"
-            ? "Ad 3-200 karakter olmalıdır."
-            : "Name must be 3-200 characters.",
+            ? "Lütfen bir anrede seçin."
+            : "Bitte wählen Sie eine Anrede.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (formData.name.trim().length < 2 || formData.name.trim().length > 200) {
+      setStatus({
+        type: "error",
+        message:
+          lang === "tr"
+            ? "Ad 2-200 karakter olmalıdır."
+            : "Name muss 2-200 Zeichen lang sein.",
       });
       setIsSubmitting(false);
       return;
@@ -123,7 +136,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
         message:
           lang === "tr"
             ? "Geçerli bir e-mail adresi girin."
-            : "Please enter a valid email.",
+            : "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
       });
       setIsSubmitting(false);
       return;
@@ -138,7 +151,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
         message:
           lang === "tr"
             ? "Konu 3-200 karakter olmalıdır."
-            : "Subject must be 3-200 characters.",
+            : "Betreff muss 3-200 Zeichen lang sein.",
       });
       setIsSubmitting(false);
       return;
@@ -153,37 +166,57 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
         message:
           lang === "tr"
             ? "Mesaj 10-5000 karakter olmalıdır."
-            : "Message must be 10-5000 characters.",
+            : "Nachricht muss 10-5000 Zeichen lang sein.",
       });
       setIsSubmitting(false);
       return;
     }
 
-    const result = await contactApi.submitContactMessage(formData);
+    try {
+      const result = await contactApi.submitContactMessage({
+        anrede: formData.anrede,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        subject: formData.subject,
+        message: formData.message,
+      });
 
-    if (result.success) {
-      setStatus({
-        type: "success",
-        message:
-          lang === "tr"
-            ? "Mesajınız başarıyla gönderildi! En kısa sürede size geri dönüş yapacağız."
-            : "Ihre Nachricht wurde erfolgreich versendet! Wir werden uns so schnell wie möglich bei Ihnen melden.",
-      });
-      setFormData({
-        anrede: "",
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: "",
-      });
-      setTimeout(() => setStatus({ type: "", message: "" }), 5000);
-    } else {
+      if (result.success) {
+        setStatus({
+          type: "success",
+          message:
+            lang === "tr"
+              ? "Mesajınız başarıyla gönderildi! En kısa sürede size geri dönüş yapacağız."
+              : "Ihre Nachricht wurde erfolgreich versendet! Wir werden uns so schnell wie möglich bei Ihnen melden.",
+        });
+        setFormData({
+          anrede: "",
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: "",
+        });
+        setTimeout(() => setStatus({ type: "", message: "" }), 5000);
+      } else {
+        setStatus({
+          type: "error",
+          message:
+            result.error ||
+            (lang === "tr"
+              ? "Bir hata oluştu."
+              : "Ein Fehler ist aufgetreten."),
+        });
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
       setStatus({
         type: "error",
         message:
-          result.error ||
-          (lang === "tr" ? "Bir hata oluştu." : "An error occurred."),
+          lang === "tr"
+            ? "Mesaj gönderilemedi. Lütfen tekrar deneyin."
+            : "Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es später.",
       });
     }
 
@@ -218,41 +251,44 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-20 relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-100/50 skew-x-12 transform translate-x-32"></div>
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-kpf-teal/5 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-slate-50 py-20 relative overflow-hidden selection:bg-teal-100 selection:text-teal-900">
+      {/* Arka Plan Dekorasyonu */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-100/50 skew-x-12 transform translate-x-32 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-serif font-bold text-kpf-dark mb-4">
+          <h1 className="text-5xl md:text-6xl font-serif font-bold text-slate-900 mb-4 tracking-tight">
             {t("contact_title")}
           </h1>
-          <div className="w-24 h-1.5 bg-kpf-teal mx-auto rounded-full"></div>
+          <div className="w-24 h-1.5 bg-gradient-to-r from-teal-500 to-teal-700 mx-auto rounded-full"></div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 max-w-6xl mx-auto">
-          {/* Form Side (Left) */}
-          <div className="lg:col-span-7 order-2 lg:order-1">
-            <div className="bg-white rounded-3xl shadow-xl border-0 h-full relative overflow-hidden group">
-              <div className="h-2 w-full bg-gradient-to-r from-kpf-teal via-teal-400 to-kpf-teal"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto items-stretch">
+          {/* --- SOL TARAF: MODERN FORM --- */}
+          <div className="lg:col-span-7 order-2 lg:order-1 flex flex-col h-full">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col h-full relative group">
+              {/* Üst Renk Çubuğu */}
+              <div className="h-2 w-full bg-gradient-to-r from-teal-400 via-teal-600 to-teal-800"></div>
 
-              <div className="p-10 md:p-12">
-                <h3 className="text-3xl font-bold text-slate-800 mb-2 font-serif">
-                  {lang === "tr"
-                    ? "Bize Mesaj Gönderin"
-                    : "Senden Sie uns eine Nachricht"}
-                </h3>
-                <p className="text-slate-500 mb-10">
-                  {lang === "tr"
-                    ? "Sorularınız veya önerileriniz için aşağıdaki formu doldurabilirsiniz."
-                    : "Für Fragen oder Anregungen füllen Sie bitte das untenstehende Formular aus."}
-                </p>
+              <div className="p-8 md:p-12 flex flex-col h-full">
+                <div className="mb-10">
+                  <h3 className="text-3xl font-bold text-slate-800 mb-3 font-serif">
+                    {lang === "tr"
+                      ? "Bize Mesaj Gönderin"
+                      : "Senden Sie uns eine Nachricht"}
+                  </h3>
+                  <p className="text-slate-500 font-medium">
+                    {lang === "tr"
+                      ? "Sorularınız veya önerileriniz için aşağıdaki formu doldurabilirsiniz."
+                      : "Für Fragen oder Anregungen füllen Sie bitte das untenstehende Formular aus."}
+                  </p>
+                </div>
 
                 {status.type === "success" ? (
-                  <div className="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center p-8 text-center animate-fade-in-up">
-                    <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6 shadow-sm">
-                      <CheckCircle size={48} />
+                  <div className="flex-grow flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in duration-300">
+                    <div className="w-24 h-24 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                      <CheckCircle size={48} strokeWidth={1.5} />
                     </div>
                     <h3 className="text-2xl font-bold text-slate-800 mb-2">
                       {lang === "tr" ? "Başarılı!" : "Erfolg!"}
@@ -262,204 +298,195 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                     </p>
                     <button
                       onClick={() => setStatus({ type: "", message: "" })}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 px-8 rounded-xl transition-colors"
+                      className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-10 rounded-2xl transition-all shadow-lg active:scale-95"
                     >
-                      {lang === "tr"
-                        ? "Yeni Mesaj Gönder"
-                        : "Neue Nachricht senden"}
+                      {lang === "tr" ? "Yeni Mesaj" : "Neue Nachricht"}
                     </button>
                   </div>
                 ) : (
-                  <form className="space-y-8" onSubmit={handleSubmit}>
+                  <form
+                    className="space-y-6 flex flex-col flex-grow"
+                    onSubmit={handleSubmit}
+                  >
                     {status.message && (
                       <div
-                        className={`p-4 rounded-xl flex items-start gap-3 ${
+                        className={`p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 ${
                           status.type === "success"
-                            ? "bg-green-50 border border-green-200 text-green-800"
-                            : "bg-red-50 border border-red-200 text-red-800"
+                            ? "bg-teal-50 text-teal-800 border border-teal-100"
+                            : "bg-red-50 text-red-800 border border-red-100"
                         }`}
                       >
-                        <div className="flex-shrink-0 mt-0.5">
-                          {status.type === "success" ? (
-                            <CheckCircle size={20} />
-                          ) : (
-                            <AlertCircle size={20} />
-                          )}
-                        </div>
-                        <p className="text-sm font-medium">{status.message}</p>
+                        {status.type === "success" ? (
+                          <CheckCircle size={20} />
+                        ) : (
+                          <AlertCircle size={20} />
+                        )}
+                        <p className="text-sm font-semibold">
+                          {status.message}
+                        </p>
                       </div>
                     )}
-                    <div className="space-y-8">
-                      <div className="relative group">
-                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
-                          <User size={20} />
-                        </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Anrede */}
+                      <div className="relative group/input">
                         <select
                           id="anrede"
                           value={formData.anrede}
                           onChange={handleChange}
-                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all"
+                          className="peer w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all appearance-none font-medium text-slate-700"
                           required
                         >
-                          <option value="">
-                            {lang === "tr" ? "Anrede seçin" : "Anrede wählen"}
+                          <option value="">{t("contact_form_anrede")}</option>
+                          <option value="Bay">
+                            {t("contact_form_anrede_mr")}
                           </option>
-                          {lang === "tr" ? (
-                            <>
-                              <option value="Sayın">Sayın</option>
-                              <option value="Hanım">Hanım</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="Herr">Herr</option>
-                              <option value="Frau">Frau</option>
-                            </>
-                          )}
+                          <option value="Bayan">
+                            {t("contact_form_anrede_mrs")}
+                          </option>
+                          <option value="Diğer">
+                            {t("contact_form_anrede_other")}
+                          </option>
                         </select>
-                        <label
-                          htmlFor="anrede"
-                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal transition-all cursor-text pointer-events-none"
-                        >
-                          {lang === "tr" ? "Anrede" : "Anrede"}
-                        </label>
+                        <User
+                          className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
+                          size={20}
+                        />
                       </div>
 
-                      <div className="relative group">
-                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
-                          <User size={20} />
-                        </div>
+                      {/* Name */}
+                      <div className="relative group/input">
                         <input
                           type="text"
                           id="name"
                           value={formData.name}
                           onChange={handleChange}
-                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
-                          placeholder={t("contact_form_name")}
+                          onFocus={() => setFocusedField("name")}
+                          onBlur={() => setFocusedField(null)}
+                          className="peer w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all font-medium text-slate-700"
                           required
                         />
                         <label
-                          htmlFor="name"
-                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
+                          className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "name" || formData.name ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
                         >
                           {t("contact_form_name")}
                         </label>
+                        <User
+                          className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
+                          size={20}
+                        />
                       </div>
+                    </div>
 
-                      <div className="relative group">
-                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
-                          <AtSign size={20} />
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Email */}
+                      <div className="relative group/input">
                         <input
                           type="email"
                           id="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
-                          placeholder={t("contact_form_email")}
+                          onFocus={() => setFocusedField("email")}
+                          onBlur={() => setFocusedField(null)}
+                          className="peer w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all font-medium text-slate-700"
                           required
                         />
                         <label
-                          htmlFor="email"
-                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
+                          className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "email" || formData.email ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
                         >
                           {t("contact_form_email")}
                         </label>
+                        <AtSign
+                          className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
+                          size={20}
+                        />
                       </div>
 
-                      <div className="relative group">
-                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
-                          <Phone size={20} />
-                        </div>
+                      {/* Phone */}
+                      <div className="relative group/input">
                         <input
                           type="tel"
                           id="phone"
                           value={formData.phone}
                           onChange={handleChange}
-                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
-                          placeholder={
-                            lang === "tr"
-                              ? "Telefon (isteğe bağlı)"
-                              : "Telefon (optional)"
-                          }
+                          onFocus={() => setFocusedField("phone")}
+                          onBlur={() => setFocusedField(null)}
+                          className="peer w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all font-medium text-slate-700"
                         />
                         <label
-                          htmlFor="phone"
-                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
+                          className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "phone" || formData.phone ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
                         >
                           {lang === "tr" ? "Telefon" : "Telefon"}
                         </label>
-                      </div>
-
-                      <div className="relative group">
-                        <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
-                          <MessageSquare size={20} />
-                        </div>
-                        <input
-                          type="text"
-                          id="subject"
-                          value={formData.subject}
-                          onChange={handleChange}
-                          className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent"
-                          placeholder={lang === "tr" ? "Konu" : "Betreff"}
-                          required
+                        <Phone
+                          className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
+                          size={20}
                         />
-                        <label
-                          htmlFor="subject"
-                          className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
-                        >
-                          {lang === "tr" ? "Konu" : "Betreff"}
-                        </label>
                       </div>
                     </div>
 
-                    <div className="relative group">
-                      <div className="absolute left-4 top-4 text-slate-400 group-focus-within:text-kpf-teal transition-colors">
-                        <MessageSquare size={20} />
-                      </div>
+                    {/* Subject */}
+                    <div className="relative group/input">
+                      <input
+                        type="text"
+                        id="subject"
+                        value={formData.subject}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField("subject")}
+                        onBlur={() => setFocusedField(null)}
+                        className="peer w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all font-medium text-slate-700"
+                        required
+                      />
+                      <label
+                        className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "subject" || formData.subject ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
+                      >
+                        {lang === "tr" ? "Konu" : "Betreff"}
+                      </label>
+                      <MessageSquare
+                        className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
+                        size={20}
+                      />
+                    </div>
+
+                    {/* Message */}
+                    <div className="relative group/input flex-grow">
                       <textarea
                         id="message"
                         value={formData.message}
                         onChange={handleChange}
-                        rows={8}
-                        className="peer w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-kpf-teal focus:ring-4 focus:ring-teal-500/10 outline-none transition-all placeholder-transparent resize-none"
-                        placeholder={t("contact_form_message")}
+                        onFocus={() => setFocusedField("message")}
+                        onBlur={() => setFocusedField(null)}
+                        className="peer w-full h-full min-h-[150px] pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50/30 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 outline-none transition-all font-medium text-slate-700 resize-none"
                         required
                       ></textarea>
                       <label
-                        htmlFor="message"
-                        className="absolute left-12 -top-2.5 bg-white px-2 text-xs font-bold text-slate-400 peer-focus:text-kpf-teal peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-4 peer-placeholder-shown:bg-transparent transition-all cursor-text pointer-events-none"
+                        className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "message" || formData.message ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
                       >
                         {t("contact_form_message")}
                       </label>
+                      <MessageSquare
+                        className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
+                        size={20}
+                      />
                     </div>
 
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-3 group active:scale-[0.98] transition-all ${
+                      className={`w-full font-bold py-5 rounded-2xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-xl ${
                         isSubmitting
-                          ? "bg-slate-300 text-slate-600 cursor-not-allowed"
-                          : "bg-gradient-to-r from-kpf-teal to-teal-800 text-white hover:shadow-lg hover:shadow-teal-800/20 hover:-translate-y-0.5"
+                          ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                          : "bg-gradient-to-r from-teal-600 to-slate-900 text-white hover:shadow-teal-900/20 hover:-translate-y-1"
                       }`}
                     >
                       {isSubmitting ? (
-                        <>
-                          <Loader2 size={20} className="animate-spin" />
-                          <span className="text-lg">
-                            {lang === "tr"
-                              ? "Gönderiliyor..."
-                              : "Wird übermittelt..."}
-                          </span>
-                        </>
+                        <Loader2 size={24} className="animate-spin" />
                       ) : (
                         <>
                           <span className="text-lg">
                             {t("contact_form_send")}
                           </span>
-                          <Send
-                            size={20}
-                            className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform"
-                          />
+                          <Send size={20} />
                         </>
                       )}
                     </button>

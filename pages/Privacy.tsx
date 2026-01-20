@@ -1,5 +1,5 @@
 import React from "react";
-import { Shield, Lock, Eye, FileText } from "lucide-react";
+import { Shield, Lock, Eye } from "lucide-react";
 import { Language } from "../types";
 
 interface PrivacyProps {
@@ -17,9 +17,9 @@ const Privacy: React.FC<PrivacyProps> = ({ lang }) => {
           <Shield size={200} />
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <div className="flex items-center gap-4 mb-4">
-            <Lock className="text-white" size={40} />
-            <h1 className="text-4xl md:text-5xl font-serif font-bold">
+          <div className="flex items-center gap-2 sm:gap-4 mb-4">
+            <Lock className="text-white flex-shrink-0" size={30} />
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-bold">
               {isGerman ? "Datenschutzerklärung" : "Gizlilik Politikası"}
             </h1>
           </div>

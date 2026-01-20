@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Language, PageView, Course } from "../types";
-import { TEXTS, COURSES_DATA } from "../constants";
+import { TEXTS } from "../constants";
 import { coursesApi } from "../services/api";
 
 interface CoursesProps {
@@ -45,11 +45,6 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
     try {
       setLoading(true);
       const data = await coursesApi.getAll(false);
-
-      if (!data || data.length === 0) {
-        setCourses(COURSES_DATA);
-        return;
-      }
 
       const formatDate = (dateISO: string) => {
         try {
@@ -106,7 +101,6 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
       setCourses(formattedCourses);
     } catch (error) {
       console.error("❌ Veri hatası:", error);
-      setCourses(COURSES_DATA);
     } finally {
       setLoading(false);
     }
@@ -341,7 +335,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
                     onClick={() => {
                       const dateOnly = selectedCourse.dateISO
                         .split("T")[0]
-                        .replace(/-/g, "");
+                        .replaceAll(/-/g, "");
                       const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
                         selectedCourse.title[lang],
                       )}&dates=${dateOnly}T100000Z/${dateOnly}T120000Z&details=${encodeURIComponent(
