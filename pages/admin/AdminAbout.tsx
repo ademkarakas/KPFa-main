@@ -13,6 +13,9 @@ interface ApiWhoWeAre {
   id?: string;
   whoWeAreTr: string;
   whoWeAreDe: string;
+  bannerImageUrl: string | null;
+  bannerImageBase64: string | null;
+  bannerImageFileName: string | null;
 }
 
 interface ApiGoals {
@@ -49,6 +52,9 @@ interface ApiFocusArea {
   descriptionTr: string;
   descriptionDe: string;
   order: number;
+  iconUrl: string | null;
+  iconBase64: string | null;
+  iconFileName: string | null;
 }
 
 interface ApiActivityArea {
@@ -130,6 +136,9 @@ const initialForm: AboutForm = {
   whoWeAre: {
     whoWeAreTr: "",
     whoWeAreDe: "",
+    bannerImageUrl: null,
+    bannerImageBase64: null,
+    bannerImageFileName: null,
   },
   goals: {
     goalsTr: "",
@@ -402,6 +411,9 @@ const AdminAbout: React.FC = () => {
                   id: form.whoWeAre.id,
                   whoWeAreTr: form.whoWeAre.whoWeAreTr,
                   whoWeAreDe: form.whoWeAre.whoWeAreDe,
+                  bannerImageUrl: form.whoWeAre.bannerImageUrl,
+                  bannerImageBase64: form.whoWeAre.bannerImageBase64,
+                  bannerImageFileName: form.whoWeAre.bannerImageFileName,
                 }),
               }
             );
@@ -535,6 +547,9 @@ const AdminAbout: React.FC = () => {
                 descriptionTr: fa.descriptionTr,
                 descriptionDe: fa.descriptionDe,
                 order: fa.order,
+                iconUrl: fa.iconUrl,
+                iconBase64: fa.iconBase64,
+                iconFileName: fa.iconFileName,
               }),
             });
             if (res.status === 401) {
@@ -777,6 +792,9 @@ const AdminAbout: React.FC = () => {
           descriptionTr: "",
           descriptionDe: "",
           order: prev.focusAreas.length + 1,
+          iconUrl: null,
+          iconBase64: null,
+          iconFileName: null,
         },
       ],
     }));

@@ -24,6 +24,9 @@ interface ApiWhoWeAre {
   id: string;
   whoWeAreTr: string;
   whoWeAreDe: string;
+  bannerImageUrl: string | null;
+  bannerImageBase64: string | null;
+  bannerImageFileName: string | null;
 }
 
 interface ApiGoals {
@@ -60,6 +63,9 @@ interface ApiFocusArea {
   descriptionTr: string;
   descriptionDe: string;
   order: number;
+  iconUrl: string | null;
+  iconBase64: string | null;
+  iconFileName: string | null;
 }
 
 interface ApiActivityArea {
