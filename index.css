@@ -1,0 +1,21 @@
+@import "./src/styles/design-tokens.css";
+@import "./src/styles/admin-theme.css";
+
+/* Global button standardization: all buttons are medium by default */
+button,
+[role="button"],
+.btn,
+.button,
+.admin-btn {
+  min-height: var(--button-height-md);
+  padding: var(--button-padding-md);
+  font-size: var(--button-font-size-md);
+  border-radius: var(--button-border-radius);
+}
+
+/* Keep icon-only buttons from becoming huge if explicitly marked */
+button[data-size="icon"],
+.btn[data-size="icon"] {
+  min-height: unset;
+  padding: 8px;
+}

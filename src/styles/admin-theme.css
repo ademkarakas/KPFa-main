@@ -1,0 +1,172 @@
+/* Admin Theme - Teal Color System */
+
+/* ========================================
+   LAYOUT COMPONENTS
+   ======================================== */
+
+/* Main Admin Wrapper */
+.admin-wrapper,
+.admin-layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f7f7;
+}
+
+/* Content Area */
+.admin-content,
+.admin-main {
+  flex: 1;
+  padding: 24px;
+  background-color: var(--color-primary-teal-50, #e0f2f1);
+}
+
+/* ========================================
+   DASHBOARD COMPONENTS
+   ======================================== */
+
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* Stat Cards */
+.dashboard-stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  border-top: 4px solid var(--color-primary-teal, #008080);
+  box-shadow: 0 2px 8px rgba(0, 128, 128, 0.08);
+}
+
+.dashboard-stat-card .stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--color-primary-teal, #008080);
+}
+
+.dashboard-stat-card .stat-label {
+  color: var(--color-primary-teal-700, #00796b);
+  font-size: 14px;
+}
+
+/* Chart Containers */
+.dashboard-chart {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border-top: 4px solid var(--color-primary-teal, #008080);
+}
+
+/* ========================================
+   NAVIGATION COMPONENTS
+   ======================================== */
+
+/* Breadcrumb */
+.admin-breadcrumb {
+  background: transparent;
+  padding: 12px 0;
+}
+
+.admin-breadcrumb a {
+  color: var(--color-primary-teal, #008080);
+}
+
+.admin-breadcrumb a:hover {
+  color: var(--color-primary-teal-dark, #006666);
+}
+
+/* Dropdown Menus */
+.admin-dropdown-menu {
+  border: 1px solid var(--color-primary-teal-200, #80cbc4);
+}
+
+.admin-dropdown-item:hover {
+  background-color: var(--color-primary-teal-50, #e0f2f1);
+  color: var(--color-primary-teal, #008080);
+}
+
+/* ========================================
+   FORM ELEMENTS
+   ======================================== */
+
+/* Labels */
+.admin-form label {
+  color: var(--color-primary-teal-800, #00695c);
+  font-weight: 500;
+}
+
+/* Checkboxes & Radios */
+.admin-form input[type="checkbox"]:checked,
+.admin-form input[type="radio"]:checked {
+  accent-color: var(--color-primary-teal, #008080);
+}
+
+/* Select Dropdowns */
+.admin-form select {
+  border-color: var(--color-primary-teal-200, #80cbc4);
+}
+
+/* Toggle Switches */
+.admin-toggle.active {
+  background-color: var(--color-primary-teal, #008080);
+}
+
+/* ========================================
+   INTERACTIVE ELEMENTS
+   ======================================== */
+
+/* Links */
+.admin-link {
+  color: var(--color-primary-teal, #008080);
+}
+
+.admin-link:hover {
+  color: var(--color-primary-teal-dark, #006666);
+}
+
+/* Icons */
+.admin-icon {
+  color: var(--color-primary-teal, #008080);
+}
+
+/* Loading Spinner */
+.admin-spinner {
+  border-color: var(--color-primary-teal-200, #80cbc4);
+  border-top-color: var(--color-primary-teal, #008080);
+}
+
+/* Progress Bar */
+.admin-progress-bar {
+  background-color: var(--color-primary-teal-100, #b2dfdb);
+}
+
+.admin-progress-bar .progress-fill {
+  background-color: var(--color-primary-teal, #008080);
+}
+
+/* ========================================
+   MODAL & OVERLAY
+   ======================================== */
+
+.admin-modal-header {
+  background-color: var(--color-primary-teal, #008080);
+  color: white;
+}
+
+.admin-modal-footer .btn-primary {
+  background-color: var(--color-primary-teal, #008080);
+}
+
+/* ========================================
+   STATUS INDICATORS
+   ======================================== */
+
+.status-active {
+  color: var(--color-primary-teal, #008080);
+}
+
+.status-dot-active {
+  background-color: var(--color-primary-teal, #008080);
+}

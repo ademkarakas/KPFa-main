@@ -8,6 +8,8 @@ import {
   Shield,
   CheckCircle,
 } from "lucide-react";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { TEXTS } from "../../constants";
 
 interface ImprintContent {
   id?: string;
@@ -98,6 +100,8 @@ const EMPTY_STATE: ImprintContent = {
 const AdminImprint: React.FC = () => {
   const [content, setContent] = useState<ImprintContent>(EMPTY_STATE);
   const [loading, setLoading] = useState(false);
+  const { language } = useLanguage();
+  const t = (key: string) => TEXTS[key]?.[language] || key;
 
   useEffect(() => {
     loadImprint();
@@ -132,7 +136,7 @@ const AdminImprint: React.FC = () => {
         phone: data.phone || "",
       });
     } catch (err) {
-      console.warn("Imprint yüklenemedi, boş state kullanılıyor");
+      console.warn("Imprint yüklenemedi, boş state kullanılıyor", err);
     }
   };
 
@@ -229,20 +233,21 @@ const AdminImprint: React.FC = () => {
 
       // POST ise dönen ID'yi kaydet ve veriyi yeniden yükle
       if (isNewRecord) {
-        const result = await res.json();
-        alert("Künye başarıyla oluşturuldu!");
+        await res.json();
+        alert(t("admin_imprint_created"));
         // Backend'den tam veriyi yükle
         await loadImprint();
       } else {
-        alert("Künye başarıyla güncellendi!");
+        alert(t("admin_imprint_updated"));
         // Güncel veriyi yükle
         await loadImprint();
       }
     } catch (err) {
       console.error("Imprint işlem hatası:", err);
       alert(
-        "İşlem başarısız: " +
-          (err instanceof Error ? err.message : "Bilinmeyen hata")
+        t("admin_imprint_failed") +
+          ": " +
+          (err instanceof Error ? err.message : t("admin_unknown_error")),
       );
     } finally {
       setLoading(false);
@@ -255,26 +260,26 @@ const AdminImprint: React.FC = () => {
         {/* Sticky Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-kpf-red/10 rounded-2xl">
-              <Shield className="text-kpf-red" size={28} />
+            <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+              <Shield className="text-kpf-teal" size={28} />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-800">
-                Künye / Impressum
+                {t("admin_imprint_title")}
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" />
-                Yasal bilgileri ve künye içeriğini düzenleyin
+                {t("admin_imprint_subtitle")}
               </p>
             </div>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
           >
             <Save size={18} />
-            {loading ? "Kaydediliyor..." : "Sitede Yayınla"}
+            {loading ? t("admin_saving") : t("admin_publish")}
           </button>
         </div>
 
@@ -284,16 +289,20 @@ const AdminImprint: React.FC = () => {
             {/* Kuruluş Bilgileri */}
             <div className="pb-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Building2 size={24} className="text-kpf-red" />
+                <Building2 size={24} className="text-kpf-teal" />
                 Kuruluş Bilgileri / Organisation
               </h2>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-organization-name"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Kuruluş Adı / Name der Organisation
                   </label>
                   <input
+                    id="imprint-organization-name"
                     type="text"
                     value={content.organizationName}
                     onChange={(e) =>
@@ -308,10 +317,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-organization-type"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Kuruluş Tipi / Organisationstyp
                   </label>
                   <input
+                    id="imprint-organization-type"
                     type="text"
                     value={content.organizationType}
                     onChange={(e) =>
@@ -335,10 +348,14 @@ const AdminImprint: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-3">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-address-street"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Sokak / Straße
                   </label>
                   <input
+                    id="imprint-address-street"
                     type="text"
                     value={content.address.street}
                     onChange={(e) =>
@@ -352,10 +369,14 @@ const AdminImprint: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-address-houseNo"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Bina No / Hausnr.
                   </label>
                   <input
+                    id="imprint-address-houseNo"
                     type="text"
                     value={content.address.houseNo}
                     onChange={(e) =>
@@ -373,10 +394,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-address-zipCode"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Posta Kodu / PLZ
                   </label>
                   <input
+                    id="imprint-address-zipCode"
                     type="text"
                     value={content.address.zipCode}
                     onChange={(e) =>
@@ -394,10 +419,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-address-city"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Şehir / Stadt
                   </label>
                   <input
+                    id="imprint-address-city"
                     type="text"
                     value={content.address.city}
                     onChange={(e) =>
@@ -412,10 +441,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-address-country"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Ülke / Land
                   </label>
                   <input
+                    id="imprint-address-country"
                     type="text"
                     value={content.address.country}
                     onChange={(e) =>
@@ -443,10 +476,14 @@ const AdminImprint: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-email"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     E-Mail
                   </label>
                   <input
+                    id="imprint-email"
                     type="email"
                     value={content.email}
                     onChange={(e) =>
@@ -458,10 +495,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-phone"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Telefon
                   </label>
                   <input
+                    id="imprint-phone"
                     type="tel"
                     value={content.phone}
                     onChange={(e) =>
@@ -489,10 +530,14 @@ const AdminImprint: React.FC = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      <label
+                        htmlFor="imprint-president-firstName"
+                        className="block text-sm font-semibold text-slate-700 mb-2"
+                      >
                         Ad / Vorname
                       </label>
                       <input
+                        id="imprint-president-firstName"
                         type="text"
                         value={content.president.firstName}
                         onChange={(e) =>
@@ -509,10 +554,14 @@ const AdminImprint: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      <label
+                        htmlFor="imprint-president-lastName"
+                        className="block text-sm font-semibold text-slate-700 mb-2"
+                      >
                         Soyad / Nachname
                       </label>
                       <input
+                        id="imprint-president-lastName"
                         type="text"
                         value={content.president.lastName}
                         onChange={(e) =>
@@ -538,10 +587,14 @@ const AdminImprint: React.FC = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      <label
+                        htmlFor="imprint-vicePresident-firstName"
+                        className="block text-sm font-semibold text-slate-700 mb-2"
+                      >
                         Ad / Vorname
                       </label>
                       <input
+                        id="imprint-vicePresident-firstName"
                         type="text"
                         value={content.vicePresident.firstName}
                         onChange={(e) =>
@@ -558,10 +611,14 @@ const AdminImprint: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      <label
+                        htmlFor="imprint-vicePresident-lastName"
+                        className="block text-sm font-semibold text-slate-700 mb-2"
+                      >
                         Soyad / Nachname
                       </label>
                       <input
+                        id="imprint-vicePresident-lastName"
                         type="text"
                         value={content.vicePresident.lastName}
                         onChange={(e) =>
@@ -591,10 +648,14 @@ const AdminImprint: React.FC = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    <label
+                      htmlFor="imprint-legalStructure-tr"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
                       Yasal Yapı (Türkçe) / Rechtsstruktur (TR)
                     </label>
                     <input
+                      id="imprint-legalStructure-tr"
                       type="text"
                       value={content.legalStructureTurkish}
                       onChange={(e) =>
@@ -607,10 +668,14 @@ const AdminImprint: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    <label
+                      htmlFor="imprint-legalStructure-de"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
                       Yasal Yapı (Almanca) / Rechtsstruktur (DE)
                     </label>
                     <input
+                      id="imprint-legalStructure-de"
                       type="text"
                       value={content.legalStructureGerman}
                       onChange={(e) =>
@@ -626,10 +691,14 @@ const AdminImprint: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    <label
+                      htmlFor="imprint-purpose-tr"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
                       Amaç (Türkçe) / Zweck (TR)
                     </label>
                     <textarea
+                      id="imprint-purpose-tr"
                       value={content.purposeTurkish}
                       onChange={(e) =>
                         setContent({
@@ -642,10 +711,14 @@ const AdminImprint: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    <label
+                      htmlFor="imprint-purpose-de"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
                       Amaç (Almanca) / Zweck (DE)
                     </label>
                     <textarea
+                      id="imprint-purpose-de"
                       value={content.purposeGerman}
                       onChange={(e) =>
                         setContent({
@@ -661,10 +734,14 @@ const AdminImprint: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    <label
+                      htmlFor="imprint-taxExemption-tr"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
                       Vergi Muafiyeti (Türkçe) / Steuerbefreiung (TR)
                     </label>
                     <input
+                      id="imprint-taxExemption-tr"
                       type="text"
                       value={content.taxExemptionTurkish}
                       onChange={(e) =>
@@ -677,10 +754,14 @@ const AdminImprint: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    <label
+                      htmlFor="imprint-taxExemption-de"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
                       Vergi Muafiyeti (Almanca) / Steuerbefreiung (DE)
                     </label>
                     <input
+                      id="imprint-taxExemption-de"
                       type="text"
                       value={content.taxExemptionGerman}
                       onChange={(e) =>
@@ -704,10 +785,14 @@ const AdminImprint: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-contentResponsibility-tr"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Türkçe
                   </label>
                   <textarea
+                    id="imprint-contentResponsibility-tr"
                     value={content.contentResponsibilityTurkish}
                     onChange={(e) =>
                       setContent({
@@ -721,10 +806,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-contentResponsibility-de"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Deutsch
                   </label>
                   <textarea
+                    id="imprint-contentResponsibility-de"
                     value={content.contentResponsibilityGerman}
                     onChange={(e) =>
                       setContent({
@@ -747,10 +836,14 @@ const AdminImprint: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-linksResponsibility-tr"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Türkçe
                   </label>
                   <textarea
+                    id="imprint-linksResponsibility-tr"
                     value={content.linksResponsibilityTurkish}
                     onChange={(e) =>
                       setContent({
@@ -764,10 +857,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-linksResponsibility-de"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Deutsch
                   </label>
                   <textarea
+                    id="imprint-linksResponsibility-de"
                     value={content.linksResponsibilityGerman}
                     onChange={(e) =>
                       setContent({
@@ -790,10 +887,14 @@ const AdminImprint: React.FC = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-copyright-tr"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Türkçe
                   </label>
                   <textarea
+                    id="imprint-copyright-tr"
                     value={content.copyrightTurkish}
                     onChange={(e) =>
                       setContent({
@@ -807,10 +908,14 @@ const AdminImprint: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="imprint-copyright-de"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Deutsch
                   </label>
                   <textarea
+                    id="imprint-copyright-de"
                     value={content.copyrightGerman}
                     onChange={(e) =>
                       setContent({

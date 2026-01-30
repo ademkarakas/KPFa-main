@@ -78,6 +78,7 @@ const AdminTeam: React.FC = () => {
       password: "Şifre",
       passwordHint: "Düzenlemede boş bırakılırsa değiştirilmez",
       role: "Rol",
+      status: "Durum",
       roleUser: "Kullanıcı",
       roleUserAdmin: "Kullanıcı Yöneticisi",
       roleSystemAdmin: "Sistem Yöneticisi",
@@ -94,6 +95,7 @@ const AdminTeam: React.FC = () => {
       deleteError: "Silme işlemi başarısız!",
       saveSuccess: "Kullanıcı kaydedildi!",
       saveError: "Kayıt başarısız!",
+      noUsersFound: "Kullanıcı bulunamadı",
     },
     de: {
       pageTitle: "Benutzerverwaltung",
@@ -112,6 +114,7 @@ const AdminTeam: React.FC = () => {
       password: "Passwort",
       passwordHint: "Bei Bearbeitung leer lassen, um es nicht zu ändern",
       role: "Rolle",
+      status: "Status",
       roleUser: "Benutzer",
       roleUserAdmin: "Benutzeradministrator",
       roleSystemAdmin: "Systemadministrator",
@@ -129,6 +132,7 @@ const AdminTeam: React.FC = () => {
       deleteError: "Löschen fehlgeschlagen!",
       saveSuccess: "Benutzer gespeichert!",
       saveError: "Speichern fehlgeschlagen!",
+      noUsersFound: "Keine Benutzer gefunden",
     },
   };
 
@@ -183,78 +187,81 @@ const AdminTeam: React.FC = () => {
     }
   };
 
+  const handleUnauthorizedResponse = (res: Response) => {
+    if (res.status !== 401) return false;
+    handleUnauthorized();
+    return true;
+  };
+
+  const getResponseTextOrFallback = async (res: Response, fallback: string) => {
+    const text = await res.text();
+    return text || fallback;
+  };
+
+  const updateAdmin = async () => {
+    const res = await fetch(`${API_BASE_URL}/Admins/${editingId}`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        id: editingId,
+        email: formData.email,
+        name: formData.name,
+      }),
+    });
+
+    if (handleUnauthorizedResponse(res)) return;
+    if (!res.ok) {
+      throw new Error(await getResponseTextOrFallback(res, "Update failed"));
+    }
+  };
+
+  const updateRoleIfChanged = async () => {
+    if (!editingId || formData.role === originalRole) return;
+
+    const roleRes = await fetch(`${API_BASE_URL}/Admins/${editingId}/role`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        adminId: editingId,
+        role: formData.role,
+      }),
+    });
+
+    if (handleUnauthorizedResponse(roleRes)) return;
+    if (!roleRes.ok) {
+      throw new Error(
+        await getResponseTextOrFallback(roleRes, "Role update failed"),
+      );
+    }
+  };
+
+  const createAdmin = async () => {
+    const res = await fetch(`${API_BASE_URL}/Admins`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        role: formData.role,
+      }),
+    });
+
+    if (handleUnauthorizedResponse(res)) return;
+    if (!res.ok) {
+      throw new Error(await getResponseTextOrFallback(res, "Create failed"));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       if (editingId) {
-        // Update existing admin
-        const res = await fetch(`${API_BASE_URL}/Admins/${editingId}`, {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            id: editingId,
-            email: formData.email,
-            name: formData.name,
-          }),
-        });
-
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText || "Update failed");
-        }
-
-        // Update role if changed
-        if (formData.role !== originalRole) {
-          const roleRes = await fetch(
-            `${API_BASE_URL}/Admins/${editingId}/role`,
-            {
-              method: "PUT",
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                adminId: editingId,
-                role: formData.role,
-              }),
-            }
-          );
-
-          if (roleRes.status === 401) {
-            handleUnauthorized();
-            return;
-          }
-
-          if (!roleRes.ok) {
-            const errorText = await roleRes.text();
-            throw new Error(errorText || "Role update failed");
-          }
-        }
+        await updateAdmin();
+        await updateRoleIfChanged();
       } else {
-        // Create new admin
-        const res = await fetch(`${API_BASE_URL}/Admins`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            name: formData.name,
-            role: formData.role,
-          }),
-        });
-
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText || "Create failed");
-        }
+        await createAdmin();
       }
 
       await loadAdmins();
@@ -320,7 +327,7 @@ const AdminTeam: React.FC = () => {
     (admin) =>
       admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       admin.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      admin.role.toLowerCase().includes(searchQuery.toLowerCase())
+      admin.role.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const formatDate = (dateString: string | null) => {
@@ -333,7 +340,7 @@ const AdminTeam: React.FC = () => {
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-      }
+      },
     );
   };
 
@@ -357,10 +364,21 @@ const AdminTeam: React.FC = () => {
     }
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "SystemAdmin":
+        return t.roleSystemAdmin;
+      case "UserAdmin":
+        return t.roleUserAdmin;
+      default:
+        return t.roleUser;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-red"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-teal"></div>
       </div>
     );
   }
@@ -406,7 +424,7 @@ const AdminTeam: React.FC = () => {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all shadow-lg"
+          className="flex items-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all shadow-lg"
         >
           <Plus size={20} />
           <span className="font-semibold">{t.newUser}</span>
@@ -443,7 +461,7 @@ const AdminTeam: React.FC = () => {
                 {t.role}
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
-                Status
+                {t.status}
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
                 {t.lastLogin}
@@ -478,15 +496,11 @@ const AdminTeam: React.FC = () => {
                 <td className="px-6 py-4">
                   <span
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${getRoleBadgeColor(
-                      admin.role
+                      admin.role,
                     )}`}
                   >
                     {getRoleIcon(admin.role)}
-                    {admin.role === "SystemAdmin"
-                      ? t.roleSystemAdmin
-                      : admin.role === "UserAdmin"
-                      ? t.roleUserAdmin
-                      : t.roleUser}
+                    {getRoleLabel(admin.role)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
@@ -534,7 +548,7 @@ const AdminTeam: React.FC = () => {
         {filteredAdmins.length === 0 && (
           <div className="text-center py-12 text-slate-500">
             <Users size={48} className="mx-auto mb-4 opacity-30" />
-            <p>No users found</p>
+            <p>{t.noUsersFound}</p>
           </div>
         )}
       </div>
@@ -628,7 +642,7 @@ const AdminTeam: React.FC = () => {
               <div className="flex gap-4 pt-4 border-t">
                 <button
                   type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all font-semibold"
                 >
                   <Save size={20} />
                   {editingId ? t.update : t.create}

@@ -1,5 +1,13 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  ReactNode,
+} from "react";
 import { Language } from "../types";
+import i18n from "../src/i18n/config";
 
 interface LanguageContextType {
   language: Language;
@@ -7,7 +15,7 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const useLanguage = () => {
@@ -25,10 +33,30 @@ interface LanguageProviderProps {
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({
   children,
 }) => {
-  const [language, setLanguage] = useState<Language>("tr");
+  const getInitialLanguage = (): Language => {
+    const stored = globalThis.localStorage?.getItem("i18nextLng");
+    if (stored === "de" || stored === "tr") return stored;
+    return "tr";
+  };
+
+  const [language, setLanguage] = useState<Language>(getInitialLanguage());
+
+  useEffect(() => {
+    try {
+      globalThis.localStorage?.setItem("i18nextLng", language);
+    } catch {
+      // ignore storage failures
+    }
+    i18n.changeLanguage(language);
+  }, [language]);
+
+  const value = useMemo(
+    () => ({ language, setLanguage }),
+    [language, setLanguage],
+  );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

@@ -24,9 +24,7 @@ interface ApiWhoWeAre {
   id: string;
   whoWeAreTr: string;
   whoWeAreDe: string;
-  bannerImageUrl: string | null;
-  bannerImageBase64: string | null;
-  bannerImageFileName: string | null;
+  bannerImageSource: string | null;
 }
 
 interface ApiGoals {
@@ -63,9 +61,7 @@ interface ApiFocusArea {
   descriptionTr: string;
   descriptionDe: string;
   order: number;
-  iconUrl: string | null;
-  iconBase64: string | null;
-  iconFileName: string | null;
+  iconSource: string | null;
 }
 
 interface ApiActivityArea {
@@ -129,7 +125,7 @@ interface AboutProps {
 
 const About: React.FC<AboutProps> = ({ lang }) => {
   const [selectedMember, setSelectedMember] = useState<ApiTeamMember | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [aboutData, setAboutData] = useState<ApiAboutUsResponse | null>(null);
@@ -243,7 +239,10 @@ const About: React.FC<AboutProps> = ({ lang }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2">
               <div className="relative h-64 lg:h-auto overflow-hidden">
                 <img
-                  src="https://picsum.photos/800/800?random=community"
+                  src={
+                    aboutData.whoWeAre.bannerImageSource ||
+                    "https://picsum.photos/800/800?random=community"
+                  }
                   alt="Community"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
@@ -417,11 +416,12 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                           : area.descriptionDe}
                       </p>
                     </div>
-                    <div className="flex-1 bg-slate-50 h-64 w-full rounded-2xl flex items-center justify-center text-slate-300 overflow-hidden relative group">
+                    <div className="flex-1 bg-slate-50 h-96 w-full rounded-2xl flex items-center justify-center text-slate-300 overflow-hidden relative group">
                       <img
-                        src={`https://picsum.photos/600/400?random=${
-                          index + 20
-                        }`}
+                        src={
+                          area.iconSource ||
+                          `https://picsum.photos/600/400?random=${index + 20}`
+                        }
                         alt={lang === "tr" ? area.titleTr : area.titleDe}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       />
@@ -630,7 +630,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       {/* Team Section */}
       {aboutData?.teamMembers && aboutData.teamMembers.length > 0 && (
         <div className="bg-slate-50 py-24 border-t border-slate-200">
-          <div className="container mx-auto px-4 max-w-6xl">
+          <div className="container mx-auto px-6 md:px-12 max-w-7xl">
             {/* Başlık */}
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-800 mb-4">
@@ -656,7 +656,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                       key={member.id}
                       type="button"
                       onClick={() => setSelectedMember(member)} // Detayı açan tetikleyici
-                      className="group relative flex flex-col md:flex-row items-center bg-white p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left border border-slate-100 overflow-hidden w-full outline-none focus:ring-2 focus:ring-kpf-teal/20"
+                      className="group relative flex flex-col md:flex-row items-center bg-white p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left border border-slate-100 overflow-visible w-full outline-none focus:ring-2 focus:ring-kpf-teal/20"
                     >
                       {/* Sol: Büyük Teal Avatar */}
                       <div className="relative flex-shrink-0 w-40 h-40 md:w-44 md:h-44 bg-gradient-to-br from-kpf-teal via-kpf-teal to-teal-800 rounded-[2rem] flex items-center justify-center text-white text-4xl md:text-5xl font-bold tracking-tighter overflow-hidden shadow-xl shadow-kpf-teal/20 transition-all duration-500 group-hover:scale-105">

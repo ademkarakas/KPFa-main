@@ -99,14 +99,17 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
             },
             dateISO: item.date || "",
             location: formatAddress(item.address),
-            imageUrl:
-              item.imageUrl ||
-              (item.imageBase64
-                ? `data:image/jpeg;base64,${item.imageBase64}`
-                : item.imageSource || ""),
+            imageUrl: item.imageUrl || item.imageSource || "",
             category: item.category || "Etkinlik",
             videoUrl: item.videoUrl || "",
-            galleryImages: item.galleryImages || [],
+            galleryImages:
+              item.galleryImages && item.galleryImages.length > 0
+                ? item.galleryImages.map((img: any) => ({
+                    url: img.url || "",
+                    base64Data: img.base64Data || "",
+                    fileName: img.fileName || "",
+                  }))
+                : [],
           };
         });
 

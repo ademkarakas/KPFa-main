@@ -38,6 +38,11 @@ const AdminTranslations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sectionFilter, setSectionFilter] = useState<string>("all");
 
+  const emptyStateMessage =
+    searchTerm || sectionFilter !== "all"
+      ? t("admin_translations_no_results")
+      : t("admin_translations_empty");
+
   const sections = [
     "all",
     "common",
@@ -122,32 +127,32 @@ const AdminTranslations: React.FC = () => {
           turkish: editingTranslation.turkish,
           german: editingTranslation.german,
         });
-        alert("Çeviri başarıyla güncellendi!");
+        alert(t("admin_translations_alert_updated"));
       } else {
         // Create new
         await localizationApi.create(editingTranslation);
-        alert("Çeviri başarıyla eklendi!");
+        alert(t("admin_translations_alert_created"));
       }
       await loadTranslations();
       setShowForm(false);
       setEditingTranslation(null);
     } catch (error) {
       console.error("İşlem hatası:", error);
-      alert("İşlem başarısız!");
+      alert(t("admin_operation_failed"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Bu çeviriyi silmek istediğinize emin misiniz?")) {
+    if (confirm(t("admin_translations_delete_confirm"))) {
       try {
         await localizationApi.delete(id);
         await loadTranslations();
-        alert("Çeviri silindi!");
+        alert(t("admin_translations_alert_deleted"));
       } catch (error) {
         console.error("Silme hatası:", error);
-        alert("Silme başarısız!");
+        alert(t("admin_translations_alert_delete_failed"));
       }
     }
   };
@@ -169,19 +174,17 @@ const AdminTranslations: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
             <Globe className="inline-block mr-2" size={32} />
-            Çeviri Yönetimi / Translation Management
+            {t("admin_translations_title")}
           </h1>
-          <p className="text-slate-600">
-            Backend'den gelen dinamik çevirileri yönetin
-          </p>
+          <p className="text-slate-600">{t("admin_translations_subtitle")}</p>
         </div>
         {!showForm && (
           <button
             onClick={handleNew}
-            className="flex items-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all shadow-lg"
+            className="flex items-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all shadow-lg"
           >
             <Plus size={20} />
-            Yeni Çeviri Ekle
+            {t("admin_translations_new")}
           </button>
         )}
       </div>
@@ -194,13 +197,13 @@ const AdminTranslations: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 <Search size={16} className="inline mr-2" />
-                Ara / Search
+                {t("admin_translations_search_label")}
               </label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Key, Turkish, German..."
+                placeholder={t("admin_translations_search_placeholder")}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
               />
             </div>
@@ -209,7 +212,7 @@ const AdminTranslations: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 <Filter size={16} className="inline mr-2" />
-                Bölüm / Section
+                {t("admin_translations_section_label")}
               </label>
               <select
                 value={sectionFilter}
@@ -219,7 +222,7 @@ const AdminTranslations: React.FC = () => {
                 {sections.map((section) => (
                   <option key={section} value={section}>
                     {section === "all"
-                      ? "Tümü / All"
+                      ? t("admin_translations_all_sections")
                       : section.charAt(0).toUpperCase() + section.slice(1)}
                   </option>
                 ))}
@@ -228,7 +231,8 @@ const AdminTranslations: React.FC = () => {
           </div>
 
           <div className="mt-4 text-sm text-slate-600">
-            <strong>{filteredTranslations.length}</strong> çeviri gösteriliyor
+            <strong>{filteredTranslations.length}</strong>{" "}
+            {t("admin_translations_showing")}
           </div>
         </div>
       )}
@@ -238,7 +242,9 @@ const AdminTranslations: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-slate-800">
-              {editingTranslation.id ? "Çeviri Düzenle" : "Yeni Çeviri"}
+              {editingTranslation.id
+                ? t("admin_translations_edit")
+                : t("admin_translations_create")}
             </h2>
             <button
               onClick={() => {
@@ -256,7 +262,8 @@ const AdminTranslations: React.FC = () => {
               {/* Key */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Key <span className="text-red-500">*</span>
+                  {t("admin_translations_key_label")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -270,17 +277,18 @@ const AdminTranslations: React.FC = () => {
                   required
                   disabled={!!editingTranslation.id}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all disabled:bg-slate-100"
-                  placeholder="contact.form.title"
+                  placeholder={t("admin_translations_key_example")}
                 />
                 <p className="text-xs text-slate-500 mt-1">
-                  Nokta ile ayrılmış format: section.subsection.name
+                  {t("admin_translations_key_help")}
                 </p>
               </div>
 
               {/* Section */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Section <span className="text-red-500">*</span>
+                  {t("admin_translations_section_label")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={editingTranslation.section}
@@ -308,7 +316,8 @@ const AdminTranslations: React.FC = () => {
             {/* Turkish */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                🇹🇷 Türkçe <span className="text-red-500">*</span>
+                🇹🇷 {t("common_language_tr")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={editingTranslation.turkish}
@@ -321,14 +330,15 @@ const AdminTranslations: React.FC = () => {
                 required
                 rows={3}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                placeholder="Türkçe çeviri..."
+                placeholder={t("admin_translations_turkish_placeholder")}
               />
             </div>
 
             {/* German */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                🇩🇪 Deutsch <span className="text-red-500">*</span>
+                🇩🇪 {t("common_language_de")}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={editingTranslation.german}
@@ -341,7 +351,7 @@ const AdminTranslations: React.FC = () => {
                 required
                 rows={3}
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all resize-none"
-                placeholder="Deutsche Übersetzung..."
+                placeholder={t("admin_translations_german_placeholder")}
               />
             </div>
 
@@ -350,10 +360,10 @@ const AdminTranslations: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg"
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-lg"
               >
                 <Save size={20} />
-                {loading ? "Kaydediliyor..." : "Kaydet"}
+                {loading ? t("admin_saving") : t("admin_save")}
               </button>
               <button
                 type="button"
@@ -363,7 +373,7 @@ const AdminTranslations: React.FC = () => {
                 }}
                 className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all"
               >
-                İptal
+                {t("admin_cancel")}
               </button>
             </div>
           </form>
@@ -378,19 +388,19 @@ const AdminTranslations: React.FC = () => {
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Key
+                    {t("admin_translations_key_label")}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Section
+                    {t("admin_translations_section_label")}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    🇹🇷 Türkçe
+                    🇹🇷 {t("common_language_tr")}
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    🇩🇪 Deutsch
+                    🇩🇪 {t("common_language_de")}
                   </th>
                   <th className="px-6 py-4 text-right text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    İşlemler
+                    {t("admin_actions")}
                   </th>
                 </tr>
               </thead>
@@ -419,14 +429,14 @@ const AdminTranslations: React.FC = () => {
                         <button
                           onClick={() => handleEdit(translation)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                          title="Düzenle"
+                          title={t("admin_edit")}
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(translation.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                          title="Sil"
+                          title={t("admin_delete")}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -440,9 +450,7 @@ const AdminTranslations: React.FC = () => {
 
           {filteredTranslations.length === 0 && (
             <div className="p-12 text-center text-slate-500">
-              {searchTerm || sectionFilter !== "all"
-                ? "Filtreye uygun çeviri bulunamadı."
-                : "Henüz çeviri eklenmedi. Yeni eklemek için yukarıdaki butonu kullanın."}
+              {emptyStateMessage}
             </div>
           )}
         </div>

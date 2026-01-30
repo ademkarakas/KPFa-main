@@ -20,6 +20,8 @@ interface HomeHero {
   descriptionTr: string;
   descriptionDe: string;
   backgroundImageUrl: string;
+  backgroundImageBase64?: string;
+  backgroundImageFileName?: string;
   primaryButtonTextTr: string;
   primaryButtonTextDe: string;
   secondaryButtonTextTr: string;
@@ -74,6 +76,8 @@ const INITIAL_HOME_DATA: HomeData = {
     descriptionTr: "",
     descriptionDe: "",
     backgroundImageUrl: "",
+    backgroundImageBase64: "",
+    backgroundImageFileName: "",
     primaryButtonTextTr: "",
     primaryButtonTextDe: "",
     secondaryButtonTextTr: "",
@@ -195,7 +199,11 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           subtitleDe: heroSource?.subtitleDe || "",
           descriptionTr: heroSource?.descriptionTr || "",
           descriptionDe: heroSource?.descriptionDe || "",
-          backgroundImageUrl: heroSource?.backgroundImageUrl || "",
+          backgroundImageUrl:
+            heroSource?.backgroundImageUrl ||
+            "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80",
+          backgroundImageBase64: "",
+          backgroundImageFileName: "",
           primaryButtonTextTr: heroSource?.primaryButtonTextTr || "",
           primaryButtonTextDe: heroSource?.primaryButtonTextDe || "",
           secondaryButtonTextTr: heroSource?.secondaryButtonTextTr || "",
@@ -240,10 +248,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
       <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src={
-              homeData.hero.backgroundImageUrl ||
-              "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80"
-            }
+            src={homeData.hero.backgroundImageUrl}
             alt="Culture Hero"
             className="w-full h-full object-cover scale-105 animate-slow-zoom"
           />

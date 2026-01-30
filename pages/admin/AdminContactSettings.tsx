@@ -14,7 +14,7 @@ const QuillEditor = ({
 }: {
   value: string;
   onChange: (val: string) => void;
-  placeholder?: string;
+  placeholder: string;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
@@ -24,7 +24,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder,
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -197,7 +197,7 @@ const AdminContactSettings: React.FC = () => {
   if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-red"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-teal"></div>
       </div>
     );
   }
@@ -223,7 +223,7 @@ const AdminContactSettings: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-6 py-2 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl font-semibold"
+            className="flex items-center justify-center gap-2 px-6 py-2 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl font-semibold"
           >
             <Save size={16} />
             {loading ? t("admin_loading") : t("admin_publish")}
@@ -280,7 +280,7 @@ const AdminContactSettings: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
-                  placeholder="Street"
+                  placeholder={t("admin_address_street")}
                   value={contactInfo.address.street}
                   onChange={(e) =>
                     setContactInfo({
@@ -295,7 +295,7 @@ const AdminContactSettings: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="House No"
+                  placeholder={t("admin_address_houseNo")}
                   value={contactInfo.address.houseNo}
                   onChange={(e) =>
                     setContactInfo({
@@ -310,7 +310,7 @@ const AdminContactSettings: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Postal Code"
+                  placeholder={t("admin_address_postalCode")}
                   value={contactInfo.address.zipCode}
                   onChange={(e) =>
                     setContactInfo({
@@ -325,7 +325,7 @@ const AdminContactSettings: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="City"
+                  placeholder={t("admin_address_city")}
                   value={contactInfo.address.city}
                   onChange={(e) =>
                     setContactInfo({
@@ -337,7 +337,7 @@ const AdminContactSettings: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="State"
+                  placeholder={t("admin_address_state")}
                   value={contactInfo.address.state}
                   onChange={(e) =>
                     setContactInfo({
@@ -352,7 +352,7 @@ const AdminContactSettings: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Country"
+                  placeholder={t("admin_address_country")}
                   value={contactInfo.address.country}
                   onChange={(e) =>
                     setContactInfo({
@@ -378,13 +378,14 @@ const AdminContactSettings: React.FC = () => {
                 onChange={(val) =>
                   setContactInfo({ ...contactInfo, officeHours: val })
                 }
+                placeholder={t("admin_editor_placeholder")}
               />
             </div>
 
             {/* Social Media */}
             <div className="pt-4 border-t border-slate-200 mt-4">
               <h3 className="text-lg font-bold text-slate-800 mb-4">
-                Sosyal Medya
+                {t("admin_social_media")}
               </h3>
               <div className="space-y-3">
                 {["facebook", "instagram", "twitter"].map((sm) => (
@@ -418,7 +419,7 @@ const AdminContactSettings: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 shadow-lg"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition-all disabled:opacity-50 shadow-lg"
               >
                 <Save size={18} />
                 {loading ? t("admin_loading") : t("admin_save")}

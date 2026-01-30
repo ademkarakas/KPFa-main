@@ -291,7 +291,7 @@ const Layout: React.FC<LayoutProps> = ({
 
               <div className="mx-2"></div>
               {/* Donate Button - Special styling */}
-              <div className="ml-3">
+              <div className="ml-1">
                 <button
                   onClick={() => {
                     globalThis.location.hash = "donate";

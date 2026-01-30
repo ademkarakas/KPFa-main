@@ -18,7 +18,7 @@ export interface Activity {
   date: Translation;
   dateISO: string; // ISO 8601 format: YYYY-MM-DD
   location: string;
-  category: "music" | "art" | "education" | "social";
+  category: "music" | "art" | "education" | "social" | "sports";
   imageUrl: string;
   galleryImages?: GalleryImageDto[]; // Galeri fotoğrafları
   videoUrl?: string; // Video URL (opsiyonel)

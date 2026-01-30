@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Heart, Save, Languages, CheckCircle, List } from "lucide-react";
-import { useLanguage } from "../../contexts/LanguageContext";
+import { useTranslation } from "react-i18next";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -28,7 +28,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder: placeholder || "",
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -108,8 +108,7 @@ interface VolunteerData {
 }
 
 const AdminVolunteerPage: React.FC = () => {
-  const { language } = useLanguage();
-  const isGerman = language === "de";
+  const { t } = useTranslation();
   const [data, setData] = useState<VolunteerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -238,15 +237,15 @@ const AdminVolunteerPage: React.FC = () => {
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-red"></div>
-        <p className="mt-4 text-slate-500 font-medium">Veriler yükleniyor...</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-teal"></div>
+        <p className="mt-4 text-slate-500 font-medium">{t("common.loading")}</p>
       </div>
     );
 
   if (!data)
     return (
       <div className="text-center p-10 text-red-500 font-bold">
-        Veri bulunamadı.
+        {t("admin.errors.loadFailed")}
       </div>
     );
 
@@ -256,12 +255,12 @@ const AdminVolunteerPage: React.FC = () => {
         {/* Üst Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-kpf-red/10 rounded-2xl">
-              <Heart className="text-kpf-red" size={28} />
+            <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+              <Heart className="text-kpf-teal" size={28} />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-800">
-                Gönüllülük Yönetimi
+                {t("volunteer.pageTitle")}
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" /> React 19
@@ -272,10 +271,10 @@ const AdminVolunteerPage: React.FC = () => {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
           >
             <Save size={18} />
-            {saving ? "Kaydediliyor..." : "Sitede Yayınla"}
+            {saving ? t("common.saving") : t("common.publish")}
           </button>
         </div>
 
@@ -286,30 +285,31 @@ const AdminVolunteerPage: React.FC = () => {
               <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
                 <Languages size={20} />
                 <span className="font-bold text-xs uppercase tracking-widest">
-                  Türkçe (TR) İçerik
+                  {t("volunteer.admin.trContent")}
                 </span>
               </div>
               <input
                 type="text"
                 value={data.titleTr}
                 onChange={(e) => handleChange("titleTr", e.target.value)}
-                placeholder="Başlık (TR)"
+                placeholder={t("volunteer.admin.placeholders.titleTr")}
                 className="w-full text-4xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200"
               />
               <input
                 type="text"
                 value={data.subtitleTr}
                 onChange={(e) => handleChange("subtitleTr", e.target.value)}
-                placeholder="Alt Başlık (TR)"
+                placeholder={t("volunteer.admin.placeholders.subtitleTr")}
                 className="w-full text-lg text-slate-500 font-medium border-none focus:ring-0 p-0"
               />
               <div className="pt-4 border-t border-slate-50">
                 <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                  Giriş Metni
+                  {t("volunteer.admin.labels.introTr")}
                 </label>
                 <QuillEditor
                   value={data.introTr}
                   onChange={(val) => handleChange("introTr", val)}
+                  placeholder={t("volunteer.admin.placeholders.editor")}
                 />
               </div>
             </div>
@@ -318,30 +318,31 @@ const AdminVolunteerPage: React.FC = () => {
               <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
                 <Languages size={20} />
                 <span className="font-bold text-xs uppercase tracking-widest">
-                  Almanca (DE) İçerik
+                  {t("volunteer.admin.deContent")}
                 </span>
               </div>
               <input
                 type="text"
                 value={data.titleDe}
                 onChange={(e) => handleChange("titleDe", e.target.value)}
-                placeholder="Haupttitel (DE)"
+                placeholder={t("volunteer.admin.placeholders.titleDe")}
                 className="w-full text-4xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200"
               />
               <input
                 type="text"
                 value={data.subtitleDe}
                 onChange={(e) => handleChange("subtitleDe", e.target.value)}
-                placeholder="Untertitel (DE)"
+                placeholder={t("volunteer.admin.placeholders.subtitleDe")}
                 className="w-full text-lg text-slate-500 font-medium border-none focus:ring-0 p-0"
               />
               <div className="pt-4 border-t border-slate-50">
                 <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                  Einleitungstext
+                  {t("volunteer.admin.labels.introDe")}
                 </label>
                 <QuillEditor
                   value={data.introDe}
                   onChange={(val) => handleChange("introDe", val)}
+                  placeholder={t("volunteer.admin.placeholders.editor")}
                 />
               </div>
             </div>
@@ -378,14 +379,17 @@ const AdminVolunteerPage: React.FC = () => {
                       onChange={(e) =>
                         handleSectionChange(key, "headingTr", e.target.value)
                       }
-                      placeholder="Başlık (TR)"
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-red outline-none pb-2 transition-all"
+                      placeholder={t(
+                        "volunteer.admin.placeholders.sectionHeadingTr",
+                      )}
+                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-teal outline-none pb-2 transition-all"
                     />
                     <QuillEditor
                       value={section.bodyTr}
                       onChange={(val) =>
                         handleSectionChange(key, "bodyTr", val)
                       }
+                      placeholder={t("volunteer.admin.placeholders.editor")}
                     />
                   </div>
 
@@ -396,14 +400,17 @@ const AdminVolunteerPage: React.FC = () => {
                       onChange={(e) =>
                         handleSectionChange(key, "headingDe", e.target.value)
                       }
-                      placeholder="Überschrift (DE)"
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-red outline-none pb-2 transition-all"
+                      placeholder={t(
+                        "volunteer.admin.placeholders.sectionHeadingDe",
+                      )}
+                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-teal outline-none pb-2 transition-all"
                     />
                     <QuillEditor
                       value={section.bodyDe}
                       onChange={(val) =>
                         handleSectionChange(key, "bodyDe", val)
                       }
+                      placeholder={t("volunteer.admin.placeholders.editor")}
                     />
                   </div>
 
@@ -412,7 +419,7 @@ const AdminVolunteerPage: React.FC = () => {
                     <div className="lg:col-span-2 mt-4 pt-6 border-t border-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {section.items.map((item, iidx) => (
                         <div
-                          key={iidx}
+                          key={`${key}-${item.icon}-${item.titleTr}-${item.titleDe}`}
                           className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 items-center"
                         >
                           <input
@@ -426,8 +433,8 @@ const AdminVolunteerPage: React.FC = () => {
                                 e.target.value,
                               )
                             }
-                            className="w-12 h-12 text-center rounded-xl bg-white border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-kpf-red"
-                            placeholder="Ikon"
+                            className="w-12 h-12 text-center rounded-xl bg-white border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-kpf-teal"
+                            placeholder={t("volunteer.admin.placeholders.icon")}
                           />
                           <div className="flex-1 space-y-1">
                             <input
@@ -442,7 +449,9 @@ const AdminVolunteerPage: React.FC = () => {
                                 )
                               }
                               className="w-full px-2 py-1 bg-white rounded-lg text-sm border-none shadow-sm"
-                              placeholder="TR Madde"
+                              placeholder={t(
+                                "volunteer.admin.placeholders.itemTr",
+                              )}
                             />
                             <input
                               type="text"
@@ -456,7 +465,9 @@ const AdminVolunteerPage: React.FC = () => {
                                 )
                               }
                               className="w-full px-2 py-1 bg-white rounded-lg text-sm border-none shadow-sm"
-                              placeholder="DE Punkt"
+                              placeholder={t(
+                                "volunteer.admin.placeholders.itemDe",
+                              )}
                             />
                           </div>
                         </div>
@@ -473,7 +484,7 @@ const AdminVolunteerPage: React.FC = () => {
       {/* Editor Özelleştirme CSS */}
       <style>{`
         .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
-        .quill-modern-container:focus-within { background: #fff; border-color: #ef4444; }
+        .quill-modern-container:focus-within { background: #fff; border-color: #006778; }
         .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }

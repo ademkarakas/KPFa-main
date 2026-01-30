@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import AdminLayout from "./AdminLayout";
+import { useTranslation } from "react-i18next";
 
 const AdminAboutPage: React.FC = () => {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState("about");
   const handleLogout = () => {
     // logout logic
@@ -13,7 +15,7 @@ const AdminAboutPage: React.FC = () => {
       onLogout={handleLogout}
     >
       <div>
-        <h1>Admin About Yönetimi</h1>
+        <h1>{t("admin_about_page_title")}</h1>
         {/* AdminAbout form component */}
       </div>
     </AdminLayout>

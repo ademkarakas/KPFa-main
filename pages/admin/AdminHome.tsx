@@ -6,7 +6,6 @@ import {
   Edit,
   Trash2,
   Eye,
-  EyeOff,
   Sparkles,
   Heart,
   CheckCircle,
@@ -33,7 +32,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder: placeholder,
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -85,17 +84,19 @@ const QuillEditor = ({
 
 interface HeroContent {
   id: string;
-  title_tr: string;
-  title_de: string;
-  subtitle_tr: string;
-  subtitle_de: string;
-  description_tr: string;
-  description_de: string;
+  titleTr: string;
+  titleDe: string;
+  subtitleTr: string;
+  subtitleDe: string;
+  descriptionTr: string;
+  descriptionDe: string;
   backgroundImageUrl: string;
-  primaryButtonText_tr: string;
-  primaryButtonText_de: string;
-  secondaryButtonText_tr: string;
-  secondaryButtonText_de: string;
+  backgroundImageBase64?: string;
+  backgroundImageFileName?: string;
+  primaryButtonTextTr: string;
+  primaryButtonTextDe: string;
+  secondaryButtonTextTr: string;
+  secondaryButtonTextDe: string;
 }
 
 interface Feature {
@@ -125,17 +126,19 @@ interface CTASection {
 const AdminHome: React.FC = () => {
   const [heroContent, setHeroContent] = useState<HeroContent>({
     id: "",
-    title_tr: "",
-    title_de: "",
-    subtitle_tr: "",
-    subtitle_de: "",
-    description_tr: "",
-    description_de: "",
+    titleTr: "",
+    titleDe: "",
+    subtitleTr: "",
+    subtitleDe: "",
+    descriptionTr: "",
+    descriptionDe: "",
     backgroundImageUrl: "",
-    primaryButtonText_tr: "",
-    primaryButtonText_de: "",
-    secondaryButtonText_tr: "",
-    secondaryButtonText_de: "",
+    backgroundImageBase64: "",
+    backgroundImageFileName: "",
+    primaryButtonTextTr: "",
+    primaryButtonTextDe: "",
+    secondaryButtonTextTr: "",
+    secondaryButtonTextDe: "",
   });
 
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -184,17 +187,19 @@ const AdminHome: React.FC = () => {
       const heroSource = heroApiData || data.hero;
       setHeroContent({
         id: heroSource?.id || "",
-        title_tr: heroSource?.titleTr || "",
-        title_de: heroSource?.titleDe || "",
-        subtitle_tr: heroSource?.subtitleTr || "",
-        subtitle_de: heroSource?.subtitleDe || "",
-        description_tr: heroSource?.descriptionTr || "",
-        description_de: heroSource?.descriptionDe || "",
+        titleTr: heroSource?.titleTr || "",
+        titleDe: heroSource?.titleDe || "",
+        subtitleTr: heroSource?.subtitleTr || "",
+        subtitleDe: heroSource?.subtitleDe || "",
+        descriptionTr: heroSource?.descriptionTr || "",
+        descriptionDe: heroSource?.descriptionDe || "",
         backgroundImageUrl: heroSource?.backgroundImageUrl || "",
-        primaryButtonText_tr: heroSource?.primaryButtonTextTr || "",
-        primaryButtonText_de: heroSource?.primaryButtonTextDe || "",
-        secondaryButtonText_tr: heroSource?.secondaryButtonTextTr || "",
-        secondaryButtonText_de: heroSource?.secondaryButtonTextDe || "",
+        backgroundImageBase64: "", // Backend'den gelen veri yüklenince base64'ü temizle (url-based görseller için)
+        backgroundImageFileName: "", // Dosya adını da temizle
+        primaryButtonTextTr: heroSource?.primaryButtonTextTr || "",
+        primaryButtonTextDe: heroSource?.primaryButtonTextDe || "",
+        secondaryButtonTextTr: heroSource?.secondaryButtonTextTr || "",
+        secondaryButtonTextDe: heroSource?.secondaryButtonTextDe || "",
       });
 
       // Features
@@ -206,7 +211,7 @@ const AdminHome: React.FC = () => {
           description_tr: f.descriptionTr || "",
           description_de: f.descriptionDe || "",
           icon: f.icon || "users",
-        }))
+        })),
       );
 
       // Instagram
@@ -248,17 +253,22 @@ const AdminHome: React.FC = () => {
         },
         body: JSON.stringify({
           id: heroContent.id || undefined,
-          titleTr: heroContent.title_tr,
-          titleDe: heroContent.title_de,
-          subtitleTr: heroContent.subtitle_tr,
-          subtitleDe: heroContent.subtitle_de,
-          descriptionTr: heroContent.description_tr,
-          descriptionDe: heroContent.description_de,
-          backgroundImageUrl: heroContent.backgroundImageUrl,
-          primaryButtonTextTr: heroContent.primaryButtonText_tr,
-          primaryButtonTextDe: heroContent.primaryButtonText_de,
-          secondaryButtonTextTr: heroContent.secondaryButtonText_tr,
-          secondaryButtonTextDe: heroContent.secondaryButtonText_de,
+          titleTr: heroContent.titleTr,
+          titleDe: heroContent.titleDe,
+          subtitleTr: heroContent.subtitleTr,
+          subtitleDe: heroContent.subtitleDe,
+          descriptionTr: heroContent.descriptionTr,
+          descriptionDe: heroContent.descriptionDe,
+          // Hem URL hem Base64 göndermeyin - sadece birini gönder
+          backgroundImageUrl: heroContent.backgroundImageBase64
+            ? null
+            : heroContent.backgroundImageUrl,
+          backgroundImageBase64: heroContent.backgroundImageBase64 || null,
+          backgroundImageFileName: heroContent.backgroundImageFileName || null,
+          primaryButtonTextTr: heroContent.primaryButtonTextTr,
+          primaryButtonTextDe: heroContent.primaryButtonTextDe,
+          secondaryButtonTextTr: heroContent.secondaryButtonTextTr,
+          secondaryButtonTextDe: heroContent.secondaryButtonTextDe,
         }),
       });
       if (response.status === 401) {
@@ -268,24 +278,42 @@ const AdminHome: React.FC = () => {
       }
       if (!response.ok) throw new Error("Save failed");
 
-      // Kayıt başarılı ise verileri yeniden yükle
-      await loadHomeContent();
+      // Response'tan güncellenmiş verileri al
+      if (heroContent.id) {
+        // PUT işlemi - backend yeni URL'yi döndürüyor
+        const updatedHero = await response.json();
+        setHeroContent({
+          id: updatedHero.id,
+          titleTr: updatedHero.titleTr,
+          titleDe: updatedHero.titleDe,
+          subtitleTr: updatedHero.subtitleTr,
+          subtitleDe: updatedHero.subtitleDe,
+          descriptionTr: updatedHero.descriptionTr,
+          descriptionDe: updatedHero.descriptionDe,
+          backgroundImageUrl: updatedHero.backgroundImageUrl || "",
+          backgroundImageBase64: "", // Kaydedildikten sonra base64'ü temizle
+          backgroundImageFileName: "",
+          primaryButtonTextTr: updatedHero.primaryButtonTextTr,
+          primaryButtonTextDe: updatedHero.primaryButtonTextDe,
+          secondaryButtonTextTr: updatedHero.secondaryButtonTextTr,
+          secondaryButtonTextDe: updatedHero.secondaryButtonTextDe,
+        });
+        console.log("✅ Hero updated:", updatedHero);
+      } else {
+        // POST işlemi - verileri yeniden yükle
+        await loadHomeContent();
+      }
 
       setMessage({
         type: "success",
-        text:
-          language === "tr"
-            ? "Hero bölümü kaydedildi"
-            : "Hero-Bereich gespeichert",
+        text: t("admin_home_hero_saved"),
       });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
+      console.error("Hero kaydetme hatası:", error);
       setMessage({
         type: "error",
-        text:
-          language === "tr"
-            ? "Kaydedilirken hata oluştu"
-            : "Fehler beim Speichern",
+        text: t("admin_save_failed"),
       });
     } finally {
       setSaving(false);
@@ -310,7 +338,7 @@ const AdminHome: React.FC = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const isNew = !features.find((f) => f.id === editingFeature.id);
+      const isNew = !features.some((f) => f.id === editingFeature.id);
 
       // Mevcut feature'dan color'ı al veya varsayılan kullan
       const existingFeature = features.find((f) => f.id === editingFeature.id);
@@ -362,24 +390,21 @@ const AdminHome: React.FC = () => {
               f.descriptionDe || f.DescriptionDe || f.description_de || "",
             icon: (["users", "sparkles", "calendar"] as const)[idx % 3],
             color: f.color || f.Color || "#FF6B35",
-          }))
+          })),
         );
       }
 
       setEditingFeature(null);
       setMessage({
         type: "success",
-        text: language === "tr" ? "Özellik kaydedildi" : "Funktion gespeichert",
+        text: t("admin_feature_saved"),
       });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error("Feature kaydetme hatası:", error);
       setMessage({
         type: "error",
-        text:
-          language === "tr"
-            ? "Kaydedilirken hata oluştu"
-            : "Fehler beim Speichern",
+        text: t("admin_save_failed"),
       });
       setTimeout(() => setMessage(null), 3000);
     } finally {
@@ -398,7 +423,7 @@ const AdminHome: React.FC = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.status === 401) {
@@ -414,15 +439,14 @@ const AdminHome: React.FC = () => {
       setFeatures(features.filter((f) => f.id !== id));
       setMessage({
         type: "success",
-        text: language === "tr" ? "Özellik silindi" : "Funktion gelöscht",
+        text: t("admin_feature_deleted"),
       });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
       console.error("Feature silme hatası:", error);
       setMessage({
         type: "error",
-        text:
-          language === "tr" ? "Silinirken hata oluştu" : "Fehler beim Löschen",
+        text: t("admin_delete_failed"),
       });
       setTimeout(() => setMessage(null), 3000);
     } finally {
@@ -449,7 +473,7 @@ const AdminHome: React.FC = () => {
             descriptionDe: instagramSection.description_de,
             instagramHandle: instagramSection.instagramHandle,
           }),
-        }
+        },
       );
       if (response.status === 401) {
         localStorage.removeItem("adminToken");
@@ -459,19 +483,14 @@ const AdminHome: React.FC = () => {
       if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
-        text:
-          language === "tr"
-            ? "Instagram bölümü kaydedildi"
-            : "Instagram-Bereich gespeichert",
+        text: t("admin_home_instagram_saved"),
       });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
+      console.error("Instagram kaydetme hatası:", error);
       setMessage({
         type: "error",
-        text:
-          language === "tr"
-            ? "Kaydedilirken hata oluştu"
-            : "Fehler beim Speichern",
+        text: t("admin_save_failed"),
       });
     } finally {
       setSaving(false);
@@ -503,19 +522,14 @@ const AdminHome: React.FC = () => {
       if (!response.ok) throw new Error("Save failed");
       setMessage({
         type: "success",
-        text:
-          language === "tr"
-            ? "CTA bölümü kaydedildi"
-            : "CTA-Bereich gespeichert",
+        text: t("admin_home_cta_saved"),
       });
       setTimeout(() => setMessage(null), 3000);
     } catch (error) {
+      console.error("CTA kaydetme hatası:", error);
       setMessage({
         type: "error",
-        text:
-          language === "tr"
-            ? "Kaydedilirken hata oluştu"
-            : "Fehler beim Speichern",
+        text: t("admin_save_failed"),
       });
     } finally {
       setSaving(false);
@@ -540,18 +554,16 @@ const AdminHome: React.FC = () => {
       {/* Sticky Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50 mb-8">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-kpf-red/10 rounded-2xl">
-            <Sparkles className="text-kpf-red" size={28} />
+          <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+            <Sparkles className="text-kpf-teal" size={28} />
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-800">
-              {language === "tr" ? "Anasayfa Yönetimi" : "Homepage-Verwaltung"}
+              {t("admin_home_title")}
             </h1>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
               <CheckCircle size={10} className="text-green-500" />
-              {language === "tr"
-                ? "Anasayfa içeriğini düzenle"
-                : "Homepage bearbeiten"}
+              {t("admin_home_subtitle")}
             </p>
           </div>
         </div>
@@ -559,16 +571,10 @@ const AdminHome: React.FC = () => {
           <button
             onClick={saveHeroContent}
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
           >
             <Save size={18} />
-            {saving
-              ? language === "tr"
-                ? "Kaydediliyor..."
-                : "Wird gespeichert..."
-              : language === "tr"
-              ? "Sitede Yayınla"
-              : "Veröffentlichen"}
+            {saving ? t("admin_saving") : t("admin_publish")}
           </button>
         </div>
       </div>
@@ -577,95 +583,93 @@ const AdminHome: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
           <Eye size={24} className="text-blue-600" />
-          {language === "tr" ? "Hero Bölümü" : "Hero-Bereich"}
+          {t("admin_section_hero")}
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Başlık (TR)" : "Titel (TR)"}
+              {t("admin_field_title_tr")}
             </label>
             <input
               type="text"
-              value={heroContent.title_tr}
+              value={heroContent.titleTr}
               onChange={(e) =>
-                setHeroContent({ ...heroContent, title_tr: e.target.value })
+                setHeroContent({ ...heroContent, titleTr: e.target.value })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Başlık (DE)" : "Titel (DE)"}
+              {t("admin_field_title_de")}
             </label>
             <input
               type="text"
-              value={heroContent.title_de}
+              value={heroContent.titleDe}
               onChange={(e) =>
-                setHeroContent({ ...heroContent, title_de: e.target.value })
+                setHeroContent({ ...heroContent, titleDe: e.target.value })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Alt Başlık (TR)" : "Untertitel (TR)"}
+              {t("admin_field_subtitle_tr")}
             </label>
             <QuillEditor
-              value={heroContent.subtitle_tr}
+              value={heroContent.subtitleTr}
               onChange={(val) =>
-                setHeroContent({ ...heroContent, subtitle_tr: val })
+                setHeroContent({ ...heroContent, subtitleTr: val })
               }
-              placeholder="Alt başlık (Türkçe)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Alt Başlık (DE)" : "Untertitel (DE)"}
+              {t("admin_field_subtitle_de")}
             </label>
             <QuillEditor
-              value={heroContent.subtitle_de}
+              value={heroContent.subtitleDe}
               onChange={(val) =>
-                setHeroContent({ ...heroContent, subtitle_de: val })
+                setHeroContent({ ...heroContent, subtitleDe: val })
               }
-              placeholder="Untertitel (Deutsch)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Açıklama (TR)" : "Beschreibung (TR)"}
+              {t("admin_field_description_tr")}
             </label>
             <QuillEditor
-              value={heroContent.description_tr}
+              value={heroContent.descriptionTr}
               onChange={(val) =>
-                setHeroContent({ ...heroContent, description_tr: val })
+                setHeroContent({ ...heroContent, descriptionTr: val })
               }
-              placeholder="Açıklama (Türkçe)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Açıklama (DE)" : "Beschreibung (DE)"}
+              {t("admin_field_description_de")}
             </label>
             <QuillEditor
-              value={heroContent.description_de}
+              value={heroContent.descriptionDe}
               onChange={(val) =>
-                setHeroContent({ ...heroContent, description_de: val })
+                setHeroContent({ ...heroContent, descriptionDe: val })
               }
-              placeholder="Beschreibung (Deutsch)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div className="lg:col-span-2">
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr"
-                ? "Arka Plan Görsel URL"
-                : "Hintergrundbild URL"}
+              {t("admin_field_background_image_url")}
             </label>
             <input
               type="text"
@@ -676,84 +680,127 @@ const AdminHome: React.FC = () => {
                   backgroundImageUrl: e.target.value,
                 })
               }
-              placeholder="https://..."
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              placeholder={t("admin_url_placeholder")}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              {t("admin_field_background_image_file")}
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const base64 = event.target?.result as string;
+                    setHeroContent({
+                      ...heroContent,
+                      backgroundImageBase64: base64,
+                      backgroundImageFileName: file.name,
+                      backgroundImageUrl: "", // Yeni dosya yüklendiyse URL'yi temizle
+                    });
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+            />
+            {heroContent.backgroundImageFileName && (
+              <p className="mt-2 text-sm text-green-600">
+                ✓ {heroContent.backgroundImageFileName}
+              </p>
+            )}
+            {heroContent.backgroundImageBase64 && (
+              <div className="mt-4 rounded-lg overflow-hidden border-2 border-green-200">
+                <img
+                  src={heroContent.backgroundImageBase64}
+                  alt="Preview"
+                  className="w-full h-48 object-cover"
+                />
+              </div>
+            )}
+            {!heroContent.backgroundImageBase64 &&
+              heroContent.backgroundImageUrl && (
+                <div className="mt-4 rounded-lg overflow-hidden border-2 border-slate-200">
+                  <img
+                    src={heroContent.backgroundImageUrl}
+                    alt="Current"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              {t("admin_field_primary_button_text_tr")}
+            </label>
+            <input
+              type="text"
+              value={heroContent.primaryButtonTextTr}
+              onChange={(e) =>
+                setHeroContent({
+                  ...heroContent,
+                  primaryButtonTextTr: e.target.value,
+                })
+              }
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr"
-                ? "Ana Buton Metni (TR)"
-                : "Primär-Schaltflächentext (TR)"}
+              {t("admin_field_primary_button_text_de")}
             </label>
             <input
               type="text"
-              value={heroContent.primaryButtonText_tr}
+              value={heroContent.primaryButtonTextDe}
               onChange={(e) =>
                 setHeroContent({
                   ...heroContent,
-                  primaryButtonText_tr: e.target.value,
+                  primaryButtonTextDe: e.target.value,
                 })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr"
-                ? "Ana Buton Metni (DE)"
-                : "Primär-Schaltflächentext (DE)"}
+              {t("admin_field_secondary_button_text_tr")}
             </label>
             <input
               type="text"
-              value={heroContent.primaryButtonText_de}
+              value={heroContent.secondaryButtonTextTr}
               onChange={(e) =>
                 setHeroContent({
                   ...heroContent,
-                  primaryButtonText_de: e.target.value,
+                  secondaryButtonTextTr: e.target.value,
                 })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr"
-                ? "İkincil Buton Metni (TR)"
-                : "Sekundär-Schaltflächentext (TR)"}
+              {t("admin_field_secondary_button_text_de")}
             </label>
             <input
               type="text"
-              value={heroContent.secondaryButtonText_tr}
+              value={heroContent.secondaryButtonTextDe}
               onChange={(e) =>
                 setHeroContent({
                   ...heroContent,
-                  secondaryButtonText_tr: e.target.value,
+                  secondaryButtonTextDe: e.target.value,
                 })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr"
-                ? "İkincil Buton Metni (DE)"
-                : "Sekundär-Schaltflächentext (DE)"}
-            </label>
-            <input
-              type="text"
-              value={heroContent.secondaryButtonText_de}
-              onChange={(e) =>
-                setHeroContent({
-                  ...heroContent,
-                  secondaryButtonText_de: e.target.value,
-                })
-              }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
         </div>
@@ -761,10 +808,10 @@ const AdminHome: React.FC = () => {
         <button
           onClick={saveHeroContent}
           disabled={saving}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="bg-kpf-teal text-white px-6 py-2 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center gap-2 disabled:opacity-50"
         >
           <Save size={20} />
-          {language === "tr" ? "Kaydet" : "Speichern"}
+          {t("admin_save")}
         </button>
       </div>
 
@@ -773,15 +820,13 @@ const AdminHome: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <Sparkles size={24} className="text-green-600" />
-            {language === "tr"
-              ? "Özellikler (3 Pillar)"
-              : "Features (3 Säulen)"}
+            {t("admin_home_features_title")}
           </h2>
           <button
             onClick={addFeature}
             className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center gap-2"
           >
-            <Plus size={20} /> {language === "tr" ? "Ekle" : "Hinzufügen"}
+            <Plus size={20} /> {t("admin_add")}
           </button>
         </div>
 
@@ -804,14 +849,14 @@ const AdminHome: React.FC = () => {
                 <button
                   onClick={() => setEditingFeature(feature)}
                   className="text-blue-600 hover:text-blue-800 p-2"
-                  title={language === "tr" ? "Düzenle" : "Bearbeiten"}
+                  title={t("admin_edit")}
                 >
                   <Edit size={18} />
                 </button>
                 <button
                   onClick={() => deleteFeature(feature.id)}
                   className="text-red-600 hover:text-red-800 p-2"
-                  title={language === "tr" ? "Sil" : "Löschen"}
+                  title={t("admin_delete")}
                 >
                   <Trash2 size={18} />
                 </button>
@@ -826,9 +871,7 @@ const AdminHome: React.FC = () => {
             <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-slate-800">
-                  {language === "tr"
-                    ? "Özelliği Düzenle"
-                    : "Feature bearbeiten"}
+                  {t("admin_home_edit_feature")}
                 </h3>
                 <button
                   onClick={() => setEditingFeature(null)}
@@ -841,7 +884,7 @@ const AdminHome: React.FC = () => {
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    {language === "tr" ? "İkon Türü" : "Icon-Typ"}
+                    {t("admin_field_icon_type")}
                   </label>
                   <select
                     value={editingFeature.icon}
@@ -854,24 +897,18 @@ const AdminHome: React.FC = () => {
                           | "calendar",
                       })
                     }
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                   >
-                    <option value="users">
-                      {language === "tr" ? "Kişiler" : "Personen"}
-                    </option>
-                    <option value="sparkles">
-                      {language === "tr" ? "Parlak" : "Glitzernd"}
-                    </option>
-                    <option value="calendar">
-                      {language === "tr" ? "Takvim" : "Kalender"}
-                    </option>
+                    <option value="users">{t("admin_icon_users")}</option>
+                    <option value="sparkles">{t("admin_icon_sparkles")}</option>
+                    <option value="calendar">{t("admin_icon_calendar")}</option>
                   </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      {language === "tr" ? "Başlık (TR)" : "Titel (TR)"}
+                      {t("admin_field_title_tr")}
                     </label>
                     <input
                       type="text"
@@ -882,13 +919,13 @@ const AdminHome: React.FC = () => {
                           title_tr: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      {language === "tr" ? "Başlık (DE)" : "Titel (DE)"}
+                      {t("admin_field_title_de")}
                     </label>
                     <input
                       type="text"
@@ -899,7 +936,7 @@ const AdminHome: React.FC = () => {
                           title_de: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                     />
                   </div>
                 </div>
@@ -907,9 +944,7 @@ const AdminHome: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      {language === "tr"
-                        ? "Açıklama (TR)"
-                        : "Beschreibung (TR)"}
+                      {t("admin_field_description_tr")}
                     </label>
                     <QuillEditor
                       value={editingFeature.description_tr}
@@ -919,15 +954,13 @@ const AdminHome: React.FC = () => {
                           description_tr: val,
                         })
                       }
-                      placeholder="Açıklama (Türkçe)..."
+                      placeholder={t("admin_editor_placeholder")}
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      {language === "tr"
-                        ? "Açıklama (DE)"
-                        : "Beschreibung (DE)"}
+                      {t("admin_field_description_de")}
                     </label>
                     <QuillEditor
                       value={editingFeature.description_de}
@@ -937,7 +970,7 @@ const AdminHome: React.FC = () => {
                           description_de: val,
                         })
                       }
-                      placeholder="Beschreibung (Deutsch)..."
+                      placeholder={t("admin_editor_placeholder")}
                     />
                   </div>
                 </div>
@@ -946,16 +979,16 @@ const AdminHome: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={saveFeature}
-                  className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-kpf-teal text-white px-4 py-2 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center justify-center gap-2"
                 >
                   <Save size={20} />
-                  {language === "tr" ? "Kaydet" : "Speichern"}
+                  {t("admin_save")}
                 </button>
                 <button
                   onClick={() => setEditingFeature(null)}
                   className="flex-1 bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold hover:bg-slate-400 transition-colors"
                 >
-                  {language === "tr" ? "İptal" : "Abbrechen"}
+                  {t("admin_cancel")}
                 </button>
               </div>
             </div>
@@ -967,13 +1000,13 @@ const AdminHome: React.FC = () => {
       <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
           <Eye size={24} className="text-pink-600" />
-          Instagram {language === "tr" ? "Bölümü" : "Bereich"}
+          {t("admin_section_instagram")}
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Başlık (TR)" : "Titel (TR)"}
+              {t("admin_field_title_tr")}
             </label>
             <input
               type="text"
@@ -984,13 +1017,13 @@ const AdminHome: React.FC = () => {
                   title_tr: e.target.value,
                 })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Başlık (DE)" : "Titel (DE)"}
+              {t("admin_field_title_de")}
             </label>
             <input
               type="text"
@@ -1001,13 +1034,13 @@ const AdminHome: React.FC = () => {
                   title_de: e.target.value,
                 })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Açıklama (TR)" : "Beschreibung (TR)"}
+              {t("admin_field_description_tr")}
             </label>
             <QuillEditor
               value={instagramSection.description_tr}
@@ -1017,13 +1050,13 @@ const AdminHome: React.FC = () => {
                   description_tr: val,
                 })
               }
-              placeholder="Açıklama (Türkçe)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Açıklama (DE)" : "Beschreibung (DE)"}
+              {t("admin_field_description_de")}
             </label>
             <QuillEditor
               value={instagramSection.description_de}
@@ -1033,13 +1066,13 @@ const AdminHome: React.FC = () => {
                   description_de: val,
                 })
               }
-              placeholder="Beschreibung (Deutsch)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div className="lg:col-span-2">
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Instagram Hesabı" : "Instagram-Konto"}
+              {t("admin_field_instagram_handle")}
             </label>
             <input
               type="text"
@@ -1051,7 +1084,7 @@ const AdminHome: React.FC = () => {
                 })
               }
               placeholder="@kulturplattformfreiburg"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
         </div>
@@ -1059,24 +1092,24 @@ const AdminHome: React.FC = () => {
         <button
           onClick={saveInstagramSection}
           disabled={saving}
-          className="bg-pink-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-pink-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="bg-kpf-teal text-white px-6 py-2 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center gap-2 disabled:opacity-50"
         >
           <Save size={20} />
-          {language === "tr" ? "Kaydet" : "Speichern"}
+          {t("admin_save")}
         </button>
       </div>
 
       {/* CTA Section */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-          <Heart size={24} className="text-red-600" />
-          {language === "tr" ? "Çağrı Bölümü (CTA)" : "Call-to-Action-Bereich"}
+          <Heart size={24} className="text-kpf-teal" />
+          {t("admin_section_cta")}
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Başlık (TR)" : "Titel (TR)"}
+              {t("admin_field_title_tr")}
             </label>
             <input
               type="text"
@@ -1084,13 +1117,13 @@ const AdminHome: React.FC = () => {
               onChange={(e) =>
                 setCtaSection({ ...ctaSection, title_tr: e.target.value })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Başlık (DE)" : "Titel (DE)"}
+              {t("admin_field_title_de")}
             </label>
             <input
               type="text"
@@ -1098,33 +1131,33 @@ const AdminHome: React.FC = () => {
               onChange={(e) =>
                 setCtaSection({ ...ctaSection, title_de: e.target.value })
               }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-red"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Açıklama (TR)" : "Beschreibung (TR)"}
+              {t("admin_field_description_tr")}
             </label>
             <QuillEditor
               value={ctaSection.description_tr}
               onChange={(val) =>
                 setCtaSection({ ...ctaSection, description_tr: val })
               }
-              placeholder="Açıklama (Türkçe)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">
-              {language === "tr" ? "Açıklama (DE)" : "Beschreibung (DE)"}
+              {t("admin_field_description_de")}
             </label>
             <QuillEditor
               value={ctaSection.description_de}
               onChange={(val) =>
                 setCtaSection({ ...ctaSection, description_de: val })
               }
-              placeholder="Beschreibung (Deutsch)..."
+              placeholder={t("admin_editor_placeholder")}
             />
           </div>
         </div>
@@ -1132,17 +1165,17 @@ const AdminHome: React.FC = () => {
         <button
           onClick={saveCtaSection}
           disabled={saving}
-          className="bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="bg-kpf-teal text-white px-6 py-2 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center gap-2 disabled:opacity-50"
         >
           <Save size={20} />
-          {language === "tr" ? "Kaydet" : "Speichern"}
+          {t("admin_save")}
         </button>
       </div>
 
       {/* Editor Özelleştirme CSS */}
       <style>{`
         .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
-        .quill-modern-container:focus-within { background: #fff; border-color: #ef4444; }
+        .quill-modern-container:focus-within { background: #fff; border-color: var(--color-primary-teal); }
         .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }

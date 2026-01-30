@@ -37,7 +37,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder: placeholder ?? "",
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -119,6 +119,8 @@ interface ActivityFormData {
   isActive: boolean;
 }
 
+type NotificationType = "success" | "error" | "info";
+
 const AdminActivities: React.FC = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,18 +134,174 @@ const AdminActivities: React.FC = () => {
   // Modern bildirim sistemi
   const [notification, setNotification] = useState<{
     show: boolean;
-    type: "success" | "error" | "info";
+    type: NotificationType;
     message: string;
   }>({ show: false, type: "success", message: "" });
 
-  const showNotification = (
-    type: "success" | "error" | "info",
-    message: string,
-  ) => {
+  const showNotification = (type: NotificationType, message: string) => {
     setNotification({ show: true, type, message });
     setTimeout(() => {
       setNotification({ show: false, type, message: "" });
     }, 3000);
+  };
+
+  const notificationThemeByType: Record<NotificationType, string> = {
+    success:
+      "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 text-green-800",
+    error:
+      "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800",
+    info: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800",
+  };
+
+  const renderNotificationIcon = (type: NotificationType) => {
+    if (type === "success") {
+      return (
+        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+      );
+    }
+
+    if (type === "error") {
+      return (
+        <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+          <svg
+            className="w-5 h-5 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+        <svg
+          className="w-5 h-5 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+    );
+  };
+
+  const readAsDataUrl = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () =>
+        reject(reader.error ?? new Error("File could not be read"));
+      reader.readAsDataURL(blob);
+    });
+
+  const loadImage = (src: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Image load failed"));
+      img.src = src;
+    });
+
+  const canvasToJpegBlob = (
+    canvas: HTMLCanvasElement,
+    quality: number,
+  ): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error("Canvas compression failed"));
+        },
+        "image/jpeg",
+        quality,
+      );
+    });
+
+  const buildAddressDto = (
+    address: ActivityFormData["address"] | undefined,
+    location: string,
+  ) => {
+    let addressObj = address;
+    if (!addressObj && location) {
+      addressObj = {
+        street: location,
+        houseNo: "",
+        zipCode: "",
+        city: "",
+        state: "",
+        country: "Deutschland",
+      };
+    }
+
+    return addressObj
+      ? {
+          Street: addressObj.street || "",
+          HouseNo: addressObj.houseNo || "",
+          ZipCode: addressObj.zipCode || "",
+          City: addressObj.city || "",
+          State: addressObj.state || "",
+          Country: addressObj.country || "Deutschland",
+        }
+      : null;
+  };
+
+  const buildGalleryImagesDto = (images: GalleryImage[]) =>
+    images
+      .filter((img) => img.url || img.base64Data)
+      .map((img) => ({
+        url: img.url || null,
+        base64Data: img.base64Data || null,
+        fileName: img.fileName || null,
+      }));
+
+  const buildActivityDto = (id: number | null, data: ActivityFormData) => {
+    const addressDto = buildAddressDto(data.address, data.location);
+    return {
+      ...(id && { id }),
+      titleTr: data.titleTr,
+      titleDe: data.titleDe,
+      descriptionTr: data.descriptionTr,
+      descriptionDe: data.descriptionDe,
+      detailedContentTr: data.detailedContentTr,
+      detailedContentDe: data.detailedContentDe,
+      date: data.date,
+      address: addressDto,
+      category: data.category,
+      imageUrl: data.imageBase64 ? null : data.imageUrl || null,
+      imageBase64: data.imageBase64 || null,
+      imageFileName: data.imageBase64 ? data.imageFileName : null,
+      videoUrl: data.videoUrl || null,
+      galleryImages: buildGalleryImagesDto(data.galleryImages),
+      isActive: data.isActive,
+    };
   };
 
   const [galleryUrlInput, setGalleryUrlInput] = useState("");
@@ -178,12 +336,7 @@ const AdminActivities: React.FC = () => {
       setActivities(formatted);
     } catch (error) {
       console.error("Etkinlikler yüklenirken hata:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "Etkinlikler yüklenemedi!"
-          : "Aktivitäten konnten nicht geladen werden!",
-      );
+      showNotification("error", t("admin_activities_load_failed"));
     } finally {
       setLoading(false);
     }
@@ -209,18 +362,13 @@ const AdminActivities: React.FC = () => {
       const sizeKB = (compressed.base64Data.length * 0.75) / 1024;
       showNotification(
         "success",
-        language === "tr"
-          ? `Resim başarıyla yüklendi! (${sizeKB.toFixed(0)}KB)`
-          : `Bild erfolgreich hochgeladen! (${sizeKB.toFixed(0)}KB)`,
+        `${t("admin_activities_image_upload_success")} (${sizeKB.toFixed(0)}KB)`,
       );
     } catch (error) {
       console.error("Resim yüklenirken hata:", error);
+      const fallbackMessage = t("admin_activities_image_upload_failed");
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : language === "tr"
-            ? "Resim yüklenemedi!"
-            : "Bild konnte nicht hochgeladen werden!";
+        error instanceof Error ? error.message : fallbackMessage;
       showNotification("error", errorMessage);
     } finally {
       setUploadingImage(false);
@@ -234,108 +382,82 @@ const AdminActivities: React.FC = () => {
     maxHeight: number = 1200,
     quality: number = 0.7,
   ): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    return (async () => {
+      const dataUrl = await readAsDataUrl(file);
+      const img = await loadImage(dataUrl);
 
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            let width = img.width;
-            let height = img.height;
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
 
-            // Calculate new dimensions
-            if (width > height) {
-              if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-              }
-            } else if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else if (height > maxHeight) {
+        width = Math.round((width * maxHeight) / height);
+        height = maxHeight;
+      }
 
-            canvas.width = width;
-            canvas.height = height;
+      canvas.width = width;
+      canvas.height = height;
 
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, width, height);
-            }
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+      }
 
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  resolve(blob);
-                } else {
-                  reject(new Error("Canvas compression failed"));
-                }
-              },
-              "image/jpeg",
-              quality,
-            );
-          } catch (error) {
-            reject(error);
-          }
-        };
-        img.onerror = () => reject(new Error("Image load failed"));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
+      return canvasToJpegBlob(canvas, quality);
+    })();
   };
 
   const convertFileToBase64 = async (file: File): Promise<GalleryImage> => {
     // Validate file size (max 5MB before compression)
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_FILE_SIZE) {
+      const currentSizeMb = (file.size / 1024 / 1024).toFixed(2);
       throw new Error(
-        language === "tr"
-          ? `Dosya çok büyük! Maksimum: 5MB, Mevcut: ${(file.size / 1024 / 1024).toFixed(2)}MB`
-          : `Datei zu groß! Maximum: 5MB, Aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        `${t("admin_activities_file_too_large")} ${currentSizeMb}MB`,
       );
     }
 
-    try {
-      const compressedBlob = await compressImage(file, 1200, 1200, 0.7);
-      return new Promise<GalleryImage>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            const dataUrl = reader.result as string;
-            const base64String = dataUrl.split(",")[1];
+    const compressedBlob = await compressImage(file, 1200, 1200, 0.7);
+    const dataUrl = await readAsDataUrl(compressedBlob);
+    const base64String = dataUrl.split(",")[1] ?? "";
 
-            // Check base64 size (max 2MB)
-            const base64Size = base64String.length * 0.75; // Approximate size in bytes
-            const MAX_BASE64_SIZE = 2 * 1024 * 1024;
-            if (base64Size > MAX_BASE64_SIZE) {
-              reject(
-                new Error(
-                  language === "tr"
-                    ? "Sıkıştırılan resim çok büyük! Daha düşük çözünürlüklü bir resim kullanın."
-                    : "Komprimiertes Bild zu groß! Bitte verwenden Sie ein Bild mit niedrigerer Auflösung.",
-                ),
-              );
-              return;
-            }
-
-            resolve({
-              url: null,
-              base64Data: base64String,
-              fileName: file.name,
-            });
-          } catch (error) {
-            reject(error);
-          }
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(compressedBlob);
-      });
-    } catch (error) {
-      throw error;
+    // Check base64 size (max 2MB)
+    const base64Size = base64String.length * 0.75;
+    const MAX_BASE64_SIZE = 2 * 1024 * 1024;
+    if (base64Size > MAX_BASE64_SIZE) {
+      throw new Error(t("admin_activities_compressed_image_too_large"));
     }
+
+    return {
+      url: null,
+      base64Data: base64String,
+      fileName: file.name,
+    };
+  };
+
+  const processGalleryFiles = async (filesToProcess: File[]) => {
+    const processedItems: GalleryImage[] = [];
+    const errors: string[] = [];
+
+    for (const file of filesToProcess) {
+      try {
+        const item = await convertFileToBase64(file);
+        processedItems.push(item);
+      } catch (fileError) {
+        const errorMsg =
+          fileError instanceof Error
+            ? fileError.message
+            : t("admin_unknown_error");
+        errors.push(`${file.name}: ${errorMsg}`);
+      }
+    }
+
+    return { processedItems, errors };
   };
 
   const handleGalleryUpload = async (
@@ -355,29 +477,17 @@ const AdminActivities: React.FC = () => {
       if (remainingSlots <= 0) {
         showNotification(
           "error",
-          language === "tr"
-            ? `Maksimum galeri resim sayısına ulaştınız! (${MAX_GALLERY_IMAGES} max)`
-            : `Sie haben das Maximum an Galeriebildern erreicht! (${MAX_GALLERY_IMAGES} max)`,
+          `${t("admin_activities_gallery_limit_reached")} (${MAX_GALLERY_IMAGES} max)`,
         );
         return;
       }
 
-      const filesToProcess = Array.from(files).slice(0, remainingSlots);
-      const processedItems: GalleryImage[] = [];
-      const errors: string[] = [];
-
-      for (const fileItem of filesToProcess) {
-        try {
-          const file = fileItem as File;
-          const item = await convertFileToBase64(file);
-          processedItems.push(item);
-        } catch (fileError) {
-          const errorMsg =
-            fileError instanceof Error ? fileError.message : "Unknown error";
-          const file = fileItem as File;
-          errors.push(`${file.name}: ${errorMsg}`);
-        }
-      }
+      const filesToProcess = Array.from(files).slice(
+        0,
+        remainingSlots,
+      ) as File[];
+      const { processedItems, errors } =
+        await processGalleryFiles(filesToProcess);
 
       if (processedItems.length > 0) {
         setFormData({
@@ -387,27 +497,21 @@ const AdminActivities: React.FC = () => {
 
         showNotification(
           "success",
-          language === "tr"
-            ? `${processedItems.length} resim başarıyla yüklendi!`
-            : `${processedItems.length} Bilder erfolgreich hochgeladen!`,
+          `${processedItems.length} ${t("admin_activities_gallery_upload_success")}`,
         );
       }
 
       if (errors.length > 0) {
         showNotification(
           "error",
-          language === "tr"
-            ? `${errors.length} resim yüklenemedi: ${errors.join(", ")}`
-            : `${errors.length} Bilder konnten nicht hochgeladen werden: ${errors.join(", ")}`,
+          `${errors.length} ${t("admin_activities_gallery_upload_failed")} ${errors.join(", ")}`,
         );
       }
     } catch (error) {
       console.error("Galeri resimleri yüklenirken hata:", error);
       showNotification(
         "error",
-        language === "tr"
-          ? "Galeri resimleri yüklenemedi!"
-          : "Galeriebilder konnten nicht hochgeladen werden!",
+        t("admin_activities_gallery_upload_failed_generic"),
       );
     } finally {
       setUploadingImage(false);
@@ -418,103 +522,33 @@ const AdminActivities: React.FC = () => {
     e.preventDefault();
 
     try {
-      // Location string'inden address objesi oluştur (yeni etkinlik için)
-      let addressObj = formData.address;
-      if (!addressObj && formData.location) {
-        // Yeni etkinlik - location'dan basit bir address objesi oluştur
-        addressObj = {
-          street: formData.location,
-          houseNo: "",
-          zipCode: "",
-          city: "",
-          state: "",
-          country: "Deutschland", // Varsayılan ülke
-        };
-      }
-
-      // Backend'in beklediği PascalCase formatına dönüştür
-      const addressDto = addressObj
-        ? {
-            Street: addressObj.street || "",
-            HouseNo: addressObj.houseNo || "",
-            ZipCode: addressObj.zipCode || "",
-            City: addressObj.city || "",
-            State: addressObj.state || "",
-            Country: addressObj.country || "Deutschland",
-          }
-        : null;
-
-      // Filter out empty gallery images (those with all null values)
-      let validGalleryImages = formData.galleryImages.filter(
-        (img) => img.url || img.base64Data,
-      );
-
-      const dto = {
-        ...(editingId && { id: editingId }), // Edit modunda ID ekle
-        titleTr: formData.titleTr,
-        titleDe: formData.titleDe,
-        descriptionTr: formData.descriptionTr,
-        descriptionDe: formData.descriptionDe,
-        detailedContentTr: formData.detailedContentTr,
-        detailedContentDe: formData.detailedContentDe,
-        date: formData.date,
-        address: addressDto, // Backend'in beklediği PascalCase formatında
-        category: formData.category,
-        // Sadece Base64 VEYA URL'i gönder, ikisini birden değil
-        imageUrl: formData.imageBase64 ? null : formData.imageUrl || null,
-        imageBase64: formData.imageBase64 || null,
-        imageFileName: formData.imageBase64 ? formData.imageFileName : null,
-        videoUrl: formData.videoUrl || null,
-        // Yeni format: Galeri resimleri GalleryImage nesneleri olarak gönder (sadece geçerli olanlar)
-        galleryImages: validGalleryImages.map((img) => ({
-          url: img.url || null,
-          base64Data: img.base64Data || null,
-          fileName: img.fileName || null,
-        })),
-        isActive: formData.isActive,
-      };
+      const dto = buildActivityDto(editingId, formData);
 
       // Check approximate payload size to prevent header size errors
       const payloadSize = JSON.stringify(dto).length;
       const MAX_PAYLOAD_SIZE = 20 * 1024 * 1024; // 20MB
       if (payloadSize > MAX_PAYLOAD_SIZE) {
+        const payloadMb = (payloadSize / 1024 / 1024).toFixed(2);
         showNotification(
           "error",
-          language === "tr"
-            ? `Payload çok büyük! (${(payloadSize / 1024 / 1024).toFixed(2)}MB). Daha az resim kullanın veya daha düşük çözünürlüklü resimler seçin.`
-            : `Payload zu groß! (${(payloadSize / 1024 / 1024).toFixed(2)}MB). Verwenden Sie weniger oder kleinere Bilder.`,
+          `${t("admin_activities_payload_too_large")} (${payloadMb}MB). ${t("admin_activities_payload_too_large_hint")}`,
         );
         return;
       }
 
       if (editingId) {
         await activitiesApi.update(editingId, dto);
-        showNotification(
-          "success",
-          language === "tr"
-            ? "✓ Etkinlik başarıyla güncellendi!"
-            : "✓ Aktivität erfolgreich aktualisiert!",
-        );
+        showNotification("success", t("admin_activities_update_success"));
       } else {
         await activitiesApi.create(dto);
-        showNotification(
-          "success",
-          language === "tr"
-            ? "✓ Yeni etkinlik oluşturuldu!"
-            : "✓ Neue Aktivität erstellt!",
-        );
+        showNotification("success", t("admin_activities_create_success"));
       }
 
       await loadActivities();
       resetForm();
     } catch (error) {
       console.error("Kayıt hatası:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "❌ İşlem başarısız!"
-          : "❌ Vorgang fehlgeschlagen!",
-      );
+      showNotification("error", t("admin_operation_failed"));
     }
   };
 
@@ -549,30 +583,15 @@ const AdminActivities: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (
-      !confirm(
-        language === "tr"
-          ? "Bu etkinliği silmek istediğinizden emin misiniz?"
-          : "Sind Sie sicher, dass Sie diese Aktivität löschen möchten?",
-      )
-    )
-      return;
+    if (!confirm(t("admin_activities_delete_confirm"))) return;
 
     try {
       await activitiesApi.delete(id);
       await loadActivities();
-      showNotification(
-        "success",
-        language === "tr" ? "✓ Etkinlik silindi!" : "✓ Aktivität gelöscht!",
-      );
+      showNotification("success", t("admin_activities_delete_success"));
     } catch (error) {
       console.error("Silme hatası:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "❌ Silme işlemi başarısız!"
-          : "❌ Löschvorgang fehlgeschlagen!",
-      );
+      showNotification("error", t("admin_activities_delete_failed"));
     }
   };
 
@@ -582,12 +601,7 @@ const AdminActivities: React.FC = () => {
       const activity = activities.find((a) => a.id === id);
       if (!activity) {
         console.error("Etkinlik bulunamadı:", id);
-        showNotification(
-          "error",
-          language === "tr"
-            ? "❌ Etkinlik bulunamadı!"
-            : "❌ Aktivität nicht gefunden!",
-        );
+        showNotification("error", t("admin_activities_not_found"));
         return;
       }
 
@@ -632,24 +646,14 @@ const AdminActivities: React.FC = () => {
 
       await activitiesApi.update(id, dto);
       await loadActivities();
-      showNotification(
-        "success",
-        !currentStatus
-          ? language === "tr"
-            ? "✓ Etkinlik aktif hale getirildi!"
-            : "✓ Aktivität aktiviert!"
-          : language === "tr"
-            ? "✓ Etkinlik pasif hale getirildi!"
-            : "✓ Aktivität deaktiviert!",
-      );
+      const nextIsActive = dto.isActive;
+      const successMessage = nextIsActive
+        ? t("admin_activities_activated_success")
+        : t("admin_activities_deactivated_success");
+      showNotification("success", successMessage);
     } catch (error) {
       console.error("Durum değiştirme hatası detayı:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "❌ Durum değişirilemedi!"
-          : "❌ Status konnte nicht geändert werden!",
-      );
+      showNotification("error", t("admin_activities_toggle_failed"));
     }
   };
 
@@ -751,9 +755,7 @@ const AdminActivities: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-teal"></div>
         <p className="mt-4 text-slate-500 font-medium">
-          {language === "tr"
-            ? "Etkinlikler yükleniyor..."
-            : "Aktivitäten werden geladen..."}
+          {t("admin_activities_loading")}
         </p>
       </div>
     );
@@ -774,8 +776,7 @@ const AdminActivities: React.FC = () => {
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" />
-                {language === "tr" ? "Toplam" : "Gesamt"} {activities.length}{" "}
-                {language === "tr" ? "etkinlik" : "Aktivitäten"}
+                {t("admin_activities_total")}: {activities.length}
               </p>
             </div>
           </div>
@@ -796,11 +797,7 @@ const AdminActivities: React.FC = () => {
           />
           <input
             type="text"
-            placeholder={
-              language === "tr"
-                ? "🔍 Etkinlik ara... (başlık, konum veya kategoriye göre)"
-                : "🔍 Aktivität suchen... (nach Titel, Ort oder Kategorie)"
-            }
+            placeholder={t("admin_activities_search_placeholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-14 pr-6 py-4 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-kpf-teal/30 focus:border-kpf-teal text-base shadow-sm"
@@ -815,21 +812,17 @@ const AdminActivities: React.FC = () => {
                 <Search size={40} className="text-slate-400" />
               </div>
               <p className="text-slate-600 text-xl font-semibold mb-2">
-                {language === "tr"
-                  ? "🔍 Arama sonuçunda etkinlik bulunamadı"
-                  : "🔍 Keine Aktivitäten gefunden"}
+                {t("admin_activities_no_results_title")}
               </p>
               <p className="text-slate-500 text-sm">
-                {language === "tr"
-                  ? "Farklı anahtar kelimeler deneyin veya yeni bir etkinlik ekleyin"
-                  : "Versuchen Sie andere Schlüsselwörter oder fügen Sie eine neue Aktivität hinzu"}
+                {t("admin_activities_no_results_subtitle")}
               </p>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
                   className="mt-4 px-6 py-2 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/80 transition-all font-semibold"
                 >
-                  {language === "tr" ? "Aramayı Temizle" : "Suche zurücksetzen"}
+                  {t("admin_clear_search")}
                 </button>
               )}
             </div>
@@ -841,22 +834,22 @@ const AdminActivities: React.FC = () => {
           {/* Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold text-white bg-gradient-to-r from-kpf-teal to-kpf-teal uppercase tracking-wide">
             <div className="col-span-4">
-              {language === "tr" ? "📋 Etkinlik" : "📋 Aktivität"}
+              {t("admin_activities_header_activity")}
             </div>
             <div className="col-span-2">
-              {language === "tr" ? "🏷️ Kategori" : "🏷️ Kategorie"}
+              {t("admin_activities_header_category")}
             </div>
             <div className="col-span-2">
-              {language === "tr" ? "📅 Tarih" : "📅 Datum"}
+              {t("admin_activities_header_date")}
             </div>
             <div className="col-span-2">
-              {language === "tr" ? "📍 Konum" : "📍 Ort"}
+              {t("admin_activities_header_location")}
             </div>
             <div className="col-span-1 text-center">
-              {language === "tr" ? "👁️ Durum" : "👁️ Status"}
+              {t("admin_activities_header_status")}
             </div>
             <div className="col-span-1 text-right">
-              {language === "tr" ? "⚙️ İşlemler" : "⚙️ Aktionen"}
+              {t("admin_activities_header_actions")}
             </div>
           </div>
 
@@ -876,7 +869,7 @@ const AdminActivities: React.FC = () => {
               return (
                 <div
                   key={activity.id}
-                  className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-red/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
+                  className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-teal/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
                 >
                   {/* Title + Image */}
                   <div className="col-span-4 flex items-center gap-4">
@@ -916,7 +909,7 @@ const AdminActivities: React.FC = () => {
 
                   {/* Date */}
                   <div className="col-span-2 text-sm text-slate-700 font-semibold flex items-center gap-2">
-                    <Calendar size={16} className="text-kpf-red" />
+                    <Calendar size={16} className="text-kpf-teal" />
                     <span>{activity.date}</span>
                   </div>
 
@@ -936,24 +929,20 @@ const AdminActivities: React.FC = () => {
                       }
                       className="group relative"
                       title={
-                        language === "tr"
-                          ? activity.isActive
-                            ? "Pasif yap"
-                            : "Aktif yap"
-                          : activity.isActive
-                            ? "Deaktivieren"
-                            : "Aktivieren"
+                        activity.isActive
+                          ? t("admin_activities_deactivate")
+                          : t("admin_activities_activate")
                       }
                     >
                       {activity.isActive ? (
                         <span className="px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1.5 border border-green-200 cursor-pointer group-hover:shadow-lg group-hover:scale-105 transition-all">
                           <Eye size={14} />
-                          {language === "tr" ? "Aktif" : "Aktiv"}
+                          {t("admin_active")}
                         </span>
                       ) : (
                         <span className="px-3 py-1.5 bg-gradient-to-r from-slate-100 to-gray-100 text-slate-600 text-xs font-bold rounded-full flex items-center gap-1.5 border border-slate-200 cursor-pointer group-hover:shadow-lg group-hover:scale-105 transition-all">
                           <EyeOff size={14} />
-                          {language === "tr" ? "Pasif" : "Inaktiv"}
+                          {t("admin_inactive")}
                         </span>
                       )}
                     </button>
@@ -964,14 +953,14 @@ const AdminActivities: React.FC = () => {
                     <button
                       onClick={() => handleEdit(activity)}
                       className="p-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all hover:shadow-md"
-                      title={language === "tr" ? "Düzenle" : "Bearbeiten"}
+                      title={t("admin_edit")}
                     >
                       <Edit size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(activity.id)}
                       className="p-2.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all hover:shadow-md"
-                      title={language === "tr" ? "Sil" : "Löschen"}
+                      title={t("admin_delete")}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -996,18 +985,12 @@ const AdminActivities: React.FC = () => {
                     <div>
                       <h1 className="text-xl font-black text-slate-800">
                         {editingId
-                          ? language === "tr"
-                            ? "Etkinlik Düzenle"
-                            : "Aktivität bearbeiten"
-                          : language === "tr"
-                            ? "Yeni Etkinlik Oluştur"
-                            : "Neue Aktivität erstellen"}
+                          ? t("admin_activities_edit")
+                          : t("admin_activities_create")}
                       </h1>
                       <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                         <CheckCircle size={10} className="text-green-500" />
-                        {language === "tr"
-                          ? "Tüm alanları doldurun"
-                          : "Füllen Sie alle Felder aus"}
+                        {t("admin_fill_all_fields")}
                       </p>
                     </div>
                   </div>
@@ -1025,9 +1008,7 @@ const AdminActivities: React.FC = () => {
                     >
                       <Save size={20} />
                       <span className="hidden sm:inline">
-                        {language === "tr"
-                          ? "Sitede Yayınla"
-                          : "Auf der Website veröffentlichen"}
+                        {t("admin_publish")}
                       </span>
                     </button>
                     <button
@@ -1048,7 +1029,7 @@ const AdminActivities: React.FC = () => {
                         <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
                           <Languages size={20} />
                           <span className="font-bold text-xs uppercase tracking-widest">
-                            Türkçe (TR) İçerik
+                            {t("admin_content_tr")}
                           </span>
                         </div>
                         <input
@@ -1061,12 +1042,14 @@ const AdminActivities: React.FC = () => {
                               titleTr: e.target.value,
                             })
                           }
-                          placeholder="Etkinlik Başlığı *"
+                          placeholder={t(
+                            "admin_activities_form_title_tr_placeholder",
+                          )}
                           className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
                         />
                         <div className="pt-4 border-t border-slate-50">
                           <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                            Kısa Açıklama *
+                            {t("admin_activities_short_description_label")}
                           </span>
                           <textarea
                             required
@@ -1078,13 +1061,15 @@ const AdminActivities: React.FC = () => {
                                 descriptionTr: e.target.value,
                               })
                             }
-                            placeholder="Etkinlik hakkında kısa açıklama..."
+                            placeholder={t(
+                              "admin_activities_short_description_tr_placeholder",
+                            )}
                             className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
                           />
                         </div>
                         <div className="pt-4 border-t border-slate-50">
                           <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                            Detaylı İçerik
+                            {t("admin_activities_detailed_content_label")}
                           </span>
                           <QuillEditor
                             value={formData.detailedContentTr}
@@ -1094,7 +1079,9 @@ const AdminActivities: React.FC = () => {
                                 detailedContentTr: val,
                               })
                             }
-                            placeholder="Detay sayfasında gösterilecek içerik..."
+                            placeholder={t(
+                              "admin_activities_detailed_content_tr_placeholder",
+                            )}
                           />
                         </div>
                       </div>
@@ -1104,7 +1091,7 @@ const AdminActivities: React.FC = () => {
                         <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
                           <Languages size={20} />
                           <span className="font-bold text-xs uppercase tracking-widest">
-                            Almanca (DE) İçerik
+                            {t("admin_content_de")}
                           </span>
                         </div>
                         <input
@@ -1117,12 +1104,14 @@ const AdminActivities: React.FC = () => {
                               titleDe: e.target.value,
                             })
                           }
-                          placeholder="Aktivität Titel *"
+                          placeholder={t(
+                            "admin_activities_form_title_de_placeholder",
+                          )}
                           className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
                         />
                         <div className="pt-4 border-t border-slate-50">
                           <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                            Kurzbeschreibung *
+                            {t("admin_activities_short_description_label")}
                           </span>
                           <textarea
                             required
@@ -1134,13 +1123,15 @@ const AdminActivities: React.FC = () => {
                                 descriptionDe: e.target.value,
                               })
                             }
-                            placeholder="Kurze Beschreibung der Aktivität..."
+                            placeholder={t(
+                              "admin_activities_short_description_de_placeholder",
+                            )}
                             className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
                           />
                         </div>
                         <div className="pt-4 border-t border-slate-50">
                           <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                            Detaillierter Inhalt
+                            {t("admin_activities_detailed_content_label")}
                           </span>
                           <QuillEditor
                             value={formData.detailedContentDe}
@@ -1150,7 +1141,9 @@ const AdminActivities: React.FC = () => {
                                 detailedContentDe: val,
                               })
                             }
-                            placeholder="Inhalt für Detailseite..."
+                            placeholder={t(
+                              "admin_activities_detailed_content_de_placeholder",
+                            )}
                           />
                         </div>
                       </div>
@@ -1162,10 +1155,7 @@ const AdminActivities: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                       <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
                         <Calendar size={14} className="text-kpf-teal" />
-                        {language === "tr"
-                          ? "Etkinlik Tarihi"
-                          : "Aktivitätsdatum"}{" "}
-                        *
+                        {t("admin_activities_date_label")} *
                       </span>
                       <input
                         type="date"
@@ -1179,7 +1169,7 @@ const AdminActivities: React.FC = () => {
                     </div>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                       <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest">
-                        {language === "tr" ? "Kategori" : "Kategorie"} *
+                        {t("admin_activities_category_label")} *
                       </span>
                       <select
                         required
@@ -1189,12 +1179,24 @@ const AdminActivities: React.FC = () => {
                         }
                         className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
                       >
-                        <option value="music">🎵 Müzik / Musik</option>
-                        <option value="art">🎨 Sanat / Kunst</option>
-                        <option value="education">📚 Eğitim / Bildung</option>
-                        <option value="culture">🌍 Kültür / Kultur</option>
-                        <option value="sport">⚽ Spor / Sport</option>
-                        <option value="social">🤝 Sosyal / Sozial</option>
+                        <option value="music">
+                          {t("admin_activities_category_music")}
+                        </option>
+                        <option value="art">
+                          {t("admin_activities_category_art")}
+                        </option>
+                        <option value="education">
+                          {t("admin_activities_category_education")}
+                        </option>
+                        <option value="culture">
+                          {t("admin_activities_category_culture")}
+                        </option>
+                        <option value="sport">
+                          {t("admin_activities_category_sport")}
+                        </option>
+                        <option value="social">
+                          {t("admin_activities_category_social")}
+                        </option>
                       </select>
                     </div>
                   </div>
@@ -1203,16 +1205,14 @@ const AdminActivities: React.FC = () => {
                   <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
                     <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                       <MapPin size={20} className="text-kpf-teal" />
-                      {language === "tr"
-                        ? "📍 Adres Bilgileri"
-                        : "📍 Adressinformationen"}
+                      {t("admin_activities_address_section_title")}
                     </h3>
 
                     <div className="grid grid-cols-2 gap-4">
                       {/* Sokak */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          {language === "tr" ? "Sokak" : "Straße"} *
+                          {t("admin_address_street")} *
                         </label>
                         <input
                           type="text"
@@ -1234,11 +1234,9 @@ const AdminActivities: React.FC = () => {
                               }`.trim(),
                             })
                           }
-                          placeholder={
-                            language === "tr"
-                              ? "örn: Rheinstraße"
-                              : "z.B: Rheinstraße"
-                          }
+                          placeholder={t(
+                            "admin_activities_address_street_placeholder",
+                          )}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                         />
                       </div>
@@ -1246,7 +1244,7 @@ const AdminActivities: React.FC = () => {
                       {/* Ev Numarası */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          {language === "tr" ? "Ev No" : "Hausnummer"}
+                          {t("admin_address_houseNo")}
                         </label>
                         <input
                           type="text"
@@ -1265,9 +1263,9 @@ const AdminActivities: React.FC = () => {
                               }`.trim(),
                             })
                           }
-                          placeholder={
-                            language === "tr" ? "örn: 45" : "z.B: 45"
-                          }
+                          placeholder={t(
+                            "admin_activities_address_house_placeholder",
+                          )}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                         />
                       </div>
@@ -1275,7 +1273,7 @@ const AdminActivities: React.FC = () => {
                       {/* Posta Kodu */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          {language === "tr" ? "Posta Kodu" : "Postleitzahl"} *
+                          {t("admin_address_postalCode")} *
                         </label>
                         <input
                           type="text"
@@ -1295,9 +1293,9 @@ const AdminActivities: React.FC = () => {
                               }`.trim(),
                             })
                           }
-                          placeholder={
-                            language === "tr" ? "örn: 64283" : "z.B: 64283"
-                          }
+                          placeholder={t(
+                            "admin_activities_address_zip_placeholder",
+                          )}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                         />
                       </div>
@@ -1305,7 +1303,7 @@ const AdminActivities: React.FC = () => {
                       {/* Şehir */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          {language === "tr" ? "Şehir" : "Stadt"} *
+                          {t("admin_address_city")} *
                         </label>
                         <input
                           type="text"
@@ -1325,11 +1323,9 @@ const AdminActivities: React.FC = () => {
                               }`.trim(),
                             })
                           }
-                          placeholder={
-                            language === "tr"
-                              ? "örn: Darmstadt"
-                              : "z.B: Darmstadt"
-                          }
+                          placeholder={t(
+                            "admin_activities_address_city_placeholder",
+                          )}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                         />
                       </div>
@@ -1337,7 +1333,7 @@ const AdminActivities: React.FC = () => {
                       {/* Eyalet */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          {language === "tr" ? "Eyalet" : "Bundesland"}
+                          {t("admin_address_state")}
                         </label>
                         <input
                           type="text"
@@ -1351,9 +1347,9 @@ const AdminActivities: React.FC = () => {
                               },
                             })
                           }
-                          placeholder={
-                            language === "tr" ? "örn: Hessen" : "z.B: Hessen"
-                          }
+                          placeholder={t(
+                            "admin_activities_address_state_placeholder",
+                          )}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                         />
                       </div>
@@ -1361,7 +1357,7 @@ const AdminActivities: React.FC = () => {
                       {/* Ülke */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          {language === "tr" ? "Ülke" : "Land"} *
+                          {t("admin_address_country")} *
                         </label>
                         <input
                           type="text"
@@ -1376,28 +1372,23 @@ const AdminActivities: React.FC = () => {
                               },
                             })
                           }
-                          placeholder={
-                            language === "tr"
-                              ? "örn: Deutschland"
-                              : "z.B: Deutschland"
-                          }
+                          placeholder={t(
+                            "admin_activities_address_country_placeholder",
+                          )}
                           className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                         />
                       </div>
                     </div>
 
                     <p className="text-xs text-slate-500 mt-3 bg-white/50 p-3 rounded-lg">
-                      💡{" "}
-                      {language === "tr"
-                        ? "Adres bilgileri otomatik olarak birleştirilerek görüntülenir"
-                        : "Adressinformationen werden automatisch kombiniert angezeigt"}
+                      💡 {t("admin_activities_address_help")}
                     </p>
                   </div>
 
                   {/* Ana Resim */}
-                  <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-red/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
+                  <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-teal/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      📷 {language === "tr" ? "Ana Kapak Resmi" : "Hauptbild"} *
+                      📷 {t("admin_activities_main_image")} *
                     </label>
                     <input
                       type="file"
@@ -1419,7 +1410,7 @@ const AdminActivities: React.FC = () => {
                             className="w-full h-48 object-cover rounded-lg shadow-md"
                           />
                           <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                            ✓ {language === "tr" ? "Yüklendi" : "Hochgeladen"}
+                            ✓ {t("admin_uploaded")}
                           </div>
                           <button
                             type="button"
@@ -1433,7 +1424,7 @@ const AdminActivities: React.FC = () => {
                             }
                             className="absolute top-2 left-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
                           >
-                            ✕ {language === "tr" ? "Sil" : "Löschen"}
+                            ✕ {t("admin_delete")}
                           </button>
                         </div>
                       </div>
@@ -1442,9 +1433,7 @@ const AdminActivities: React.FC = () => {
                       <div className="mt-3 text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-4 border-kpf-teal"></div>
                         <p className="text-sm text-slate-600 mt-2">
-                          {language === "tr"
-                            ? "Yükleniyor..."
-                            : "Wird hochgeladen..."}
+                          {t("admin_loading")}
                         </p>
                       </div>
                     )}
@@ -1453,10 +1442,7 @@ const AdminActivities: React.FC = () => {
                   {/* Video URL */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      🎬{" "}
-                      {language === "tr"
-                        ? "Video URL (Opsiyonel)"
-                        : "Video URL (Optional)"}
+                      🎬 {t("admin_activities_video_label")}
                     </label>
                     <input
                       type="url"
@@ -1464,27 +1450,18 @@ const AdminActivities: React.FC = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, videoUrl: e.target.value })
                       }
-                      placeholder={
-                        language === "tr"
-                          ? "https://youtube.com/watch?v=... veya Vimeo URL"
-                          : "https://youtube.com/watch?v=... oder Vimeo URL"
-                      }
+                      placeholder={t("admin_activities_video_placeholder")}
                       className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                     />
                     <p className="text-xs text-slate-500 mt-1">
-                      {language === "tr"
-                        ? "YouTube veya Vimeo video bağlantısı ekleyebilirsiniz"
-                        : "Sie können YouTube- oder Vimeo-Videolinks hinzufügen"}
+                      {t("admin_activities_video_help")}
                     </p>
                   </div>
 
                   {/* Galeri */}
                   <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      🖼️{" "}
-                      {language === "tr"
-                        ? "Galeri Resimleri (URL veya Yükle)"
-                        : "Galerie-Bilder (URL oder Upload)"}
+                      🖼️ {t("admin_activities_gallery_label")}
                     </label>
 
                     {/* Gallery URL Input */}
@@ -1493,11 +1470,9 @@ const AdminActivities: React.FC = () => {
                         type="url"
                         value={galleryUrlInput}
                         onChange={(e) => setGalleryUrlInput(e.target.value)}
-                        placeholder={
-                          language === "tr"
-                            ? "Resim URL'sini yapıştırın... (https://...)"
-                            : "Bild-URL einfügen... (https://...)"
-                        }
+                        placeholder={t(
+                          "admin_activities_gallery_url_placeholder",
+                        )}
                         className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                       <button
@@ -1521,22 +1496,18 @@ const AdminActivities: React.FC = () => {
                             setGalleryUrlInput("");
                             showNotification(
                               "success",
-                              language === "tr"
-                                ? "Resim URL'si başarıyla eklendi!"
-                                : "Bild-URL erfolgreich hinzugefügt!",
+                              t("admin_activities_gallery_add_success"),
                             );
                           } else {
                             showNotification(
                               "error",
-                              language === "tr"
-                                ? "Lütfen geçerli bir URL girin!"
-                                : "Bitte geben Sie eine gültige URL ein!",
+                              t("admin_activities_gallery_add_invalid_url"),
                             );
                           }
                         }}
                         className="px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition font-medium"
                       >
-                        {language === "tr" ? "Ekle" : "Hinzufügen"}
+                        {t("admin_add")}
                       </button>
                     </div>
 
@@ -1547,12 +1518,10 @@ const AdminActivities: React.FC = () => {
                       multiple
                       onChange={handleGalleryUpload}
                       disabled={uploadingImage}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-red file:text-white hover:file:bg-red-700 file:cursor-pointer"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-teal-700 file:cursor-pointer"
                     />
                     <p className="text-xs text-slate-500 mt-2">
-                      {language === "tr"
-                        ? "Birden fazla resim seçebilirsiniz. Her resmi silmek için üzerindeki X'e tıklayın."
-                        : "Sie können mehrere Bilder auswählen. Klicken Sie auf X, um ein Bild zu entfernen."}
+                      {t("admin_activities_gallery_help")}
                     </p>
                     {formData.galleryImages.length > 0 && (
                       <div className="mt-4 grid grid-cols-3 md:grid-cols-4 gap-3">
@@ -1575,7 +1544,7 @@ const AdminActivities: React.FC = () => {
                                 <>
                                   <img
                                     src={imageSrc}
-                                    alt={`Gallery ${index + 1}`}
+                                    alt={`${t("admin_activities_gallery_image_alt")} ${index + 1}`}
                                     className="h-24 w-full object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
                                   />
                                   <button
@@ -1590,9 +1559,7 @@ const AdminActivities: React.FC = () => {
                                       })
                                     }
                                     className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-all opacity-0 group-hover:opacity-100"
-                                    title={
-                                      language === "tr" ? "Sil" : "Löschen"
-                                    }
+                                    title={t("admin_delete")}
                                   >
                                     <X size={14} />
                                   </button>
@@ -1621,14 +1588,10 @@ const AdminActivities: React.FC = () => {
                           ) : (
                             <EyeOff size={20} className="text-slate-400" />
                           )}
-                          {language === "tr"
-                            ? "Yayın Durumu"
-                            : "Veröffentlichungsstatus"}
+                          {t("admin_publish_status_label")}
                         </label>
                         <p className="text-sm text-slate-600 mt-1">
-                          {language === "tr"
-                            ? "Etkinlik web sitesinde görünsün mü?"
-                            : "Soll die Aktivität auf der Website sichtbar sein?"}
+                          {t("admin_publish_status_help")}
                         </p>
                       </div>
                       <div className="relative">
@@ -1647,12 +1610,8 @@ const AdminActivities: React.FC = () => {
                         <div className="w-16 h-8 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kpf-teal/30 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-green-500 cursor-pointer"></div>
                         <span className="absolute top-1.5 left-2 text-xs font-bold text-white pointer-events-none">
                           {formData.isActive
-                            ? language === "tr"
-                              ? "AÇIK"
-                              : "AN"
-                            : language === "tr"
-                              ? "KAPALI"
-                              : "AUS"}
+                            ? t("admin_toggle_on")
+                            : t("admin_toggle_off")}
                         </span>
                       </div>
                     </div>
@@ -1669,65 +1628,11 @@ const AdminActivities: React.FC = () => {
             <div
               className={`
               min-w-[300px] max-w-md rounded-xl shadow-2xl p-4 flex items-start gap-3 border-2
-              ${
-                notification.type === "success"
-                  ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 text-green-800"
-                  : notification.type === "error"
-                    ? "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800"
-                    : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800"
-              }
+              ${notificationThemeByType[notification.type]}
             `}
             >
               <div className="flex-shrink-0 mt-0.5">
-                {notification.type === "success" ? (
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                ) : notification.type === "error" ? (
-                  <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                )}
+                {renderNotificationIcon(notification.type)}
               </div>
               <div className="flex-1">
                 <p className="font-bold text-sm leading-tight">

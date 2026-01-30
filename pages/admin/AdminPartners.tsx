@@ -4,7 +4,6 @@ import {
   Edit,
   Trash2,
   Search,
-  Handshake,
   ExternalLink,
   Eye,
   EyeOff,
@@ -24,7 +23,7 @@ const QuillEditor = ({
 }: {
   value: string;
   onChange: (val: string) => void;
-  placeholder?: string;
+  placeholder: string;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
@@ -34,7 +33,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder,
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -219,13 +218,13 @@ const AdminPartners: React.FC = () => {
   const filteredPartners = partners.filter(
     (p) =>
       p.nameTr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.nameDe.toLowerCase().includes(searchQuery.toLowerCase())
+      p.nameDe.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-red"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-teal"></div>
       </div>
     );
   }
@@ -238,11 +237,14 @@ const AdminPartners: React.FC = () => {
           <h1 className="text-3xl font-bold text-slate-800 mb-2">
             {t("admin_partners_title")}
           </h1>
-          <p className="text-slate-600">Toplam {partners.length} partner</p>
+          <p className="text-slate-600">
+            {t("admin_total")} {partners.length}{" "}
+            {t("admin_partners_count_label")}
+          </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all shadow-lg"
+          className="flex items-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition-all shadow-lg"
         >
           <Plus size={20} />
           <span className="font-semibold">{t("admin_partners_new")}</span>
@@ -257,7 +259,7 @@ const AdminPartners: React.FC = () => {
         />
         <input
           type="text"
-          placeholder="Partner ara..."
+          placeholder={t("admin_partners_search_placeholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
@@ -281,12 +283,12 @@ const AdminPartners: React.FC = () => {
                 {partner.isActive ? (
                   <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
                     <Eye size={14} />
-                    Aktif
+                    {t("admin_active")}
                   </span>
                 ) : (
                   <span className="px-3 py-1 bg-slate-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
                     <EyeOff size={14} />
-                    Pasif
+                    {t("admin_inactive")}
                   </span>
                 )}
               </div>
@@ -306,7 +308,7 @@ const AdminPartners: React.FC = () => {
                   className="flex items-center gap-2 text-sm text-kpf-teal hover:text-kpf-dark mb-4 transition-colors"
                 >
                   <ExternalLink size={14} />
-                  <span className="truncate">Website</span>
+                  <span className="truncate">{t("admin_website_short")}</span>
                 </a>
               )}
               <div className="flex gap-2">
@@ -315,14 +317,14 @@ const AdminPartners: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
                 >
                   <Edit size={14} />
-                  Düzenle
+                  {t("admin_edit")}
                 </button>
                 <button
                   onClick={() => handleDelete(partner.id)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
                 >
                   <Trash2 size={14} />
-                  Sil
+                  {t("admin_delete")}
                 </button>
               </div>
             </div>
@@ -336,7 +338,7 @@ const AdminPartners: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto my-8">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
               <h2 className="text-2xl font-bold text-slate-800">
-                {editingId ? "Partner Düzenle" : "Yeni Partner"}
+                {editingId ? t("admin_partners_edit") : t("admin_partners_new")}
               </h2>
               <button
                 onClick={resetForm}
@@ -351,7 +353,7 @@ const AdminPartners: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    İsim (Türkçe) *
+                    {t("admin_partners_name_tr")} *
                   </label>
                   <input
                     type="text"
@@ -365,7 +367,7 @@ const AdminPartners: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Name (Deutsch) *
+                    {t("admin_partners_name_de")} *
                   </label>
                   <input
                     type="text"
@@ -383,7 +385,7 @@ const AdminPartners: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Açıklama (Türkçe) *
+                    {t("admin_partners_description_tr")} *
                   </label>
                   <QuillEditor
                     value={formData.descriptionTr}
@@ -393,12 +395,12 @@ const AdminPartners: React.FC = () => {
                         descriptionTr: val,
                       })
                     }
-                    placeholder="Açıklama (Türkçe)"
+                    placeholder={t("admin_partners_description_tr_placeholder")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Beschreibung (Deutsch) *
+                    {t("admin_partners_description_de")} *
                   </label>
                   <QuillEditor
                     value={formData.descriptionDe}
@@ -408,7 +410,7 @@ const AdminPartners: React.FC = () => {
                         descriptionDe: val,
                       })
                     }
-                    placeholder="Beschreibung (Deutsch)"
+                    placeholder={t("admin_partners_description_de_placeholder")}
                   />
                 </div>
               </div>
@@ -416,7 +418,7 @@ const AdminPartners: React.FC = () => {
               {/* Website */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Website URL
+                  {t("admin_partners_website_url")}
                 </label>
                 <input
                   type="url"
@@ -424,7 +426,7 @@ const AdminPartners: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, websiteUrl: e.target.value })
                   }
-                  placeholder="https://example.com"
+                  placeholder={t("admin_url_placeholder")}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                 />
               </div>
@@ -432,7 +434,7 @@ const AdminPartners: React.FC = () => {
               {/* Logo */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Logo *
+                  {t("admin_partners_logo")} *
                 </label>
                 <input
                   type="file"
@@ -445,7 +447,7 @@ const AdminPartners: React.FC = () => {
                   <div className="mt-3 bg-slate-50 p-4 rounded-lg">
                     <img
                       src={formData.logoUrl}
-                      alt="Preview"
+                      alt={t("admin_preview_alt")}
                       className="h-24 w-auto mx-auto"
                     />
                   </div>
@@ -467,7 +469,7 @@ const AdminPartners: React.FC = () => {
                   htmlFor="isActive"
                   className="text-sm font-semibold text-slate-700"
                 >
-                  Partner Aktif
+                  {t("admin_partners_active")}
                 </label>
               </div>
 
@@ -476,17 +478,17 @@ const AdminPartners: React.FC = () => {
                 <button
                   type="submit"
                   disabled={uploadingImage}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition-all disabled:opacity-50 font-semibold"
                 >
                   <Save size={20} />
-                  {editingId ? "Güncelle" : "Oluştur"}
+                  {editingId ? t("admin_update") : t("admin_create")}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
                   className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all font-semibold"
                 >
-                  İptal
+                  {t("admin_cancel")}
                 </button>
               </div>
             </form>

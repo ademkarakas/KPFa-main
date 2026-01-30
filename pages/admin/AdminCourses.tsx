@@ -21,6 +21,78 @@ import { TEXTS } from "../../constants";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
+type NotificationType = "success" | "error" | "info";
+
+const byLanguage = (language: string, tr: string, de: string) =>
+  language === "tr" ? tr : de;
+
+const notificationThemeByType: Record<NotificationType, string> = {
+  success:
+    "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 text-green-800",
+  error: "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800",
+  info: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800",
+};
+
+const NotificationIcon = ({ type }: { type: NotificationType }) => {
+  if (type === "success") {
+    return (
+      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+        <svg
+          className="w-5 h-5 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  if (type === "error") {
+    return (
+      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+        <svg
+          className="w-5 h-5 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+      <svg
+        className="w-5 h-5 text-white"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </div>
+  );
+};
+
 // --- React 19 Uyumlu Modern Editör Bileşeni ---
 const QuillEditor = ({
   value,
@@ -39,7 +111,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder: placeholder ?? "",
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -125,14 +197,11 @@ const AdminCourses: React.FC = () => {
   const t = (key: string) => TEXTS[key]?.[language] || key;
   const [notification, setNotification] = useState<{
     show: boolean;
-    type: "success" | "error" | "info";
+    type: NotificationType;
     message: string;
   }>({ show: false, type: "success", message: "" });
 
-  const showNotification = (
-    type: "success" | "error" | "info",
-    message: string
-  ) => {
+  const showNotification = (type: NotificationType, message: string) => {
     setNotification({ show: true, type, message });
     setTimeout(() => setNotification({ show: false, type, message: "" }), 3000);
   };
@@ -173,12 +242,7 @@ const AdminCourses: React.FC = () => {
       setCourses(formatted);
     } catch (error) {
       console.error("Kurslar yüklenirken hata:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "Kurslar yüklenemedi!"
-          : "Kurse konnten nicht geladen werden!"
-      );
+      showNotification("error", t("admin_courses_load_failed"));
     } finally {
       setLoading(false);
     }
@@ -194,12 +258,7 @@ const AdminCourses: React.FC = () => {
       setFormData({ ...formData, imageUrl });
     } catch (error) {
       console.error("Resim yüklenirken hata:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "Resim yüklenemedi!"
-          : "Bild konnte nicht hochgeladen werden!"
-      );
+      showNotification("error", t("admin_courses_image_upload_failed"));
     } finally {
       setUploadingImage(false);
     }
@@ -239,10 +298,7 @@ const AdminCourses: React.FC = () => {
       scheduleDe: item.scheduleDe || "",
 
       // 🟢 Adres / Lokasyon
-      location:
-        formatcourseLocation(item.courseLocation) ||
-        formatcourseLocation(item.courseLocation) ||
-        "",
+      location: formatcourseLocation(item.courseLocation) || "",
       courseLocation: item.courseLocation || null,
 
       duration: item.duration || "",
@@ -295,23 +351,48 @@ const AdminCourses: React.FC = () => {
 
       await loadCourses();
       resetForm();
-      showNotification(
-        "success",
-        editingId
-          ? language === "tr"
-            ? "Kurs güncellendi!"
-            : "Kurs wurde aktualisiert!"
-          : language === "tr"
-          ? "Kurs oluşturuldu!"
-          : "Kurs wurde erstellt!"
-      );
+
+      const successMessage = editingId
+        ? t("admin_courses_update_success")
+        : t("admin_courses_create_success");
+      showNotification("success", successMessage);
     } catch (error) {
       console.error("Kayıt hatası:", error);
-      showNotification(
-        "error",
-        language === "tr" ? "İşlem başarısız!" : "Vorgang fehlgeschlagen!"
-      );
+      showNotification("error", t("admin_operation_failed"));
     }
+  };
+
+  const normalizeCourseLocationFormValue = (course: any) => {
+    if (course.courseLocation && typeof course.courseLocation === "object") {
+      return {
+        street: course.courseLocation.street || "",
+        houseNo: course.courseLocation.houseNo || "",
+        zipCode: course.courseLocation.zipCode || "",
+        city: course.courseLocation.city || "",
+        state: course.courseLocation.state || "",
+        country: course.courseLocation.country || "",
+      };
+    }
+
+    if (typeof course.courseLocation === "string") {
+      return {
+        street: course.courseLocation,
+        houseNo: "",
+        zipCode: "",
+        city: "",
+        state: "",
+        country: "",
+      };
+    }
+
+    return {
+      street: "",
+      houseNo: "",
+      zipCode: "",
+      city: "",
+      state: "",
+      country: "",
+    };
   };
 
   const handleEdit = (course: any) => {
@@ -327,33 +408,7 @@ const AdminCourses: React.FC = () => {
       icon: course.icon || "BookOpen",
       instructor: course.instructor || "",
       date: course.date || "",
-      courseLocation:
-        course.courseLocation && typeof course.courseLocation === "object"
-          ? {
-              street: course.courseLocation.street || "",
-              houseNo: course.courseLocation.houseNo || "",
-              zipCode: course.courseLocation.zipCode || "",
-              city: course.courseLocation.city || "",
-              state: course.courseLocation.state || "",
-              country: course.courseLocation.country || "",
-            }
-          : typeof course.courseLocation === "string"
-          ? {
-              street: course.courseLocation,
-              houseNo: "",
-              zipCode: "",
-              city: "",
-              state: "",
-              country: "",
-            }
-          : {
-              street: "",
-              houseNo: "",
-              zipCode: "",
-              city: "",
-              state: "",
-              country: "",
-            },
+      courseLocation: normalizeCourseLocationFormValue(course),
       courseCategory: course.courseCategory || "",
       imageUrl: course.imageUrl || "",
       isActive: course.isActive ?? true,
@@ -363,23 +418,15 @@ const AdminCourses: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Bu kursu silmek istediğinizden emin misiniz?")) return;
+    if (!confirm(t("admin_courses_delete_confirm"))) return;
 
     try {
       await coursesApi.delete(id);
       await loadCourses();
-      showNotification(
-        "success",
-        language === "tr" ? "Kurs silindi!" : "Kurs wurde gelöscht!"
-      );
+      showNotification("success", t("admin_courses_delete_success"));
     } catch (error) {
       console.error("Silme hatası:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "Silme işlemi başarısız!"
-          : "Löschen fehlgeschlagen!"
-      );
+      showNotification("error", t("admin_courses_delete_failed"));
     }
   };
 
@@ -416,19 +463,18 @@ const AdminCourses: React.FC = () => {
     (c) =>
       c.titleTr.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.titleDe.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.instructor.toLowerCase().includes(searchQuery.toLowerCase())
+      c.instructor.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const toggleActive = async (id: any, currentStatus: boolean) => {
     try {
       const course = courses.find((c) => c.id === id);
       if (!course) {
-        showNotification(
-          "error",
-          language === "tr" ? "Kurs bulunamadı!" : "Kurs nicht gefunden!"
-        );
+        showNotification("error", t("admin_courses_not_found"));
         return;
       }
+
+      const nextIsActive = !currentStatus;
 
       const dto: any = {
         ...(id && { Id: id }),
@@ -446,29 +492,19 @@ const AdminCourses: React.FC = () => {
         CourseLocation: course.courseLocation || null,
         CourseCategory: course.courseCategory || null,
         ImageUrl: course.imageUrl || null,
-        IsActive: !currentStatus,
+        IsActive: nextIsActive,
       };
 
-      await coursesApi.update(id as any, dto);
+      await coursesApi.update(id, dto);
       await loadCourses();
-      showNotification(
-        "success",
-        !currentStatus
-          ? language === "tr"
-            ? "Kurs aktif hale getirildi!"
-            : "Kurs aktiviert!"
-          : language === "tr"
-          ? "Kurs pasif hale getirildi!"
-          : "Kurs deaktiviert!"
-      );
+
+      const toggleMessage = nextIsActive
+        ? t("admin_courses_activated_success")
+        : t("admin_courses_deactivated_success");
+      showNotification("success", toggleMessage);
     } catch (error) {
       console.error("Durum değiştirme hatası:", error);
-      showNotification(
-        "error",
-        language === "tr"
-          ? "Durum değiştirilemedi!"
-          : "Status konnte nicht geändert werden!"
-      );
+      showNotification("error", t("admin_courses_toggle_failed"));
     }
   };
 
@@ -477,13 +513,26 @@ const AdminCourses: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-teal"></div>
         <p className="mt-4 text-slate-500 font-medium">
-          {language === "tr"
-            ? "Kurslar yükleniyor..."
-            : "Kurse werden geladen..."}
+          {t("admin_courses_loading")}
         </p>
       </div>
     );
   }
+
+  const searchPlaceholder = t("admin_courses_search_placeholder");
+  const noResultsTitle = t("admin_courses_no_results_title");
+  const noResultsSubtitle = t("admin_courses_no_results_subtitle");
+  const clearSearchLabel = t("admin_clear_search");
+  const statusActivateLabel = t("admin_courses_activate");
+  const statusDeactivateLabel = t("admin_courses_deactivate");
+  const modalTitle = editingId
+    ? t("admin_courses_edit")
+    : t("admin_courses_create");
+  const modalSubtitle = t("admin_fill_all_fields");
+  const submitLabel = editingId
+    ? t("admin_courses_submit_update")
+    : t("admin_courses_submit_create");
+  const cancelLabel = t("admin_cancel");
   return (
     <div className="max-w-7xl mx-auto pb-20 px-4">
       <div className="space-y-6">
@@ -521,11 +570,7 @@ const AdminCourses: React.FC = () => {
           />
           <input
             type="text"
-            placeholder={
-              language === "tr"
-                ? "🔍 Kurs ara... (başlık, eğitmen veya kategoriye göre)"
-                : "🔍 Kurs suchen... (nach Titel, Dozent oder Kategorie)"
-            }
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-14 pr-6 py-4 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-kpf-teal/30 focus:border-kpf-teal text-base shadow-sm"
@@ -540,21 +585,15 @@ const AdminCourses: React.FC = () => {
                 <Search size={40} className="text-slate-400" />
               </div>
               <p className="text-slate-600 text-xl font-semibold mb-2">
-                {language === "tr"
-                  ? "🔍 Arama sonucunda kurs bulunamadı"
-                  : "🔍 Keine Kurse gefunden"}
+                {noResultsTitle}
               </p>
-              <p className="text-slate-500 text-sm">
-                {language === "tr"
-                  ? "Farklı anahtar kelimeler deneyin veya yeni bir kurs ekleyin"
-                  : "Versuchen Sie andere Schlüsselwörter oder fügen Sie einen neuen Kurs hinzu"}
-              </p>
+              <p className="text-slate-500 text-sm">{noResultsSubtitle}</p>
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
                   className="mt-4 px-6 py-2 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/80 transition-all font-semibold"
                 >
-                  {language === "tr" ? "Aramayı Temizle" : "Suche zurücksetzen"}
+                  {clearSearchLabel}
                 </button>
               )}
             </div>
@@ -564,65 +603,12 @@ const AdminCourses: React.FC = () => {
         {notification.show && (
           <div className="fixed top-4 right-4 z-[9999] animate-slide-in">
             <div
-              className={
-                `min-w-[300px] max-w-md rounded-xl shadow-2xl p-4 flex items-start gap-3 border-2 ` +
-                (notification.type === "success"
-                  ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 text-green-800"
-                  : notification.type === "error"
-                  ? "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800"
-                  : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800")
-              }
+              className={`min-w-[300px] max-w-md rounded-xl shadow-2xl p-4 flex items-start gap-3 border-2 ${
+                notificationThemeByType[notification.type]
+              }`}
             >
               <div className="flex-shrink-0 mt-0.5">
-                {notification.type === "success" ? (
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                ) : notification.type === "error" ? (
-                  <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                )}
+                <NotificationIcon type={notification.type} />
               </div>
               <div className="flex-1">
                 <p className="font-bold text-sm leading-tight">
@@ -645,23 +631,21 @@ const AdminCourses: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
           {/* Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold text-white bg-gradient-to-r from-kpf-teal to-kpf-teal uppercase tracking-wide">
-            <div className="col-span-4">
-              {language === "tr" ? "📚 Kurs" : "📚 Kurs"}
+            <div className="col-span-4">{t("admin_courses_header_course")}</div>
+            <div className="col-span-2">
+              {t("admin_courses_header_instructor")}
             </div>
             <div className="col-span-2">
-              {language === "tr" ? "👨‍🏫 Eğitmen" : "👨‍🏫 Dozent"}
+              {t("admin_courses_header_schedule")}
             </div>
             <div className="col-span-2">
-              {language === "tr" ? "📅 Program" : "📅 Zeitplan"}
-            </div>
-            <div className="col-span-2">
-              {language === "tr" ? "👥 Kapasite" : "👥 Kapazität"}
+              {t("admin_courses_header_capacity")}
             </div>
             <div className="col-span-1 text-center">
-              {language === "tr" ? "👁️ Durum" : "👁️ Status"}
+              {t("admin_courses_header_status")}
             </div>
             <div className="col-span-1 text-right">
-              {language === "tr" ? "⚙️ İşlemler" : "⚙️ Aktionen"}
+              {t("admin_courses_header_actions")}
             </div>
           </div>
 
@@ -670,7 +654,7 @@ const AdminCourses: React.FC = () => {
             {filteredCourses.map((course) => (
               <div
                 key={course.id}
-                className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-red/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
+                className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-teal/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
               >
                 {/* Title + Image */}
                 <div className="col-span-4 flex items-center gap-4">
@@ -690,19 +674,21 @@ const AdminCourses: React.FC = () => {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-slate-800 line-clamp-1 text-base">
-                      {language === "tr" ? course.titleTr : course.titleDe}
+                      {byLanguage(language, course.titleTr, course.titleDe)}
                     </p>
                     <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
-                      {language === "tr"
-                        ? course.descriptionTr
-                        : course.descriptionDe}
+                      {byLanguage(
+                        language,
+                        course.descriptionTr,
+                        course.descriptionDe,
+                      )}
                     </p>
                   </div>
                 </div>
 
                 {/* Instructor */}
                 <div className="col-span-2 text-sm text-slate-700 font-semibold flex items-center gap-2">
-                  <GraduationCap size={16} className="text-kpf-red" />
+                  <GraduationCap size={16} className="text-kpf-teal" />
                   <span className="line-clamp-1">
                     {course.instructor || "-"}
                   </span>
@@ -710,9 +696,9 @@ const AdminCourses: React.FC = () => {
 
                 {/* Schedule */}
                 <div className="col-span-2 text-sm text-slate-700 font-semibold flex items-center gap-2">
-                  <Calendar size={16} className="text-kpf-red" />
+                  <Calendar size={16} className="text-kpf-teal" />
                   <span className="line-clamp-1">
-                    {language === "tr" ? course.scheduleTr : course.scheduleDe}
+                    {byLanguage(language, course.scheduleTr, course.scheduleDe)}
                   </span>
                 </div>
 
@@ -728,24 +714,20 @@ const AdminCourses: React.FC = () => {
                     onClick={() => toggleActive(course.id, course.isActive)}
                     className="group relative"
                     title={
-                      language === "tr"
-                        ? course.isActive
-                          ? "Pasif yap"
-                          : "Aktif yap"
-                        : course.isActive
-                        ? "Deaktivieren"
-                        : "Aktivieren"
+                      course.isActive
+                        ? statusDeactivateLabel
+                        : statusActivateLabel
                     }
                   >
                     {course.isActive ? (
                       <span className="px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1.5 border border-green-200 cursor-pointer group-hover:shadow-lg group-hover:scale-105 transition-all">
                         <Eye size={14} />
-                        {language === "tr" ? "Aktif" : "Aktiv"}
+                        {t("admin_active")}
                       </span>
                     ) : (
                       <span className="px-3 py-1.5 bg-gradient-to-r from-slate-100 to-gray-100 text-slate-600 text-xs font-bold rounded-full flex items-center gap-1.5 border border-slate-200 cursor-pointer group-hover:shadow-lg group-hover:scale-105 transition-all">
                         <EyeOff size={14} />
-                        {language === "tr" ? "Pasif" : "Inaktiv"}
+                        {t("admin_inactive")}
                       </span>
                     )}
                   </button>
@@ -756,14 +738,14 @@ const AdminCourses: React.FC = () => {
                   <button
                     onClick={() => handleEdit(course)}
                     className="p-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all hover:shadow-md"
-                    title={language === "tr" ? "Düzenle" : "Bearbeiten"}
+                    title={t("admin_edit")}
                   >
                     <Edit size={18} />
                   </button>
                   <button
                     onClick={() => handleDelete(course.id)}
                     className="p-2.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all hover:shadow-md"
-                    title={language === "tr" ? "Sil" : "Löschen"}
+                    title={t("admin_delete")}
                   >
                     <Trash2 size={18} />
                   </button>
@@ -785,19 +767,11 @@ const AdminCourses: React.FC = () => {
                   </div>
                   <div>
                     <h1 className="text-xl font-black text-slate-800">
-                      {editingId
-                        ? language === "tr"
-                          ? "Kurs Düzenle"
-                          : "Kurs bearbeiten"
-                        : language === "tr"
-                        ? "Yeni Kurs Oluştur"
-                        : "Neuen Kurs erstellen"}
+                      {modalTitle}
                     </h1>
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                       <CheckCircle size={10} className="text-green-500" />
-                      {language === "tr"
-                        ? "Tüm alanları doldurun"
-                        : "Füllen Sie alle Felder aus"}
+                      {modalSubtitle}
                     </p>
                   </div>
                 </div>
@@ -819,7 +793,7 @@ const AdminCourses: React.FC = () => {
                       <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
                         <Languages size={20} />
                         <span className="font-bold text-xs uppercase tracking-widest">
-                          Türkçe (TR) İçerik
+                          {t("admin_content_tr")}
                         </span>
                       </div>
                       <input
@@ -829,12 +803,14 @@ const AdminCourses: React.FC = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, titleTr: e.target.value })
                         }
-                        placeholder="Kurs Başlığı *"
+                        placeholder={t(
+                          "admin_courses_form_title_tr_placeholder",
+                        )}
                         className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
                       />
                       <div className="pt-4 border-t border-slate-50">
                         <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Kısa Açıklama *
+                          {t("admin_courses_short_description_label")} *
                         </span>
                         <textarea
                           required
@@ -846,20 +822,24 @@ const AdminCourses: React.FC = () => {
                               descriptionTr: e.target.value,
                             })
                           }
-                          placeholder="Kurs hakkında kısa açıklama..."
+                          placeholder={t(
+                            "admin_courses_short_description_tr_placeholder",
+                          )}
                           className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
                         />
                       </div>
                       <div className="pt-4 border-t border-slate-50">
                         <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Detaylı Açıklama
+                          {t("admin_courses_detailed_description_label")}
                         </span>
                         <QuillEditor
                           value={formData.detailsTr}
                           onChange={(val) =>
                             setFormData({ ...formData, detailsTr: val })
                           }
-                          placeholder="Detay sayfasında gösterilecek içerik..."
+                          placeholder={t(
+                            "admin_courses_details_tr_placeholder",
+                          )}
                         />
                       </div>
                     </div>
@@ -869,7 +849,7 @@ const AdminCourses: React.FC = () => {
                       <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
                         <Languages size={20} />
                         <span className="font-bold text-xs uppercase tracking-widest">
-                          Almanca (DE) İçerik
+                          {t("admin_content_de")}
                         </span>
                       </div>
                       <input
@@ -879,12 +859,14 @@ const AdminCourses: React.FC = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, titleDe: e.target.value })
                         }
-                        placeholder="Kurs Titel *"
+                        placeholder={t(
+                          "admin_courses_form_title_de_placeholder",
+                        )}
                         className="w-full text-3xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200 bg-transparent"
                       />
                       <div className="pt-4 border-t border-slate-50">
                         <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Kurzbeschreibung *
+                          {t("admin_courses_short_description_label")} *
                         </span>
                         <textarea
                           required
@@ -896,20 +878,24 @@ const AdminCourses: React.FC = () => {
                               descriptionDe: e.target.value,
                             })
                           }
-                          placeholder="Kurze Beschreibung des Kurses..."
+                          placeholder={t(
+                            "admin_courses_short_description_de_placeholder",
+                          )}
                           className="w-full text-base text-slate-600 border-none focus:ring-0 p-0 resize-none bg-transparent placeholder:text-slate-300"
                         />
                       </div>
                       <div className="pt-4 border-t border-slate-50">
                         <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                          Detaillierte Beschreibung
+                          {t("admin_courses_detailed_description_label")}
                         </span>
                         <QuillEditor
                           value={formData.detailsDe}
                           onChange={(val) =>
                             setFormData({ ...formData, detailsDe: val })
                           }
-                          placeholder="Inhalt für Detailseite..."
+                          placeholder={t(
+                            "admin_courses_details_de_placeholder",
+                          )}
                         />
                       </div>
                     </div>
@@ -924,7 +910,7 @@ const AdminCourses: React.FC = () => {
                       <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
                         <Calendar size={20} />
                         <span className="font-bold text-xs uppercase tracking-widest">
-                          Program (TR)
+                          {t("admin_courses_schedule_tr_label")}
                         </span>
                       </div>
                       <input
@@ -937,7 +923,7 @@ const AdminCourses: React.FC = () => {
                             scheduleTr: e.target.value,
                           })
                         }
-                        placeholder="örn: Pazartesi 18:00-20:00"
+                        placeholder={t("admin_courses_schedule_tr_placeholder")}
                         className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
                       />
                     </div>
@@ -946,7 +932,7 @@ const AdminCourses: React.FC = () => {
                       <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
                         <Calendar size={20} />
                         <span className="font-bold text-xs uppercase tracking-widest">
-                          Zeitplan (DE)
+                          {t("admin_courses_schedule_de_label")}
                         </span>
                       </div>
                       <input
@@ -959,7 +945,7 @@ const AdminCourses: React.FC = () => {
                             scheduleDe: e.target.value,
                           })
                         }
-                        placeholder="z.B: Montag 18:00-20:00"
+                        placeholder={t("admin_courses_schedule_de_placeholder")}
                         className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
                       />
                     </div>
@@ -971,7 +957,7 @@ const AdminCourses: React.FC = () => {
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                     <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
                       <Users size={14} className="text-kpf-teal" />
-                      {language === "tr" ? "Eğitmen" : "Dozent"}
+                      {t("admin_courses_instructor_label")}
                     </span>
                     <input
                       type="text"
@@ -979,16 +965,14 @@ const AdminCourses: React.FC = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, instructor: e.target.value })
                       }
-                      placeholder={
-                        language === "tr" ? "Eğitmen adı" : "Dozent Name"
-                      }
+                      placeholder={t("admin_courses_instructor_placeholder")}
                       className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
                     />
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                     <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
                       <Calendar size={14} className="text-kpf-teal" />
-                      {language === "tr" ? "Başlangıç Tarihi" : "Startdatum"}
+                      {t("admin_courses_start_date_label")}
                     </span>
                     <input
                       type="date"
@@ -1004,10 +988,14 @@ const AdminCourses: React.FC = () => {
                 {/* İkon, Eğitmen, Tarih */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      İkon *
+                    <label
+                      htmlFor="courseIcon"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
+                      {t("admin_courses_icon_label")} *
                     </label>
                     <select
+                      id="courseIcon"
                       value={formData.icon}
                       onChange={(e) =>
                         setFormData({ ...formData, icon: e.target.value })
@@ -1022,10 +1010,14 @@ const AdminCourses: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Eğitmen
+                    <label
+                      htmlFor="courseInstructor"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
+                      {t("admin_courses_instructor_label")}
                     </label>
                     <input
+                      id="courseInstructor"
                       type="text"
                       value={formData.instructor}
                       onChange={(e) =>
@@ -1035,10 +1027,14 @@ const AdminCourses: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Tarih
+                    <label
+                      htmlFor="courseDate"
+                      className="block text-sm font-semibold text-slate-700 mb-2"
+                    >
+                      {t("admin_courses_start_date_label")}
                     </label>
                     <input
+                      id="courseDate"
                       type="date"
                       value={formData.date}
                       onChange={(e) =>
@@ -1053,16 +1049,14 @@ const AdminCourses: React.FC = () => {
                 <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
                   <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <MapPin size={20} className="text-kpf-teal" />
-                    {language === "tr"
-                      ? "📍 Adres Bilgileri"
-                      : "📍 Adressinformationen"}
+                    {t("admin_courses_address_section_title")}
                   </h3>
 
                   <div className="grid grid-cols-2 gap-4">
                     {/* Sokak */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Sokak" : "Straße"} *
+                        {t("admin_address_street")} *
                       </label>
                       <input
                         type="text"
@@ -1088,11 +1082,9 @@ const AdminCourses: React.FC = () => {
                             }`.trim(),
                           })
                         }
-                        placeholder={
-                          language === "tr"
-                            ? "örn: Rheinstraße"
-                            : "z.B: Rheinstraße"
-                        }
+                        placeholder={t(
+                          "admin_courses_address_street_placeholder",
+                        )}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                     </div>
@@ -1100,7 +1092,7 @@ const AdminCourses: React.FC = () => {
                     {/* Ev Numarası */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Ev No" : "Hausnummer"}
+                        {t("admin_address_houseNo")}
                       </label>
                       <input
                         type="text"
@@ -1123,7 +1115,9 @@ const AdminCourses: React.FC = () => {
                             } ${formData.courseLocation?.city || ""}`.trim(),
                           })
                         }
-                        placeholder={language === "tr" ? "örn: 45" : "z.B: 45"}
+                        placeholder={t(
+                          "admin_courses_address_house_placeholder",
+                        )}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                     </div>
@@ -1131,7 +1125,7 @@ const AdminCourses: React.FC = () => {
                     {/* Posta Kodu */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Posta Kodu" : "Postleitzahl"} *
+                        {t("admin_address_postalCode")} *
                       </label>
                       <input
                         type="text"
@@ -1155,9 +1149,7 @@ const AdminCourses: React.FC = () => {
                             } ${formData.courseLocation?.city || ""}`.trim(),
                           })
                         }
-                        placeholder={
-                          language === "tr" ? "örn: 64283" : "z.B: 64283"
-                        }
+                        placeholder={t("admin_courses_address_zip_placeholder")}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                     </div>
@@ -1165,7 +1157,7 @@ const AdminCourses: React.FC = () => {
                     {/* Şehir */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Şehir" : "Stadt"} *
+                        {t("admin_address_city")} *
                       </label>
                       <input
                         type="text"
@@ -1189,11 +1181,9 @@ const AdminCourses: React.FC = () => {
                             } ${e.target.value}`.trim(),
                           })
                         }
-                        placeholder={
-                          language === "tr"
-                            ? "örn: Darmstadt"
-                            : "z.B: Darmstadt"
-                        }
+                        placeholder={t(
+                          "admin_courses_address_city_placeholder",
+                        )}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                     </div>
@@ -1201,7 +1191,7 @@ const AdminCourses: React.FC = () => {
                     {/* Eyalet */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Eyalet" : "Bundesland"}
+                        {t("admin_address_state")}
                       </label>
                       <input
                         type="text"
@@ -1219,9 +1209,9 @@ const AdminCourses: React.FC = () => {
                             },
                           })
                         }
-                        placeholder={
-                          language === "tr" ? "örn: Hessen" : "z.B: Hessen"
-                        }
+                        placeholder={t(
+                          "admin_courses_address_state_placeholder",
+                        )}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                     </div>
@@ -1229,7 +1219,7 @@ const AdminCourses: React.FC = () => {
                     {/* Ülke */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        {language === "tr" ? "Ülke" : "Land"} *
+                        {t("admin_address_country")} *
                       </label>
                       <input
                         type="text"
@@ -1250,11 +1240,9 @@ const AdminCourses: React.FC = () => {
                             },
                           })
                         }
-                        placeholder={
-                          language === "tr"
-                            ? "örn: Almanya"
-                            : "z.B: Deutschland"
-                        }
+                        placeholder={t(
+                          "admin_courses_address_country_placeholder",
+                        )}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                       />
                     </div>
@@ -1263,10 +1251,14 @@ const AdminCourses: React.FC = () => {
 
                 {/* Kategori */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Kategori / Kategorie
+                  <label
+                    htmlFor="courseCategory"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    {t("admin_courses_category_label")}
                   </label>
                   <input
+                    id="courseCategory"
                     type="text"
                     value={formData.courseCategory}
                     onChange={(e) =>
@@ -1275,15 +1267,15 @@ const AdminCourses: React.FC = () => {
                         courseCategory: e.target.value,
                       })
                     }
-                    placeholder="örn: Dil Kursu, Sprachkurs"
+                    placeholder={t("admin_courses_category_placeholder")}
                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
                   />
                 </div>
 
                 {/* Resim */}
-                <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-red/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
+                <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-teal/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
                   <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    📷 {language === "tr" ? "Kurs Resmi" : "Kursbild"} *
+                    📷 {t("admin_courses_image_label")} *
                   </label>
                   <input
                     type="file"
@@ -1300,7 +1292,7 @@ const AdminCourses: React.FC = () => {
                         className="w-full h-48 object-cover rounded-lg shadow-md"
                       />
                       <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        ✓ {language === "tr" ? "Yüklendi" : "Hochgeladen"}
+                        ✓ {t("admin_uploaded")}
                       </div>
                     </div>
                   )}
@@ -1308,9 +1300,7 @@ const AdminCourses: React.FC = () => {
                     <div className="mt-3 text-center">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-4 border-kpf-teal"></div>
                       <p className="text-sm text-slate-600 mt-2">
-                        {language === "tr"
-                          ? "Yükleniyor..."
-                          : "Wird hochgeladen..."}
+                        {t("admin_loading")}
                       </p>
                     </div>
                   )}
@@ -1329,14 +1319,10 @@ const AdminCourses: React.FC = () => {
                         ) : (
                           <EyeOff size={20} className="text-slate-400" />
                         )}
-                        {language === "tr"
-                          ? "Yayın Durumu"
-                          : "Veröffentlichungsstatus"}
+                        {t("admin_courses_publish_status_label")}
                       </label>
                       <p className="text-sm text-slate-600 mt-1">
-                        {language === "tr"
-                          ? "Kurs web sitesinde görünsün mü?"
-                          : "Soll der Kurs auf der Website sichtbar sein?"}
+                        {t("admin_courses_publish_status_help")}
                       </p>
                     </div>
                     <div className="relative">
@@ -1355,12 +1341,8 @@ const AdminCourses: React.FC = () => {
                       <div className="w-16 h-8 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-kpf-teal/30 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-green-500 cursor-pointer"></div>
                       <span className="absolute top-1.5 left-2 text-xs font-bold text-white pointer-events-none">
                         {formData.isActive
-                          ? language === "tr"
-                            ? "AÇIK"
-                            : "AN"
-                          : language === "tr"
-                          ? "KAPALI"
-                          : "AUS"}
+                          ? t("admin_toggle_on")
+                          : t("admin_toggle_off")}
                       </span>
                     </div>
                   </div>
@@ -1376,15 +1358,7 @@ const AdminCourses: React.FC = () => {
                     className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-kpf-teal to-blue-600 text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg"
                   >
                     <Save size={22} />
-                    <span>
-                      {editingId
-                        ? language === "tr"
-                          ? "✓ Değişiklikleri Kaydet"
-                          : "✓ Änderungen speichern"
-                        : language === "tr"
-                        ? "✓ Kursu Oluştur"
-                        : "✓ Kurs erstellen"}
-                    </span>
+                    <span>{submitLabel}</span>
                   </button>
                   <button
                     type="button"
@@ -1392,7 +1366,7 @@ const AdminCourses: React.FC = () => {
                     className="px-8 py-4 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold text-lg flex items-center gap-2"
                   >
                     <X size={20} />
-                    {language === "tr" ? "İptal" : "Abbrechen"}
+                    {cancelLabel}
                   </button>
                 </div>
               </form>

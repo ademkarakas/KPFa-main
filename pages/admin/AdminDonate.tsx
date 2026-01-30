@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Save,
   Heart,
@@ -47,6 +48,7 @@ interface DonatePageData {
 }
 
 const AdminDonate: React.FC = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState<DonatePageData>({
     id: "",
     heroTitleTr: "",
@@ -94,7 +96,7 @@ const AdminDonate: React.FC = () => {
 
   const handleUnauthorized = () => {
     localStorage.removeItem("adminToken");
-    window.location.href = "/admin/login";
+    globalThis.location.href = "/admin/login";
   };
 
   // Fetch data on mount
@@ -120,7 +122,7 @@ const AdminDonate: React.FC = () => {
         }
       } catch (error) {
         console.error("DonatePage verisi yüklenemedi:", error);
-        showNotification("error", "Veriler yüklenirken hata oluştu!");
+        showNotification("error", t("adminDonate.notifications.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -143,7 +145,7 @@ const AdminDonate: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(data),
-        }
+        },
       );
 
       if (res.status === 401) {
@@ -152,14 +154,17 @@ const AdminDonate: React.FC = () => {
       }
 
       if (res.ok) {
-        showNotification("success", "Bağış sayfası başarıyla güncellendi!");
+        showNotification("success", t("adminDonate.notifications.updated"));
       } else {
         const errorText = await res.text();
-        showNotification("error", `Güncelleme başarısız: ${errorText}`);
+        showNotification(
+          "error",
+          `${t("adminDonate.notifications.updateFailed")}: ${errorText}`,
+        );
       }
     } catch (error) {
       console.error("Güncelleme hatası:", error);
-      showNotification("error", "Güncelleme sırasında hata oluştu!");
+      showNotification("error", t("adminDonate.notifications.updateError"));
     } finally {
       setSaving(false);
     }
@@ -173,8 +178,8 @@ const AdminDonate: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-kpf-red mx-auto mb-4"></div>
-          <p className="text-slate-600">Yükleniyor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-kpf-teal mx-auto mb-4"></div>
+          <p className="text-slate-600">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -218,26 +223,26 @@ const AdminDonate: React.FC = () => {
         {/* Sticky Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-kpf-red/10 rounded-2xl">
-              <Heart className="text-kpf-red" size={28} />
+            <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+              <Heart className="text-kpf-teal" size={28} />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-800">
-                Bağış Sayfası / Spendenseite
+                {t("adminDonate.pageTitle")}
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" />
-                Bağış sayfası içeriğini düzenleyin
+                {t("adminDonate.pageSubtitle")}
               </p>
             </div>
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-teal-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
           >
             <Save size={18} />
-            {saving ? "Kaydediliyor..." : "Sitede Yayınla"}
+            {saving ? t("common.saving") : t("common.publish")}
           </button>
         </div>
 
@@ -246,38 +251,38 @@ const AdminDonate: React.FC = () => {
           <div className="p-8 lg:p-12 space-y-8">
             <div className="pb-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <Heart size={24} className="text-kpf-red" />
-                Hero Bölümü
+                <Heart size={24} className="text-kpf-teal" />
+                {t("adminDonate.sections.hero")}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Ana Başlık (Türkçe)
+                    {t("adminDonate.labels.heroTitleTr")}
                   </label>
                   <input
                     type="text"
                     value={data.heroTitleTr}
                     onChange={(e) => updateField("heroTitleTr", e.target.value)}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    placeholder="Bize Destek Olun"
+                    placeholder={t("adminDonate.placeholders.heroTitleTr")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Haupttitel (Deutsch)
+                    {t("adminDonate.labels.heroTitleDe")}
                   </label>
                   <input
                     type="text"
                     value={data.heroTitleDe}
                     onChange={(e) => updateField("heroTitleDe", e.target.value)}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    placeholder="Unterstützen Sie uns"
+                    placeholder={t("adminDonate.placeholders.heroTitleDe")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Alt Başlık (Türkçe)
+                    {t("adminDonate.labels.heroSubtitleTr")}
                   </label>
                   <input
                     type="text"
@@ -286,12 +291,12 @@ const AdminDonate: React.FC = () => {
                       updateField("heroSubtitleTr", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    placeholder="Kültürel faaliyetlerimizi destekleyin"
+                    placeholder={t("adminDonate.placeholders.heroSubtitleTr")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Untertitel (Deutsch)
+                    {t("adminDonate.labels.heroSubtitleDe")}
                   </label>
                   <input
                     type="text"
@@ -300,7 +305,7 @@ const AdminDonate: React.FC = () => {
                       updateField("heroSubtitleDe", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                    placeholder="Unterstützen Sie unsere kulturellen Aktivitäten"
+                    placeholder={t("adminDonate.placeholders.heroSubtitleDe")}
                   />
                 </div>
               </div>
@@ -309,7 +314,7 @@ const AdminDonate: React.FC = () => {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   <div className="flex items-center gap-2">
                     <ImageIcon size={18} />
-                    Hero Görseli URL
+                    {t("adminDonate.labels.heroImageUrl")}
                   </div>
                 </label>
                 <input
@@ -317,12 +322,12 @@ const AdminDonate: React.FC = () => {
                   value={data.heroImageUrl}
                   onChange={(e) => updateField("heroImageUrl", e.target.value)}
                   className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
-                  placeholder="https://example.com/hero-image.jpg"
+                  placeholder={t("adminDonate.placeholders.heroImageUrl")}
                 />
                 {data.heroImageUrl && (
                   <img
                     src={data.heroImageUrl}
-                    alt="Hero Preview"
+                    alt={t("adminDonate.labels.heroImagePreviewAlt")}
                     className="mt-4 w-full max-w-md rounded-xl shadow-md"
                   />
                 )}
@@ -333,19 +338,19 @@ const AdminDonate: React.FC = () => {
             <div className="pb-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <Sparkles size={24} className="text-amber-500" />
-                Öne Çıkan Özellikler (3 Kutu)
+                {t("adminDonate.sections.features")}
               </h2>
 
               <div className="space-y-6">
                 {/* Feature 1 */}
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <h3 className="font-semibold text-slate-700 mb-3">
-                    Özellik 1
+                    {t("adminDonate.labels.feature1")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">
-                        🇹🇷 Türkçe
+                        {t("adminDonate.labels.tr")}
                       </label>
                       <input
                         type="text"
@@ -354,12 +359,14 @@ const AdminDonate: React.FC = () => {
                           updateField("feature1TitleTr", e.target.value)
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                        placeholder="Güvenli Bağış"
+                        placeholder={t(
+                          "adminDonate.placeholders.feature1TitleTr",
+                        )}
                       />
                     </div>
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">
-                        🇩🇪 Deutsch
+                        {t("adminDonate.labels.de")}
                       </label>
                       <input
                         type="text"
@@ -368,7 +375,9 @@ const AdminDonate: React.FC = () => {
                           updateField("feature1TitleDe", e.target.value)
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                        placeholder="Sichere Spende"
+                        placeholder={t(
+                          "adminDonate.placeholders.feature1TitleDe",
+                        )}
                       />
                     </div>
                   </div>
@@ -377,12 +386,12 @@ const AdminDonate: React.FC = () => {
                 {/* Feature 2 */}
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <h3 className="font-semibold text-slate-700 mb-3">
-                    Özellik 2
+                    {t("adminDonate.labels.feature2")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">
-                        🇹🇷 Türkçe
+                        {t("adminDonate.labels.tr")}
                       </label>
                       <input
                         type="text"
@@ -391,12 +400,14 @@ const AdminDonate: React.FC = () => {
                           updateField("feature2TitleTr", e.target.value)
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                        placeholder="Vergi Makbuzu"
+                        placeholder={t(
+                          "adminDonate.placeholders.feature2TitleTr",
+                        )}
                       />
                     </div>
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">
-                        🇩🇪 Deutsch
+                        {t("adminDonate.labels.de")}
                       </label>
                       <input
                         type="text"
@@ -405,7 +416,9 @@ const AdminDonate: React.FC = () => {
                           updateField("feature2TitleDe", e.target.value)
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                        placeholder="Spendenquittung"
+                        placeholder={t(
+                          "adminDonate.placeholders.feature2TitleDe",
+                        )}
                       />
                     </div>
                   </div>
@@ -414,12 +427,12 @@ const AdminDonate: React.FC = () => {
                 {/* Feature 3 */}
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <h3 className="font-semibold text-slate-700 mb-3">
-                    Özellik 3
+                    {t("adminDonate.labels.feature3")}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">
-                        🇹🇷 Türkçe
+                        {t("adminDonate.labels.tr")}
                       </label>
                       <input
                         type="text"
@@ -428,12 +441,14 @@ const AdminDonate: React.FC = () => {
                           updateField("feature3TitleTr", e.target.value)
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                        placeholder="Şeffaflık"
+                        placeholder={t(
+                          "adminDonate.placeholders.feature3TitleTr",
+                        )}
                       />
                     </div>
                     <div>
                       <label className="block text-sm text-slate-600 mb-1">
-                        🇩🇪 Deutsch
+                        {t("adminDonate.labels.de")}
                       </label>
                       <input
                         type="text"
@@ -442,7 +457,9 @@ const AdminDonate: React.FC = () => {
                           updateField("feature3TitleDe", e.target.value)
                         }
                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                        placeholder="Transparenz"
+                        placeholder={t(
+                          "adminDonate.placeholders.feature3TitleDe",
+                        )}
                       />
                     </div>
                   </div>
@@ -454,13 +471,13 @@ const AdminDonate: React.FC = () => {
             <div className="pb-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <FileText size={24} className="text-purple-500" />
-                Neden Bağış? Bölümü
+                {t("adminDonate.sections.whyDonate")}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Başlık (Türkçe)
+                    {t("adminDonate.labels.whyDonateTitleTr")}
                   </label>
                   <input
                     type="text"
@@ -469,12 +486,12 @@ const AdminDonate: React.FC = () => {
                       updateField("whyDonateTitleTr", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="Neden Bağış Yapmalısınız?"
+                    placeholder={t("adminDonate.placeholders.whyDonateTitleTr")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Titel (Deutsch)
+                    {t("adminDonate.labels.whyDonateTitleDe")}
                   </label>
                   <input
                     type="text"
@@ -483,12 +500,12 @@ const AdminDonate: React.FC = () => {
                       updateField("whyDonateTitleDe", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="Warum spenden?"
+                    placeholder={t("adminDonate.placeholders.whyDonateTitleDe")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Açıklama (Türkçe)
+                    {t("adminDonate.labels.whyDonateDescriptionTr")}
                   </label>
                   <textarea
                     value={data.whyDonateDescriptionTr}
@@ -497,12 +514,14 @@ const AdminDonate: React.FC = () => {
                     }
                     rows={4}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Neden bağış yapılmalı açıklaması..."
+                    placeholder={t(
+                      "adminDonate.placeholders.whyDonateDescriptionTr",
+                    )}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Beschreibung (Deutsch)
+                    {t("adminDonate.labels.whyDonateDescriptionDe")}
                   </label>
                   <textarea
                     value={data.whyDonateDescriptionDe}
@@ -511,7 +530,9 @@ const AdminDonate: React.FC = () => {
                     }
                     rows={4}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Beschreibung warum spenden..."
+                    placeholder={t(
+                      "adminDonate.placeholders.whyDonateDescriptionDe",
+                    )}
                   />
                 </div>
               </div>
@@ -521,13 +542,13 @@ const AdminDonate: React.FC = () => {
             <div className="pb-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <Globe size={24} className="text-teal-500" />
-                Bağışlar Nereye Gidiyor? Bölümü
+                {t("adminDonate.sections.where")}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Başlık (Türkçe)
+                    {t("adminDonate.labels.whereTitleTr")}
                   </label>
                   <input
                     type="text"
@@ -536,12 +557,12 @@ const AdminDonate: React.FC = () => {
                       updateField("whereTitleTr", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="Bağışlarınız Nereye Gidiyor?"
+                    placeholder={t("adminDonate.placeholders.whereTitleTr")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Titel (Deutsch)
+                    {t("adminDonate.labels.whereTitleDe")}
                   </label>
                   <input
                     type="text"
@@ -550,12 +571,12 @@ const AdminDonate: React.FC = () => {
                       updateField("whereTitleDe", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="Wohin gehen Ihre Spenden?"
+                    placeholder={t("adminDonate.placeholders.whereTitleDe")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Açıklama (Türkçe)
+                    {t("adminDonate.labels.whereDescriptionTr")}
                   </label>
                   <textarea
                     value={data.whereDescriptionTr}
@@ -564,12 +585,14 @@ const AdminDonate: React.FC = () => {
                     }
                     rows={4}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Bağışlar nereye gidiyor açıklaması..."
+                    placeholder={t(
+                      "adminDonate.placeholders.whereDescriptionTr",
+                    )}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Beschreibung (Deutsch)
+                    {t("adminDonate.labels.whereDescriptionDe")}
                   </label>
                   <textarea
                     value={data.whereDescriptionDe}
@@ -578,7 +601,9 @@ const AdminDonate: React.FC = () => {
                     }
                     rows={4}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Beschreibung wohin gehen Spenden..."
+                    placeholder={t(
+                      "adminDonate.placeholders.whereDescriptionDe",
+                    )}
                   />
                 </div>
               </div>
@@ -587,26 +612,26 @@ const AdminDonate: React.FC = () => {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 Vergi Bilgisi (Türkçe)
+                    {t("adminDonate.labels.taxInfoTr")}
                   </label>
                   <textarea
                     value={data.taxInfoTr}
                     onChange={(e) => updateField("taxInfoTr", e.target.value)}
                     rows={2}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Bağışlar vergiden düşülebilir..."
+                    placeholder={t("adminDonate.placeholders.taxInfoTr")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 Steuerinfo (Deutsch)
+                    {t("adminDonate.labels.taxInfoDe")}
                   </label>
                   <textarea
                     value={data.taxInfoDe}
                     onChange={(e) => updateField("taxInfoDe", e.target.value)}
                     rows={2}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Spenden sind steuerlich absetzbar..."
+                    placeholder={t("adminDonate.placeholders.taxInfoDe")}
                   />
                 </div>
               </div>
@@ -616,61 +641,77 @@ const AdminDonate: React.FC = () => {
             <div className="pb-6 border-b border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <Building2 size={24} className="text-kpf-teal" />
-                Banka Bilgileri / Bankverbindung
+                {t("adminDonate.sections.bank")}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Hesap Sahibi / Kontoinhaber
+                  <label
+                    htmlFor="donate-accountHolder"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    {t("adminDonate.labels.accountHolder")}
                   </label>
                   <input
+                    id="donate-accountHolder"
                     type="text"
                     value={data.accountHolder}
                     onChange={(e) =>
                       updateField("accountHolder", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="Kultur Platform Frankfurt e.V."
+                    placeholder={t("adminDonate.placeholders.accountHolder")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Banka Adı / Bankname
+                  <label
+                    htmlFor="donate-bankName"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    {t("adminDonate.labels.bankName")}
                   </label>
                   <input
+                    id="donate-bankName"
                     type="text"
                     value={data.bankName}
                     onChange={(e) => updateField("bankName", e.target.value)}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="Commerzbank"
+                    placeholder={t("adminDonate.placeholders.bankName")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    <div className="flex items-center gap-2">
+                  <label
+                    htmlFor="donate-iban"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    <span className="flex items-center gap-2">
                       <CreditCard size={18} />
-                      IBAN
-                    </div>
+                      {t("adminDonate.labels.iban")}
+                    </span>
                   </label>
                   <input
+                    id="donate-iban"
                     type="text"
                     value={data.iban}
                     onChange={(e) => updateField("iban", e.target.value)}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal font-mono"
-                    placeholder="DE89 3704 0044 0532 0130 00"
+                    placeholder={t("adminDonate.placeholders.iban")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    BIC / SWIFT
+                  <label
+                    htmlFor="donate-bicSwift"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    {t("adminDonate.labels.bicSwift")}
                   </label>
                   <input
+                    id="donate-bicSwift"
                     type="text"
                     value={data.bicSwift}
                     onChange={(e) => updateField("bicSwift", e.target.value)}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal font-mono"
-                    placeholder="COBADEFFXXX"
+                    placeholder={t("adminDonate.placeholders.bicSwift")}
                   />
                 </div>
               </div>
@@ -684,34 +725,42 @@ const AdminDonate: React.FC = () => {
                   alt="PayPal"
                   className="h-6"
                 />
-                PayPal Bilgileri
+                {t("adminDonate.sections.paypal")}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    PayPal URL
+                  <label
+                    htmlFor="donate-payPalUrl"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    {t("adminDonate.labels.payPalUrl")}
                   </label>
                   <input
+                    id="donate-payPalUrl"
                     type="url"
                     value={data.payPalUrl}
                     onChange={(e) => updateField("payPalUrl", e.target.value)}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="https://paypal.me/kulturplatform"
+                    placeholder={t("adminDonate.placeholders.payPalUrl")}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    PayPal Handle
+                  <label
+                    htmlFor="donate-payPalHandle"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    {t("adminDonate.labels.payPalHandle")}
                   </label>
                   <input
+                    id="donate-payPalHandle"
                     type="text"
                     value={data.payPalHandle}
                     onChange={(e) =>
                       updateField("payPalHandle", e.target.value)
                     }
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    placeholder="@kulturplatform"
+                    placeholder={t("adminDonate.placeholders.payPalHandle")}
                   />
                 </div>
               </div>
@@ -720,26 +769,26 @@ const AdminDonate: React.FC = () => {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇹🇷 PayPal Açıklama (Türkçe)
+                    {t("adminDonate.labels.payPalContentTr")}
                   </label>
                   <textarea
                     value={data.contentTr}
                     onChange={(e) => updateField("contentTr", e.target.value)}
                     rows={3}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="PayPal ile hızlı ve güvenli bağış yapın..."
+                    placeholder={t("adminDonate.placeholders.payPalContentTr")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    🇩🇪 PayPal Beschreibung (Deutsch)
+                    {t("adminDonate.labels.payPalContentDe")}
                   </label>
                   <textarea
                     value={data.contentDe}
                     onChange={(e) => updateField("contentDe", e.target.value)}
                     rows={3}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none"
-                    placeholder="Spenden Sie schnell und sicher mit PayPal..."
+                    placeholder={t("adminDonate.placeholders.payPalContentDe")}
                   />
                 </div>
               </div>

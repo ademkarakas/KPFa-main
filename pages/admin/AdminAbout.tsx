@@ -1,7 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Save,
+  X,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Sparkles,
+  Heart,
+  Users,
+} from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 
-// API'den gelen veri tipleri (Backend formatı)
+// ============= API Interface'leri =============
 interface ApiQuote {
   id?: string;
   quoteTr: string;
@@ -77,7 +90,6 @@ interface ApiTeamMember {
   order: number;
 }
 
-// Human Rights / Tenkil Section
 interface ApiHumanRights {
   id?: string;
   titleTr: string;
@@ -88,7 +100,6 @@ interface ApiHumanRights {
   instagramUrl: string;
 }
 
-// Partner
 interface ApiPartner {
   id?: string;
   name: string;
@@ -112,224 +123,197 @@ interface ApiAboutUsResponse {
   teamMembers: ApiTeamMember[];
 }
 
-// Form state tipleri
-interface AboutForm {
-  quote: ApiQuote;
-  whoWeAre: ApiWhoWeAre;
-  goals: ApiGoals;
-  vision: ApiVision;
-  mission: ApiMission;
-  coreValues: ApiCoreValue[];
-  focusAreas: ApiFocusArea[];
-  activityAreas: ApiActivityArea[];
-  teamMembers: ApiTeamMember[];
-  humanRights: ApiHumanRights;
-  partners: ApiPartner[];
-}
+// ============= QuillEditor Component =============
+const QuillEditor = ({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+  const isUpdating = useRef(false);
 
-const initialForm: AboutForm = {
-  quote: {
+  useEffect(() => {
+    if (containerRef.current && !quillRef.current) {
+      const quill = new Quill(containerRef.current, {
+        theme: "snow",
+        placeholder: placeholder || "İçerik yazın...",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ["bold", "italic", "underline"],
+            [{ list: "ordered" }, { list: "bullet" }],
+            ["link", "clean"],
+          ],
+        },
+      });
+
+      quill.on("text-change", () => {
+        if (!isUpdating.current) {
+          const html = quill.root.innerHTML;
+          onChange(html === "<p><br></p>" ? "" : html);
+        }
+      });
+
+      quillRef.current = quill;
+
+      if (value) {
+        quill.root.innerHTML = value;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (quillRef.current) {
+      const currentContent = quillRef.current.root.innerHTML;
+      const normalizedValue = value || "";
+      const normalizedCurrent =
+        currentContent === "<p><br></p>" ? "" : currentContent;
+
+      if (normalizedValue !== normalizedCurrent) {
+        isUpdating.current = true;
+        quillRef.current.root.innerHTML = normalizedValue;
+        setTimeout(() => {
+          isUpdating.current = false;
+        }, 100);
+      }
+    }
+  }, [value]);
+
+  return (
+    <div className="quill-modern-container">
+      <div ref={containerRef} />
+    </div>
+  );
+};
+
+// ============= Main Component =============
+// eslint-disable-next-line sonarjs/cognitive-complexity
+const AdminAbout: React.FC = () => {
+  const { language } = useLanguage();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "";
+  }>({ message: "", type: "" });
+
+  // ============= States =============
+  const [quote, setQuote] = useState<ApiQuote>({
     quoteTr: "",
     quoteDe: "",
     quoteAuthor: "",
-  },
-  whoWeAre: {
+  });
+
+  const [whoWeAre, setWhoWeAre] = useState<ApiWhoWeAre>({
     whoWeAreTr: "",
     whoWeAreDe: "",
     bannerImageUrl: null,
     bannerImageBase64: null,
     bannerImageFileName: null,
-  },
-  goals: {
-    goalsTr: "",
-    goalsDe: "",
-  },
-  vision: {
+  });
+
+  const [goals, setGoals] = useState<ApiGoals>({ goalsTr: "", goalsDe: "" });
+  const [vision, setVision] = useState<ApiVision>({
     visionTr: "",
     visionDe: "",
-  },
-  mission: {
+  });
+  const [mission, setMission] = useState<ApiMission>({
     missionTr: "",
     missionDe: "",
-  },
-  coreValues: [],
-  focusAreas: [],
-  activityAreas: [],
-  teamMembers: [],
-  humanRights: {
+  });
+
+  const [coreValues, setCoreValues] = useState<ApiCoreValue[]>([]);
+  const [focusAreas, setFocusAreas] = useState<ApiFocusArea[]>([]);
+  const [activityAreas, setActivityAreas] = useState<ApiActivityArea[]>([]);
+  const [teamMembers, setTeamMembers] = useState<ApiTeamMember[]>([]);
+  const [humanRights, setHumanRights] = useState<ApiHumanRights>({
     titleTr: "",
     titleDe: "",
     descriptionTr: "",
     descriptionDe: "",
     tenkilMuseumUrl: "",
     instagramUrl: "",
-  },
-  partners: [],
-};
+  });
+  const [partners, setPartners] = useState<ApiPartner[]>([]);
 
-const AdminAbout: React.FC = () => {
-  const { language } = useLanguage();
-  const [form, setForm] = useState<AboutForm>(initialForm);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    | "overview"
-    | "quote"
-    | "coreValues"
-    | "focusAreas"
-    | "activityAreas"
-    | "team"
-    | "humanRights"
-    | "partners"
-  >("overview");
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "success" | "error" | "";
-  }>({ message: "", type: "" });
+  // Modal states
+  const [editingFocusArea, setEditingFocusArea] = useState<ApiFocusArea | null>(
+    null,
+  );
+  const [editingCoreValue, setEditingCoreValue] = useState<ApiCoreValue | null>(
+    null,
+  );
+  const [editingActivityArea, setEditingActivityArea] =
+    useState<ApiActivityArea | null>(null);
+  const [editingTeamMember, setEditingTeamMember] =
+    useState<ApiTeamMember | null>(null);
+  const [editingPartner, setEditingPartner] = useState<ApiPartner | null>(null);
 
-  const fetchAbout = async () => {
-    try {
-      setIsLoading(true);
-
-      // Fetch all data in parallel
-      const [aboutRes, humanRightsRes, partnersRes] = await Promise.all([
-        fetch("https://localhost:7189/api/AboutUs"),
-        fetch("https://localhost:7189/api/AboutUs/human-rights"),
-        fetch("https://localhost:7189/api/Partners"),
-      ]);
-
-      if (!aboutRes.ok) {
-        console.error("HTTP hata:", aboutRes.status);
-        return;
-      }
-      const data: ApiAboutUsResponse = await aboutRes.json();
-
-      let humanRightsData: ApiHumanRights | null = null;
-      if (humanRightsRes.ok) {
-        humanRightsData = await humanRightsRes.json();
-      }
-
-      let partnersData: ApiPartner[] = [];
-      if (partnersRes.ok) {
-        partnersData = await partnersRes.json();
-      }
-
-      // API verisini form state'ine dönüştür
-      setForm({
-        quote: data.quote || { quoteTr: "", quoteDe: "", quoteAuthor: "" },
-        whoWeAre: data.whoWeAre || { whoWeAreTr: "", whoWeAreDe: "" },
-        goals: data.goals || { goalsTr: "", goalsDe: "" },
-        vision: data.vision || { visionTr: "", visionDe: "" },
-        mission: data.mission || { missionTr: "", missionDe: "" },
-        coreValues: data.coreValues || [],
-        focusAreas: data.focusAreas || [],
-        activityAreas: data.activityAreas || [],
-        teamMembers: data.teamMembers || [],
-        humanRights: humanRightsData || {
-          titleTr: "",
-          titleDe: "",
-          descriptionTr: "",
-          descriptionDe: "",
-          tenkilMuseumUrl: "",
-          instagramUrl: "",
-        },
-        partners: partnersData || [],
-      });
-    } catch (error) {
-      console.error("AboutUs verisi alınamadı", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAbout();
-  }, []);
+  // Track which section was last modified
+  const [lastModifiedSection, setLastModifiedSection] =
+    useState<string>("quote");
 
   const texts = {
     tr: {
-      pageTitle: "Hakkımızda Sayfası Yönetimi",
+      pageTitle: "Hakkımızda Sayfası",
       quote: "Alıntı",
-      quoteText: "Alıntı metni",
-      quoteAuthor: "Alıntı sahibi",
+      quoteTextTrLabel: "Alıntı Metni (TR)",
+      quoteTextDeLabel: "Alıntı Metni (DE)",
+      quoteAuthorLabel: "Alıntı Sahibi",
       whoWeAre: "Biz Kimiz?",
       goals: "Hedeflerimiz",
       vision: "Vizyon",
       mission: "Misyon",
       coreValues: "Temel Değerler",
       focusAreas: "Odak Alanlar",
-      activityAreas: "Faaliyet Alanlar",
+      activityAreas: "Faaliyet Alanları",
       teamMembers: "Ekip Üyeleri",
-      name: "İsim",
-      title: "Ünvan",
-      titleTR: "Ünvan (TR)",
-      titleDE: "Ünvan (DE)",
-      description: "Açıklama",
-      descriptionTR: "Açıklama (TR)",
-      descriptionDE: "Açıklama (DE)",
-      imageUrl: "Fotoğraf URL",
-      add: "Ekle",
-      delete: "Sil",
-      moveUp: "Yukarı Taşı",
-      moveDown: "Aşağı Taşı",
+      humanRights: "İnsan Hakları",
+      partners: "Ortaklar",
       save: "Kaydet",
       saving: "Kaydediliyor...",
+      add: "Ekle",
+      edit: "Düzenle",
+      delete: "Sil",
       cancel: "İptal",
-      confirmDelete: "Silmek istediğinize emin misiniz?",
-      photoPreview: "Fotoğraf Önizleme",
+      confirm: "Emin misiniz?",
       loading: "Yükleniyor...",
-      overview: "Genel Bakış",
-      humanRights: "İnsan Hakları (Tenkil)",
-      partners: "Ortaklar",
-      tenkilMuseumUrl: "Tenkil Müzesi URL",
-      instagramUrl: "Instagram URL",
-      partnerName: "Ortak Adı",
-      logoUrl: "Logo URL",
-      websiteUrl: "Website URL",
-      displayOrder: "Sıralama",
-      isActive: "Aktif",
+      success: "Başarıyla kaydedildi!",
+      error: "Hata oluştu",
+      publish: "Sitede Yayınla",
     },
     de: {
-      pageTitle: "Über Uns Seitenverwaltung",
+      pageTitle: "Über Uns",
       quote: "Zitat",
-      quoteText: "Zitattext",
-      quoteAuthor: "Zitat Autor",
+      quoteTextTrLabel: "Zitat Text (TR)",
+      quoteTextDeLabel: "Zitat Text (DE)",
+      quoteAuthorLabel: "Autor",
       whoWeAre: "Wer sind wir?",
-      goals: "Unsere Ziele",
+      goals: "Ziele",
       vision: "Vision",
       mission: "Mission",
-      coreValues: "Grundwerte",
+      coreValues: "Kernwerte",
       focusAreas: "Schwerpunkte",
       activityAreas: "Aktivitätsbereiche",
       teamMembers: "Teammitglieder",
-      name: "Name",
-      title: "Titel",
-      titleTR: "Titel (TR)",
-      titleDE: "Titel (DE)",
-      description: "Beschreibung",
-      descriptionTR: "Beschreibung (TR)",
-      descriptionDE: "Beschreibung (DE)",
-      imageUrl: "Foto URL",
-      add: "Hinzufügen",
-      delete: "Löschen",
-      moveUp: "Nach oben",
-      moveDown: "Nach unten",
+      humanRights: "Menschenrechte",
+      partners: "Partner",
       save: "Speichern",
       saving: "Wird gespeichert...",
+      add: "Hinzufügen",
+      edit: "Bearbeiten",
+      delete: "Löschen",
       cancel: "Abbrechen",
-      confirmDelete: "Sind Sie sicher, dass Sie löschen möchten?",
-      photoPreview: "Foto Vorschau",
+      confirm: "Sind Sie sicher?",
       loading: "Lädt...",
-      overview: "Übersicht",
-      humanRights: "Menschenrechte (Tenkil)",
-      partners: "Partner",
-      tenkilMuseumUrl: "Tenkil Museum URL",
-      instagramUrl: "Instagram URL",
-      partnerName: "Partnername",
-      logoUrl: "Logo URL",
-      websiteUrl: "Website URL",
-      displayOrder: "Reihenfolge",
-      isActive: "Aktiv",
+      success: "Erfolgreich gespeichert!",
+      error: "Fehler",
+      publish: "Veröffentlichen",
     },
   };
 
@@ -337,1779 +321,1834 @@ const AdminAbout: React.FC = () => {
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("adminToken");
-    if (!token) {
-      console.warn("Token bulunamadı!");
-    }
     return {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token || ""}`,
     };
   };
 
-  // 401 hatası alındığında login'e yönlendir
   const handleUnauthorized = () => {
     localStorage.removeItem("adminToken");
-    alert("Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
-    window.location.href = "/admin/login";
+    globalThis.location.href = "/admin/login";
   };
 
-  // API çağrısı sonucu kontrol
-  const checkResponse = async (response: Response) => {
-    if (response.status === 401) {
-      handleUnauthorized();
-      return false;
-    }
-    return true;
-  };
-
-  const handleSave = async () => {
-    const token = localStorage.getItem("adminToken");
-    if (!token) {
-      setNotification({
-        message: "Oturum süresi dolmuş. Lütfen tekrar giriş yapın.",
-        type: "error",
-      });
-      return;
-    }
-    setIsSaving(true);
-
-    const headers = getAuthHeaders();
-
+  // ============= API Calls =============
+  const fetchAboutData = async () => {
     try {
-      switch (activeTab) {
-        case "quote": {
-          const res = await fetch("https://localhost:7189/api/AboutUs/quote", {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({
-              id: form.quote.id,
-              quoteTr: form.quote.quoteTr,
-              quoteDe: form.quote.quoteDe,
-              quoteAuthor: form.quote.quoteAuthor,
-            }),
-          });
-          if (res.status === 401) {
-            handleUnauthorized();
-            return;
-          }
-          if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(errorText || "Quote güncelleme başarısız!");
-          }
-          break;
-        }
+      setIsLoading(true);
 
-        case "overview": {
-          // Her bileşen artık bağımsız aggregate, sırayla güncelle
-          if (form.whoWeAre.whoWeAreTr || form.whoWeAre.whoWeAreDe) {
-            const whoWeAreRes = await fetch(
-              "https://localhost:7189/api/AboutUs/who-we-are",
-              {
-                method: "PUT",
-                headers,
-                body: JSON.stringify({
-                  id: form.whoWeAre.id,
-                  whoWeAreTr: form.whoWeAre.whoWeAreTr,
-                  whoWeAreDe: form.whoWeAre.whoWeAreDe,
-                  bannerImageUrl: form.whoWeAre.bannerImageUrl,
-                  bannerImageBase64: form.whoWeAre.bannerImageBase64,
-                  bannerImageFileName: form.whoWeAre.bannerImageFileName,
-                }),
-              }
-            );
-            if (whoWeAreRes.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!whoWeAreRes.ok) {
-              const errorText = await whoWeAreRes.text();
-              throw new Error(errorText || "Who We Are güncelleme başarısız!");
-            }
-          }
+      const [aboutRes, humanRightsRes, partnersRes] = await Promise.all([
+        fetch("https://localhost:7189/api/AboutUs"),
+        fetch("https://localhost:7189/api/AboutUs/human-rights"),
+        fetch("https://localhost:7189/api/Partners"),
+      ]);
 
-          if (form.goals.goalsTr || form.goals.goalsDe) {
-            const goalsRes = await fetch(
-              "https://localhost:7189/api/AboutUs/goals",
-              {
-                method: "PUT",
-                headers,
-                body: JSON.stringify({
-                  id: form.goals.id,
-                  goalsTr: form.goals.goalsTr,
-                  goalsDe: form.goals.goalsDe,
-                }),
-              }
-            );
-            if (goalsRes.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!goalsRes.ok) {
-              const errorText = await goalsRes.text();
-              throw new Error(errorText || "Goals güncelleme başarısız!");
-            }
-          }
-
-          if (form.vision.visionTr || form.vision.visionDe) {
-            const visionRes = await fetch(
-              "https://localhost:7189/api/AboutUs/vision",
-              {
-                method: "PUT",
-                headers,
-                body: JSON.stringify({
-                  id: form.vision.id,
-                  visionTr: form.vision.visionTr,
-                  visionDe: form.vision.visionDe,
-                }),
-              }
-            );
-            if (visionRes.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!visionRes.ok) {
-              const errorText = await visionRes.text();
-              throw new Error(errorText || "Vision güncelleme başarısız!");
-            }
-          }
-
-          if (form.mission.missionTr || form.mission.missionDe) {
-            const missionRes = await fetch(
-              "https://localhost:7189/api/AboutUs/mission",
-              {
-                method: "PUT",
-                headers,
-                body: JSON.stringify({
-                  id: form.mission.id,
-                  missionTr: form.mission.missionTr,
-                  missionDe: form.mission.missionDe,
-                }),
-              }
-            );
-            if (missionRes.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!missionRes.ok) {
-              const errorText = await missionRes.text();
-              throw new Error(errorText || "Mission güncelleme başarısız!");
-            }
-          }
-          break;
-        }
-
-        case "coreValues": {
-          // Her bir CoreValue için ayrı ayrı kaydet
-          for (const cv of form.coreValues) {
-            const endpoint = cv.id
-              ? `https://localhost:7189/api/AboutUs/core-values/${cv.id}`
-              : "https://localhost:7189/api/AboutUs/core-values";
-            const method = cv.id ? "PUT" : "POST";
-
-            const res = await fetch(endpoint, {
-              method,
-              headers,
-              body: JSON.stringify({
-                id: cv.id,
-                titleTr: cv.titleTr,
-                titleDe: cv.titleDe,
-                descriptionTr: cv.descriptionTr,
-                descriptionDe: cv.descriptionDe,
-                order: cv.order,
-              }),
-            });
-            if (res.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!res.ok) {
-              const errorText = await res.text();
-              throw new Error(errorText || "Core Value güncelleme başarısız!");
-            }
-          }
-          break;
-        }
-
-        case "focusAreas": {
-          for (const fa of form.focusAreas) {
-            const endpoint = fa.id
-              ? `https://localhost:7189/api/AboutUs/focus-areas/${fa.id}`
-              : "https://localhost:7189/api/AboutUs/focus-areas";
-            const method = fa.id ? "PUT" : "POST";
-
-            const res = await fetch(endpoint, {
-              method,
-              headers,
-              body: JSON.stringify({
-                id: fa.id,
-                titleTr: fa.titleTr,
-                titleDe: fa.titleDe,
-                descriptionTr: fa.descriptionTr,
-                descriptionDe: fa.descriptionDe,
-                order: fa.order,
-                iconUrl: fa.iconUrl,
-                iconBase64: fa.iconBase64,
-                iconFileName: fa.iconFileName,
-              }),
-            });
-            if (res.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!res.ok) {
-              const errorText = await res.text();
-              throw new Error(errorText || "Focus Area güncelleme başarısız!");
-            }
-          }
-          break;
-        }
-
-        case "activityAreas": {
-          for (const aa of form.activityAreas) {
-            const endpoint = aa.id
-              ? `https://localhost:7189/api/AboutUs/activity-areas/${aa.id}`
-              : "https://localhost:7189/api/AboutUs/activity-areas";
-            const method = aa.id ? "PUT" : "POST";
-
-            const res = await fetch(endpoint, {
-              method,
-              headers,
-              body: JSON.stringify({
-                id: aa.id,
-                titleTr: aa.titleTr,
-                titleDe: aa.titleDe,
-                descriptionTr: aa.descriptionTr,
-                descriptionDe: aa.descriptionDe,
-                order: aa.order,
-              }),
-            });
-            if (res.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!res.ok) {
-              const errorText = await res.text();
-              throw new Error(
-                errorText || "Activity Area güncelleme başarısız!"
-              );
-            }
-          }
-          break;
-        }
-
-        case "team": {
-          for (const tm of form.teamMembers) {
-            const endpoint = tm.id
-              ? `https://localhost:7189/api/AboutUs/team-members/${tm.id}`
-              : "https://localhost:7189/api/AboutUs/team-members";
-            const method = tm.id ? "PUT" : "POST";
-
-            // Backend düz string bekliyor, form'da {value: string} tutuluyor
-            const res = await fetch(endpoint, {
-              method,
-              headers,
-              body: JSON.stringify({
-                id: tm.id,
-                name: tm.name?.value || "",
-                titleTr: tm.titleTr?.value || "",
-                titleDe: tm.titleDe?.value || "",
-                descriptionTr: tm.descriptionTr?.value || null,
-                descriptionDe: tm.descriptionDe?.value || null,
-                imageUrl: tm.imageUrl,
-                order: tm.order,
-              }),
-            });
-            if (res.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!res.ok) {
-              const errorText = await res.text();
-              throw new Error(errorText || "Team Member güncelleme başarısız!");
-            }
-          }
-          break;
-        }
-
-        case "humanRights": {
-          const endpoint = form.humanRights.id
-            ? `https://localhost:7189/api/AboutUs/human-rights/${form.humanRights.id}`
-            : "https://localhost:7189/api/AboutUs/human-rights";
-          const method = form.humanRights.id ? "PUT" : "POST";
-
-          const res = await fetch(endpoint, {
-            method,
-            headers,
-            body: JSON.stringify({
-              id: form.humanRights.id,
-              titleTr: form.humanRights.titleTr,
-              titleDe: form.humanRights.titleDe,
-              descriptionTr: form.humanRights.descriptionTr,
-              descriptionDe: form.humanRights.descriptionDe,
-              tenkilMuseumUrl: form.humanRights.tenkilMuseumUrl,
-              instagramUrl: form.humanRights.instagramUrl,
-            }),
-          });
-          if (res.status === 401) {
-            handleUnauthorized();
-            return;
-          }
-          if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(errorText || "Human Rights güncelleme başarısız!");
-          }
-          break;
-        }
-
-        case "partners": {
-          for (const partner of form.partners) {
-            const endpoint = partner.id
-              ? `https://localhost:7189/api/Partners/${partner.id}`
-              : "https://localhost:7189/api/Partners";
-            const method = partner.id ? "PUT" : "POST";
-
-            const res = await fetch(endpoint, {
-              method,
-              headers,
-              body: JSON.stringify({
-                id: partner.id,
-                name: partner.name,
-                descriptionTr: partner.descriptionTr,
-                descriptionDe: partner.descriptionDe,
-                logoUrl: partner.logoUrl,
-                websiteUrl: partner.websiteUrl,
-                displayOrder: partner.displayOrder,
-                isActive: partner.isActive,
-              }),
-            });
-            if (res.status === 401) {
-              handleUnauthorized();
-              return;
-            }
-            if (!res.ok) {
-              const errorText = await res.text();
-              throw new Error(errorText || "Partner güncelleme başarısız!");
-            }
-          }
-          break;
-        }
+      if (aboutRes.status === 401) {
+        handleUnauthorized();
+        return;
       }
 
-      setNotification({ message: "Başarıyla kaydedildi!", type: "success" });
-      setTimeout(() => setNotification({ message: "", type: "" }), 3000);
+      const aboutData: ApiAboutUsResponse = aboutRes.ok
+        ? await aboutRes.json()
+        : {};
 
-      // Güncel veriyi yeniden fetch et
-      await fetchAbout();
-    } catch (error) {
-      setNotification({
-        message:
-          "Kaydetme hatası: " + (error instanceof Error ? error.message : ""),
-        type: "error",
+      const humanRightsData: ApiHumanRights | null = humanRightsRes.ok
+        ? await humanRightsRes.json()
+        : null;
+
+      const partnersData: ApiPartner[] = partnersRes.ok
+        ? await partnersRes.json()
+        : [];
+
+      setQuote(
+        aboutData.quote || { quoteTr: "", quoteDe: "", quoteAuthor: "" },
+      );
+      setWhoWeAre(aboutData.whoWeAre || { whoWeAreTr: "", whoWeAreDe: "" });
+      setGoals(aboutData.goals || { goalsTr: "", goalsDe: "" });
+      setVision(aboutData.vision || { visionTr: "", visionDe: "" });
+      setMission(aboutData.mission || { missionTr: "", missionDe: "" });
+      setCoreValues(aboutData.coreValues || []);
+      setFocusAreas(aboutData.focusAreas || []);
+      setActivityAreas(aboutData.activityAreas || []);
+      setTeamMembers(aboutData.teamMembers || []);
+      setHumanRights(
+        humanRightsData || {
+          titleTr: "",
+          titleDe: "",
+          descriptionTr: "",
+          descriptionDe: "",
+          tenkilMuseumUrl: "",
+          instagramUrl: "",
+        },
+      );
+      setPartners(partnersData || []);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      showNotification(t.error, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAboutData();
+  }, []);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: "", type: "" }), 3000);
+  };
+
+  const handleSave = async (
+    data: any,
+    endpoint: string,
+    method: "PUT" | "POST" = "PUT",
+    onSuccess?: () => void,
+  ) => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
       });
-      setTimeout(() => setNotification({ message: "", type: "" }), 3000);
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "");
+        throw new Error(
+          errorText
+            ? `Save failed (HTTP ${res.status}): ${errorText}`
+            : `Save failed (HTTP ${res.status})`,
+        );
+      }
+      showNotification(t.success, "success");
+      onSuccess?.();
+      await fetchAboutData();
+    } catch (err) {
+      console.error("Error saving:", err);
+      showNotification(t.error, "error");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // CoreValue, FocusArea, ActivityArea için liste işlemleri
-  const handleCoreValueChange = (
-    idx: number,
-    field: keyof ApiCoreValue,
-    value: any
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      coreValues: prev.coreValues.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
-      ),
-    }));
-  };
+  const handleDelete = async (endpoint: string, onSuccess?: () => void) => {
+    if (!globalThis.confirm(t.confirm)) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(endpoint, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
 
-  const handleFocusAreaChange = (
-    idx: number,
-    field: keyof ApiFocusArea,
-    value: any
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      focusAreas: prev.focusAreas.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
-      ),
-    }));
-  };
-
-  const handleActivityAreaChange = (
-    idx: number,
-    field: keyof ApiActivityArea,
-    value: any
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      activityAreas: prev.activityAreas.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
-      ),
-    }));
-  };
-
-  const handleTeamMemberChange = (
-    idx: number,
-    field: keyof ApiTeamMember,
-    value: any
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      teamMembers: prev.teamMembers.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
-      ),
-    }));
-  };
-
-  const handleAddCoreValue = () => {
-    setForm((prev) => ({
-      ...prev,
-      coreValues: [
-        ...prev.coreValues,
-        {
-          titleTr: "",
-          titleDe: "",
-          descriptionTr: "",
-          descriptionDe: "",
-          order: prev.coreValues.length + 1,
-        },
-      ],
-    }));
-  };
-
-  const handleAddFocusArea = () => {
-    setForm((prev) => ({
-      ...prev,
-      focusAreas: [
-        ...prev.focusAreas,
-        {
-          titleTr: "",
-          titleDe: "",
-          descriptionTr: "",
-          descriptionDe: "",
-          order: prev.focusAreas.length + 1,
-          iconUrl: null,
-          iconBase64: null,
-          iconFileName: null,
-        },
-      ],
-    }));
-  };
-
-  const handleAddActivityArea = () => {
-    setForm((prev) => ({
-      ...prev,
-      activityAreas: [
-        ...prev.activityAreas,
-        {
-          titleTr: "",
-          titleDe: "",
-          descriptionTr: "",
-          descriptionDe: "",
-          order: prev.activityAreas.length + 1,
-        },
-      ],
-    }));
-  };
-
-  const handleAddTeamMember = () => {
-    setForm((prev) => ({
-      ...prev,
-      teamMembers: [
-        ...prev.teamMembers,
-        {
-          name: { value: "" },
-          titleTr: { value: "" },
-          titleDe: { value: "" },
-          descriptionTr: null,
-          descriptionDe: null,
-          imageUrl: "",
-          order: prev.teamMembers.length + 1,
-        },
-      ],
-    }));
-  };
-
-  const handleRemoveCoreValue = async (idx: number) => {
-    if (!window.confirm(t.confirmDelete)) return;
-    const item = form.coreValues[idx];
-    if (item.id) {
-      try {
-        const res = await fetch(
-          `https://localhost:7189/api/AboutUs/core-values/${item.id}`,
-          {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          }
-        );
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        if (!res.ok) {
-          console.error("Silme hatası", res.status);
-        }
-      } catch (error) {
-        console.error("Silme hatası", error);
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
       }
+
+      if (!res.ok) throw new Error("Delete failed");
+      showNotification(t.success, "success");
+      onSuccess?.();
+      await fetchAboutData();
+    } catch (err) {
+      console.error("Error deleting:", err);
+      showNotification(t.error, "error");
+    } finally {
+      setIsSaving(false);
     }
-    setForm((prev) => ({
-      ...prev,
-      coreValues: prev.coreValues.filter((_, i) => i !== idx),
-    }));
   };
 
-  const handleRemoveFocusArea = async (idx: number) => {
-    if (!window.confirm(t.confirmDelete)) return;
-    const item = form.focusAreas[idx];
-    if (item.id) {
-      try {
-        const res = await fetch(
-          `https://localhost:7189/api/AboutUs/focus-areas/${item.id}`,
-          {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          }
-        );
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        if (!res.ok) {
-          console.error("Silme hatası", res.status);
-        }
-      } catch (error) {
-        console.error("Silme hatası", error);
-      }
-    }
-    setForm((prev) => ({
-      ...prev,
-      focusAreas: prev.focusAreas.filter((_, i) => i !== idx),
-    }));
+  // ============= Save Functions =============
+  const saveQuote = () => {
+    const endpoint = quote.id
+      ? `https://localhost:7189/api/AboutUs/quote/${quote.id}`
+      : "https://localhost:7189/api/AboutUs/quote";
+    const method = quote.id ? "PUT" : "POST";
+    void handleSave(quote, endpoint, method);
   };
 
-  const handleRemoveActivityArea = async (idx: number) => {
-    if (!window.confirm(t.confirmDelete)) return;
-    const item = form.activityAreas[idx];
-    if (item.id) {
-      try {
-        const res = await fetch(
-          `https://localhost:7189/api/AboutUs/activity-areas/${item.id}`,
-          {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          }
-        );
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        if (!res.ok) {
-          console.error("Silme hatası", res.status);
-        }
-      } catch (error) {
-        console.error("Silme hatası", error);
-      }
-    }
-    setForm((prev) => ({
-      ...prev,
-      activityAreas: prev.activityAreas.filter((_, i) => i !== idx),
-    }));
+  const saveWhoWeAre = () => {
+    const endpoint = whoWeAre.id
+      ? `https://localhost:7189/api/AboutUs/who-we-are/${whoWeAre.id}`
+      : "https://localhost:7189/api/AboutUs/who-we-are";
+    const method = whoWeAre.id ? "PUT" : "POST";
+    void handleSave(whoWeAre, endpoint, method);
   };
 
-  const handleRemoveTeamMember = async (idx: number) => {
-    if (!window.confirm(t.confirmDelete)) return;
-    const item = form.teamMembers[idx];
-    if (item.id) {
-      try {
-        const res = await fetch(
-          `https://localhost:7189/api/AboutUs/team-members/${item.id}`,
-          {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          }
-        );
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        if (!res.ok) {
-          console.error("Silme hatası", res.status);
-        }
-      } catch (error) {
-        console.error("Silme hatası", error);
-      }
-    }
-    setForm((prev) => ({
-      ...prev,
-      teamMembers: prev.teamMembers.filter((_, i) => i !== idx),
-    }));
+  const saveGoals = () => {
+    const endpoint = goals.id
+      ? `https://localhost:7189/api/AboutUs/goals/${goals.id}`
+      : "https://localhost:7189/api/AboutUs/goals";
+    const method = goals.id ? "PUT" : "POST";
+    void handleSave(goals, endpoint, method);
   };
 
-  // Human Rights handlers
-  const handleHumanRightsChange = (
-    field: keyof ApiHumanRights,
-    value: string
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      humanRights: { ...prev.humanRights, [field]: value },
-    }));
+  const saveVision = () => {
+    const endpoint = vision.id
+      ? `https://localhost:7189/api/AboutUs/vision/${vision.id}`
+      : "https://localhost:7189/api/AboutUs/vision";
+    const method = vision.id ? "PUT" : "POST";
+    void handleSave(vision, endpoint, method);
   };
 
-  // Partner handlers
-  const handlePartnerChange = (
-    idx: number,
-    field: keyof ApiPartner,
-    value: any
-  ) => {
-    setForm((prev) => ({
-      ...prev,
-      partners: prev.partners.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
-      ),
-    }));
+  const saveMission = () => {
+    const endpoint = mission.id
+      ? `https://localhost:7189/api/AboutUs/mission/${mission.id}`
+      : "https://localhost:7189/api/AboutUs/mission";
+    const method = mission.id ? "PUT" : "POST";
+    void handleSave(mission, endpoint, method);
   };
 
-  const handleAddPartner = () => {
-    setForm((prev) => ({
-      ...prev,
-      partners: [
-        ...prev.partners,
-        {
-          name: "",
-          descriptionTr: "",
-          descriptionDe: "",
-          logoUrl: null,
-          websiteUrl: null,
-          displayOrder: prev.partners.length + 1,
-          isActive: true,
-        },
-      ],
-    }));
+  const saveHumanRights = () => {
+    const endpoint = humanRights.id
+      ? `https://localhost:7189/api/AboutUs/human-rights/${humanRights.id}`
+      : "https://localhost:7189/api/AboutUs/human-rights";
+    const method = humanRights.id ? "PUT" : "POST";
+    void handleSave(humanRights, endpoint, method);
   };
 
-  const handleRemovePartner = async (idx: number) => {
-    if (!globalThis.confirm(t.confirmDelete)) return;
-    const item = form.partners[idx];
-    if (item.id) {
-      try {
-        const res = await fetch(
-          `https://localhost:7189/api/Partners/${item.id}`,
-          {
-            method: "DELETE",
-            headers: getAuthHeaders(),
-          }
-        );
-        if (res.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-        if (!res.ok) {
-          console.error("Silme hatası", res.status);
-        }
-      } catch (error) {
-        console.error("Silme hatası", error);
-      }
-    }
-    setForm((prev) => ({
-      ...prev,
-      partners: prev.partners.filter((_, i) => i !== idx),
-    }));
+  // ============= CRUD Operations =============
+  const saveCoreValue = (item: ApiCoreValue) => {
+    const endpoint = item.id
+      ? `https://localhost:7189/api/AboutUs/core-values/${item.id}`
+      : "https://localhost:7189/api/AboutUs/core-values";
+    const method = item.id ? "PUT" : "POST";
+    void handleSave(item, endpoint, method, () => setEditingCoreValue(null));
   };
 
-  const handleMove = <T,>(
-    list: T[],
-    setList: (newList: T[]) => void,
-    idx: number,
-    dir: -1 | 1
-  ) => {
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= list.length) return;
-    const arr = [...list];
-    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-    setList(arr);
+  const deleteCoreValue = (id: string) => {
+    void handleDelete(`https://localhost:7189/api/AboutUs/core-values/${id}`);
+  };
+
+  const saveFocusArea = (item: ApiFocusArea) => {
+    const endpoint = item.id
+      ? `https://localhost:7189/api/AboutUs/focus-areas/${item.id}`
+      : "https://localhost:7189/api/AboutUs/focus-areas";
+    const method = item.id ? "PUT" : "POST";
+
+    const payload: ApiFocusArea = {
+      ...item,
+      iconUrl: item.iconUrl?.trim() ? item.iconUrl.trim() : null,
+      iconBase64: item.iconBase64?.trim() ? item.iconBase64 : null,
+      iconFileName: item.iconFileName?.trim() ? item.iconFileName : null,
+    };
+
+    void handleSave(payload, endpoint, method, () => setEditingFocusArea(null));
+  };
+
+  const deleteFocusArea = (id: string) => {
+    void handleDelete(`https://localhost:7189/api/AboutUs/focus-areas/${id}`);
+  };
+
+  const saveActivityArea = (item: ApiActivityArea) => {
+    const endpoint = item.id
+      ? `https://localhost:7189/api/AboutUs/activity-areas/${item.id}`
+      : "https://localhost:7189/api/AboutUs/activity-areas";
+    const method = item.id ? "PUT" : "POST";
+    void handleSave(item, endpoint, method, () => setEditingActivityArea(null));
+  };
+
+  const deleteActivityArea = (id: string) => {
+    void handleDelete(
+      `https://localhost:7189/api/AboutUs/activity-areas/${id}`,
+    );
+  };
+
+  const saveTeamMember = (item: ApiTeamMember) => {
+    const endpoint = item.id
+      ? `https://localhost:7189/api/AboutUs/team-members/${item.id}`
+      : "https://localhost:7189/api/AboutUs/team-members";
+    const method = item.id ? "PUT" : "POST";
+    void handleSave(item, endpoint, method, () => setEditingTeamMember(null));
+  };
+
+  const deleteTeamMember = (id: string) => {
+    void handleDelete(`https://localhost:7189/api/AboutUs/team-members/${id}`);
+  };
+
+  const savePartner = (item: ApiPartner) => {
+    const endpoint = item.id
+      ? `https://localhost:7189/api/Partners/${item.id}`
+      : "https://localhost:7189/api/Partners";
+    const method = item.id ? "PUT" : "POST";
+    void handleSave(item, endpoint, method, () => setEditingPartner(null));
+  };
+
+  const deletePartner = (id: string) => {
+    void handleDelete(`https://localhost:7189/api/Partners/${id}`);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-kpf-teal mx-auto mb-4"></div>
           <p className="text-gray-600">{t.loading}</p>
         </div>
       </div>
     );
   }
 
-  const TabContent = () => {
-    switch (activeTab) {
-      case "overview":
-        return (
-          <div className="space-y-6">
-            {/* Who We Are */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">{t.whoWeAre}</h3>
-              <textarea
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                rows={4}
-                value={
-                  language === "tr"
-                    ? form.whoWeAre.whoWeAreTr
-                    : form.whoWeAre.whoWeAreDe
-                }
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    whoWeAre: {
-                      ...prev.whoWeAre,
-                      [language === "tr" ? "whoWeAreTr" : "whoWeAreDe"]:
-                        e.target.value,
-                    },
-                  }))
-                }
-              />
-            </div>
-
-            {/* Goals */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">{t.goals}</h3>
-              <textarea
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                rows={4}
-                value={
-                  language === "tr" ? form.goals.goalsTr : form.goals.goalsDe
-                }
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    goals: {
-                      ...prev.goals,
-                      [language === "tr" ? "goalsTr" : "goalsDe"]:
-                        e.target.value,
-                    },
-                  }))
-                }
-              />
-            </div>
-
-            {/* Vision */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">{t.vision}</h3>
-              <textarea
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                rows={4}
-                value={
-                  language === "tr"
-                    ? form.vision.visionTr
-                    : form.vision.visionDe
-                }
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    vision: {
-                      ...prev.vision,
-                      [language === "tr" ? "visionTr" : "visionDe"]:
-                        e.target.value,
-                    },
-                  }))
-                }
-              />
-            </div>
-
-            {/* Mission */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">{t.mission}</h3>
-              <textarea
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                rows={4}
-                value={
-                  language === "tr"
-                    ? form.mission.missionTr
-                    : form.mission.missionDe
-                }
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    mission: {
-                      ...prev.mission,
-                      [language === "tr" ? "missionTr" : "missionDe"]:
-                        e.target.value,
-                    },
-                  }))
-                }
-              />
-            </div>
-          </div>
-        );
-
-      case "quote":
-        return (
-          <div className="max-w-2xl">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">
-              {t.quote}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.quoteText} ({language.toUpperCase()})
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                  rows={4}
-                  placeholder={t.quoteText}
-                  value={
-                    language === "tr" ? form.quote.quoteTr : form.quote.quoteDe
-                  }
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      quote: {
-                        ...prev.quote,
-                        [language === "tr" ? "quoteTr" : "quoteDe"]:
-                          e.target.value,
-                      },
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.quoteAuthor}
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  type="text"
-                  placeholder={t.quoteAuthor}
-                  value={form.quote.quoteAuthor}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      quote: { ...prev.quote, quoteAuthor: e.target.value },
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case "coreValues":
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-700">
-                {t.coreValues}
-              </h2>
-              <button
-                onClick={handleAddCoreValue}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                  ></path>
-                </svg>
-                {t.add}
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {form.coreValues.map((item, idx) => (
-                <div
-                  key={item.id || idx}
-                  className="border border-gray-200 rounded-lg p-6 bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                      #{idx + 1}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.coreValues,
-                            (list) =>
-                              setForm((p) => ({ ...p, coreValues: list })),
-                            idx,
-                            -1
-                          )
-                        }
-                        disabled={idx === 0}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveUp}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.coreValues,
-                            (list) =>
-                              setForm((p) => ({ ...p, coreValues: list })),
-                            idx,
-                            1
-                          )
-                        }
-                        disabled={idx === form.coreValues.length - 1}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveDown}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => handleRemoveCoreValue(idx)}
-                        className="p-2 text-red-600 hover:text-red-700"
-                        title={t.delete}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.title} ({language.toUpperCase()})
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={language === "tr" ? item.titleTr : item.titleDe}
-                        onChange={(e) =>
-                          handleCoreValueChange(
-                            idx,
-                            language === "tr" ? "titleTr" : "titleDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.description} ({language.toUpperCase()})
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                        rows={3}
-                        value={
-                          language === "tr"
-                            ? item.descriptionTr
-                            : item.descriptionDe
-                        }
-                        onChange={(e) =>
-                          handleCoreValueChange(
-                            idx,
-                            language === "tr"
-                              ? "descriptionTr"
-                              : "descriptionDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case "focusAreas":
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-700">
-                {t.focusAreas}
-              </h2>
-              <button
-                onClick={handleAddFocusArea}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                  ></path>
-                </svg>
-                {t.add}
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {form.focusAreas.map((item, idx) => (
-                <div
-                  key={item.id || idx}
-                  className="border border-gray-200 rounded-lg p-6 bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                      #{idx + 1}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.focusAreas,
-                            (list) =>
-                              setForm((p) => ({ ...p, focusAreas: list })),
-                            idx,
-                            -1
-                          )
-                        }
-                        disabled={idx === 0}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveUp}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.focusAreas,
-                            (list) =>
-                              setForm((p) => ({ ...p, focusAreas: list })),
-                            idx,
-                            1
-                          )
-                        }
-                        disabled={idx === form.focusAreas.length - 1}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveDown}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => handleRemoveFocusArea(idx)}
-                        className="p-2 text-red-600 hover:text-red-700"
-                        title={t.delete}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.title} ({language.toUpperCase()})
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={language === "tr" ? item.titleTr : item.titleDe}
-                        onChange={(e) =>
-                          handleFocusAreaChange(
-                            idx,
-                            language === "tr" ? "titleTr" : "titleDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.description} ({language.toUpperCase()})
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                        rows={3}
-                        value={
-                          language === "tr"
-                            ? item.descriptionTr
-                            : item.descriptionDe
-                        }
-                        onChange={(e) =>
-                          handleFocusAreaChange(
-                            idx,
-                            language === "tr"
-                              ? "descriptionTr"
-                              : "descriptionDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case "activityAreas":
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-700">
-                {t.activityAreas}
-              </h2>
-              <button
-                onClick={handleAddActivityArea}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                  ></path>
-                </svg>
-                {t.add}
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {form.activityAreas.map((item, idx) => (
-                <div
-                  key={item.id || idx}
-                  className="border border-gray-200 rounded-lg p-6 bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                      #{idx + 1}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.activityAreas,
-                            (list) =>
-                              setForm((p) => ({ ...p, activityAreas: list })),
-                            idx,
-                            -1
-                          )
-                        }
-                        disabled={idx === 0}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveUp}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.activityAreas,
-                            (list) =>
-                              setForm((p) => ({ ...p, activityAreas: list })),
-                            idx,
-                            1
-                          )
-                        }
-                        disabled={idx === form.activityAreas.length - 1}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveDown}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => handleRemoveActivityArea(idx)}
-                        className="p-2 text-red-600 hover:text-red-700"
-                        title={t.delete}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.title} ({language.toUpperCase()})
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={language === "tr" ? item.titleTr : item.titleDe}
-                        onChange={(e) =>
-                          handleActivityAreaChange(
-                            idx,
-                            language === "tr" ? "titleTr" : "titleDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.description} ({language.toUpperCase()})
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                        rows={3}
-                        value={
-                          language === "tr"
-                            ? item.descriptionTr
-                            : item.descriptionDe
-                        }
-                        onChange={(e) =>
-                          handleActivityAreaChange(
-                            idx,
-                            language === "tr"
-                              ? "descriptionTr"
-                              : "descriptionDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case "team":
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-700">
-                {t.teamMembers}
-              </h2>
-              <button
-                onClick={handleAddTeamMember}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                  ></path>
-                </svg>
-                {t.add}
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {form.teamMembers.map((member, idx) => (
-                <div
-                  key={member.id || idx}
-                  className="border border-gray-200 rounded-lg p-6 bg-gray-50"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-4">
-                      <span className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
-                        #{idx + 1}
-                      </span>
-                      {member.imageUrl && (
-                        <img
-                          src={member.imageUrl}
-                          alt={member.name?.value || ""}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.teamMembers,
-                            (list) =>
-                              setForm((p) => ({ ...p, teamMembers: list })),
-                            idx,
-                            -1
-                          )
-                        }
-                        disabled={idx === 0}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveUp}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleMove(
-                            form.teamMembers,
-                            (list) =>
-                              setForm((p) => ({ ...p, teamMembers: list })),
-                            idx,
-                            1
-                          )
-                        }
-                        disabled={idx === form.teamMembers.length - 1}
-                        className="p-2 text-gray-600 hover:text-blue-600 disabled:opacity-30"
-                        title={t.moveDown}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => handleRemoveTeamMember(idx)}
-                        className="p-2 text-red-600 hover:text-red-700"
-                        title={t.delete}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.name}
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={member.name?.value || ""}
-                        onChange={(e) =>
-                          handleTeamMemberChange(idx, "name", {
-                            value: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.imageUrl}
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={member.imageUrl || ""}
-                        onChange={(e) =>
-                          handleTeamMemberChange(
-                            idx,
-                            "imageUrl",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.title} ({language.toUpperCase()})
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={
-                          language === "tr"
-                            ? member.titleTr?.value || ""
-                            : member.titleDe?.value || ""
-                        }
-                        onChange={(e) =>
-                          handleTeamMemberChange(
-                            idx,
-                            language === "tr" ? "titleTr" : "titleDe",
-                            { value: e.target.value }
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.description} ({language.toUpperCase()})
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                        rows={3}
-                        value={
-                          language === "tr"
-                            ? member.descriptionTr?.value || ""
-                            : member.descriptionDe?.value || ""
-                        }
-                        onChange={(e) =>
-                          handleTeamMemberChange(
-                            idx,
-                            language === "tr"
-                              ? "descriptionTr"
-                              : "descriptionDe",
-                            { value: e.target.value }
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case "humanRights":
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-bold text-gray-700 mb-4">
-              {t.humanRights}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.titleTR}
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  type="text"
-                  value={form.humanRights.titleTr}
-                  onChange={(e) =>
-                    handleHumanRightsChange("titleTr", e.target.value)
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.titleDE}
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  type="text"
-                  value={form.humanRights.titleDe}
-                  onChange={(e) =>
-                    handleHumanRightsChange("titleDe", e.target.value)
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.descriptionTR}
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                  rows={4}
-                  value={form.humanRights.descriptionTr}
-                  onChange={(e) =>
-                    handleHumanRightsChange("descriptionTr", e.target.value)
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.descriptionDE}
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                  rows={4}
-                  value={form.humanRights.descriptionDe}
-                  onChange={(e) =>
-                    handleHumanRightsChange("descriptionDe", e.target.value)
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.tenkilMuseumUrl}
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  type="url"
-                  value={form.humanRights.tenkilMuseumUrl}
-                  onChange={(e) =>
-                    handleHumanRightsChange("tenkilMuseumUrl", e.target.value)
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">
-                  {t.instagramUrl}
-                </label>
-                <input
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  type="url"
-                  value={form.humanRights.instagramUrl}
-                  onChange={(e) =>
-                    handleHumanRightsChange("instagramUrl", e.target.value)
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case "partners":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-700">{t.partners}</h3>
-              <button
-                type="button"
-                onClick={handleAddPartner}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {t.add}
-              </button>
-            </div>
-            <div className="space-y-4">
-              {form.partners.map((partner, idx) => (
-                <div
-                  key={partner.id || idx}
-                  className="bg-gray-50 rounded-lg p-4"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h4 className="font-medium text-gray-700">#{idx + 1}</h4>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleMove(
-                            form.partners,
-                            (list) =>
-                              setForm((prev) => ({ ...prev, partners: list })),
-                            idx,
-                            -1
-                          )
-                        }
-                        disabled={idx === 0}
-                        className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        {t.moveUp}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleMove(
-                            form.partners,
-                            (list) =>
-                              setForm((prev) => ({ ...prev, partners: list })),
-                            idx,
-                            1
-                          )
-                        }
-                        disabled={idx === form.partners.length - 1}
-                        className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        {t.moveDown}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePartner(idx)}
-                        className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        {t.delete}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.partnerName}
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="text"
-                        value={partner.name}
-                        onChange={(e) =>
-                          handlePartnerChange(idx, "name", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.logoUrl}
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="url"
-                        value={partner.logoUrl || ""}
-                        onChange={(e) =>
-                          handlePartnerChange(
-                            idx,
-                            "logoUrl",
-                            e.target.value || null
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.websiteUrl}
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="url"
-                        value={partner.websiteUrl || ""}
-                        onChange={(e) =>
-                          handlePartnerChange(
-                            idx,
-                            "websiteUrl",
-                            e.target.value || null
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.displayOrder}
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        type="number"
-                        value={partner.displayOrder}
-                        onChange={(e) =>
-                          handlePartnerChange(
-                            idx,
-                            "displayOrder",
-                            parseInt(e.target.value) || 0
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.descriptionTR}
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                        rows={3}
-                        value={partner.descriptionTr}
-                        onChange={(e) =>
-                          handlePartnerChange(
-                            idx,
-                            "descriptionTr",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        {t.descriptionDE}
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                        rows={3}
-                        value={partner.descriptionDe}
-                        onChange={(e) =>
-                          handlePartnerChange(
-                            idx,
-                            "descriptionDe",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`partner-active-${idx}`}
-                        checked={partner.isActive}
-                        onChange={(e) =>
-                          handlePartnerChange(idx, "isActive", e.target.checked)
-                        }
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label
-                        htmlFor={`partner-active-${idx}`}
-                        className="text-sm font-medium text-gray-600"
-                      >
-                        {t.isActive}
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">{t.pageTitle}</h1>
-        </div>
-
-        {/* Notification */}
-        {notification.message && (
-          <div
-            className={`mb-6 p-4 rounded-lg ${
-              notification.type === "success"
-                ? "bg-green-100 text-green-800 border border-green-200"
-                : "bg-red-100 text-red-800 border border-red-200"
-            }`}
+    <div className="min-h-screen bg-gray-100">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-kpf-teal/10 rounded-lg">
+              <Heart className="text-kpf-teal" size={24} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800">{t.pageTitle}</h1>
+          </div>
+          <button
+            onClick={() => {
+              const saveBySection: Record<string, () => void> = {
+                quote: saveQuote,
+                whoWeAre: saveWhoWeAre,
+                goals: saveGoals,
+                vision: saveVision,
+                mission: saveMission,
+              };
+              (saveBySection[lastModifiedSection] ?? saveQuote)();
+            }}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all disabled:opacity-50 font-bold shadow-lg"
           >
-            {notification.message}
-          </div>
-        )}
+            <Save size={20} />
+            {isSaving ? t.saving : t.publish}
+          </button>
+        </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex flex-wrap -mb-px">
-              {[
-                { key: "overview", label: t.overview },
-                { key: "quote", label: t.quote },
-                { key: "coreValues", label: t.coreValues },
-                { key: "focusAreas", label: t.focusAreas },
-                { key: "activityAreas", label: t.activityAreas },
-                { key: "team", label: t.teamMembers },
-                { key: "humanRights", label: t.humanRights },
-                { key: "partners", label: t.partners },
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === tab.key
-                      ? "border-blue-600 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Tab Content */}
-          <div className="p-6">
-            <TabContent />
-          </div>
-
-          {/* Save Button */}
-          <div className="border-t border-gray-200 p-6 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`px-6 py-3 rounded-lg font-medium text-white transition-colors ${
-                isSaving
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto pb-20">
+          {/* Notification */}
+          {notification.message && (
+            <div
+              className={`p-4 rounded-lg flex items-center gap-3 mb-6 ${
+                notification.type === "success"
+                  ? "bg-green-50 text-green-700 border border-green-200"
+                  : "bg-red-50 text-red-700 border border-red-200"
               }`}
             >
+              {notification.type === "success" ? "✓" : "✕"}{" "}
+              {notification.message}
+            </div>
+          )}
+
+          {/* Quote Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Sparkles size={24} className="text-amber-600" />
+              {t.quote}
+            </h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="about_quote_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  {t.quoteTextTrLabel}
+                </label>
+                <textarea
+                  id="about_quote_tr"
+                  value={quote.quoteTr}
+                  onChange={(e) =>
+                    setQuote({ ...quote, quoteTr: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal resize-none"
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_quote_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  {t.quoteTextDeLabel}
+                </label>
+                <textarea
+                  id="about_quote_de"
+                  value={quote.quoteDe}
+                  onChange={(e) =>
+                    setQuote({ ...quote, quoteDe: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal resize-none"
+                  rows={4}
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <label
+                  htmlFor="about_quote_author"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  {t.quoteAuthorLabel}
+                </label>
+                <input
+                  id="about_quote_author"
+                  type="text"
+                  value={quote.quoteAuthor}
+                  onChange={(e) =>
+                    setQuote({ ...quote, quoteAuthor: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveQuote}
+              disabled={isSaving}
+              className="mt-6 flex items-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all disabled:opacity-50 font-bold"
+            >
+              <Save size={18} />
               {isSaving ? t.saving : t.save}
+            </button>
+          </div>
+
+          {/* Who We Are Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Users size={24} className="text-blue-600" />
+              {t.whoWeAre}
+            </h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.whoWeAre} (TR)
+                </div>
+                <QuillEditor
+                  value={whoWeAre.whoWeAreTr}
+                  onChange={(val) =>
+                    setWhoWeAre({ ...whoWeAre, whoWeAreTr: val })
+                  }
+                  placeholder="Türkçe metni girin..."
+                />
+              </div>
+
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.whoWeAre} (DE)
+                </div>
+                <QuillEditor
+                  value={whoWeAre.whoWeAreDe}
+                  onChange={(val) =>
+                    setWhoWeAre({ ...whoWeAre, whoWeAreDe: val })
+                  }
+                  placeholder="Deutsche Text..."
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <label
+                  htmlFor="about_who_we_are_banner_file"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Banner Görseli Yükle
+                </label>
+                <input
+                  id="about_who_we_are_banner_file"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    setLastModifiedSection("whoWeAre");
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setWhoWeAre({
+                          ...whoWeAre,
+                          bannerImageBase64: event.target?.result as string,
+                          bannerImageFileName: file.name,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Veya URL ile açıkla:
+                </p>
+                <input
+                  type="text"
+                  value={whoWeAre.bannerImageUrl || ""}
+                  onChange={(e) => {
+                    setLastModifiedSection("whoWeAre");
+                    setWhoWeAre({
+                      ...whoWeAre,
+                      bannerImageUrl: e.target.value,
+                    });
+                  }}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal mt-2"
+                />
+                {(whoWeAre.bannerImageUrl || whoWeAre.bannerImageBase64) && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-300">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">
+                      📸 Ön İzleme
+                    </p>
+                    <img
+                      src={
+                        whoWeAre.bannerImageBase64 ||
+                        whoWeAre.bannerImageUrl ||
+                        ""
+                      }
+                      alt="Banner Preview"
+                      className="max-h-48 object-cover rounded-lg w-full"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).alt =
+                          "Görsel yüklenemedi";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={saveWhoWeAre}
+              disabled={isSaving}
+              className="mt-6 flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 font-bold"
+            >
+              <Save size={18} />
+              {isSaving ? t.saving : t.save}
+            </button>
+          </div>
+
+          {/* Goals Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Sparkles size={24} className="text-purple-600" />
+              {t.goals}
+            </h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.goals} (TR)
+                </div>
+                <QuillEditor
+                  value={goals.goalsTr}
+                  onChange={(val) => setGoals({ ...goals, goalsTr: val })}
+                  placeholder="Türkçe metni girin..."
+                />
+              </div>
+
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.goals} (DE)
+                </div>
+                <QuillEditor
+                  value={goals.goalsDe}
+                  onChange={(val) => setGoals({ ...goals, goalsDe: val })}
+                  placeholder="Deutsche Text..."
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveGoals}
+              disabled={isSaving}
+              className="mt-6 flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all disabled:opacity-50 font-bold"
+            >
+              <Save size={18} />
+              {isSaving ? t.saving : t.save}
+            </button>
+          </div>
+
+          {/* Vision Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Eye size={24} className="text-indigo-600" />
+              {t.vision}
+            </h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.vision} (TR)
+                </div>
+                <QuillEditor
+                  value={vision.visionTr}
+                  onChange={(val) => setVision({ ...vision, visionTr: val })}
+                  placeholder="Türkçe metni girin..."
+                />
+              </div>
+
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.vision} (DE)
+                </div>
+                <QuillEditor
+                  value={vision.visionDe}
+                  onChange={(val) => setVision({ ...vision, visionDe: val })}
+                  placeholder="Deutsche Text..."
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveVision}
+              disabled={isSaving}
+              className="mt-6 flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all disabled:opacity-50 font-bold"
+            >
+              <Save size={18} />
+              {isSaving ? t.saving : t.save}
+            </button>
+          </div>
+
+          {/* Mission Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Heart size={24} className="text-rose-600" />
+              {t.mission}
+            </h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.mission} (TR)
+                </div>
+                <QuillEditor
+                  value={mission.missionTr}
+                  onChange={(val) => setMission({ ...mission, missionTr: val })}
+                  placeholder="Türkçe metni girin..."
+                />
+              </div>
+
+              <div>
+                <div className="block text-sm font-bold text-gray-700 mb-2">
+                  {t.mission} (DE)
+                </div>
+                <QuillEditor
+                  value={mission.missionDe}
+                  onChange={(val) => setMission({ ...mission, missionDe: val })}
+                  placeholder="Deutsche Text..."
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveMission}
+              disabled={isSaving}
+              className="mt-6 flex items-center gap-2 px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all disabled:opacity-50 font-bold"
+            >
+              <Save size={18} />
+              {isSaving ? t.saving : t.save}
+            </button>
+          </div>
+
+          {/* Core Values Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Users size={24} className="text-teal-600" />
+              {t.coreValues}
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              {coreValues.map((item, idx) => (
+                <div
+                  key={
+                    item.id ??
+                    `${item.order ?? "new"}-${item.titleTr}-${item.titleDe}`
+                  }
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800">{item.titleTr}</p>
+                    <p className="text-sm text-gray-600">{item.titleDe}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingCoreValue(item)}
+                      className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => deleteCoreValue(item.id || "")}
+                      className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setEditingCoreValue({
+                  titleTr: "",
+                  titleDe: "",
+                  descriptionTr: "",
+                  descriptionDe: "",
+                  order: coreValues.length,
+                })
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-bold"
+            >
+              <Plus size={18} />
+              {t.add}
+            </button>
+          </div>
+
+          {/* Focus Areas Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Sparkles size={24} className="text-cyan-600" />
+              {t.focusAreas}
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              {focusAreas.map((item, idx) => (
+                <div
+                  key={
+                    item.id ??
+                    `${item.order ?? "new"}-${item.titleTr}-${item.titleDe}`
+                  }
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800">{item.titleTr}</p>
+                    <p className="text-sm text-gray-600">{item.titleDe}</p>
+                    {item.iconUrl && (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-600 mb-2">
+                          Icon Ön İzleme:
+                        </p>
+                        <img
+                          src={item.iconUrl}
+                          alt="Icon"
+                          className="h-12 w-12 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).alt = "Yüklenemedi";
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingFocusArea(item)}
+                      className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => deleteFocusArea(item.id || "")}
+                      className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setEditingFocusArea({
+                  titleTr: "",
+                  titleDe: "",
+                  descriptionTr: "",
+                  descriptionDe: "",
+                  order: focusAreas.length,
+                  iconUrl: null,
+                  iconBase64: null,
+                  iconFileName: null,
+                })
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 font-bold"
+            >
+              <Plus size={18} />
+              {t.add}
+            </button>
+          </div>
+
+          {/* Activity Areas Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Users size={24} className="text-orange-600" />
+              {t.activityAreas}
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              {activityAreas.map((item, idx) => (
+                <div
+                  key={
+                    item.id ??
+                    `${item.order ?? "new"}-${item.titleTr}-${item.titleDe}`
+                  }
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800">{item.titleTr}</p>
+                    <p className="text-sm text-gray-600">{item.titleDe}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingActivityArea(item)}
+                      className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => deleteActivityArea(item.id || "")}
+                      className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setEditingActivityArea({
+                  titleTr: "",
+                  titleDe: "",
+                  descriptionTr: "",
+                  descriptionDe: "",
+                  order: activityAreas.length,
+                })
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-bold"
+            >
+              <Plus size={18} />
+              {t.add}
+            </button>
+          </div>
+
+          {/* Team Members Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Users size={24} className="text-green-600" />
+              {t.teamMembers}
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              {teamMembers.map((item, idx) => (
+                <div
+                  key={
+                    item.id ??
+                    `${item.order ?? "new"}-${item.name?.value ?? ""}-${
+                      item.titleTr?.value ?? ""
+                    }`
+                  }
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div className="flex-1 flex gap-4">
+                    {item.imageUrl && (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name?.value || ""}
+                        className="w-16 h-16 object-cover rounded-lg"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).alt = "Yüklenemedi";
+                        }}
+                      />
+                    )}
+                    <div>
+                      <p className="font-bold text-gray-800">
+                        {item.name?.value}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {item.titleTr?.value}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingTeamMember(item)}
+                      className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => deleteTeamMember(item.id || "")}
+                      className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setEditingTeamMember({
+                  name: { value: "" },
+                  titleTr: { value: "" },
+                  titleDe: { value: "" },
+                  descriptionTr: { value: "" },
+                  descriptionDe: { value: "" },
+                  imageUrl: "",
+                  order: teamMembers.length,
+                })
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+            >
+              <Plus size={18} />
+              {t.add}
+            </button>
+          </div>
+
+          {/* Human Rights Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Heart size={24} className="text-kpf-teal" />
+              {t.humanRights}
+            </h2>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="about_human_rights_title_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Başlık (TR)
+                </label>
+                <input
+                  id="about_human_rights_title_tr"
+                  type="text"
+                  value={humanRights.titleTr}
+                  onChange={(e) =>
+                    setHumanRights({ ...humanRights, titleTr: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_human_rights_title_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Titel (DE)
+                </label>
+                <input
+                  id="about_human_rights_title_de"
+                  type="text"
+                  value={humanRights.titleDe}
+                  onChange={(e) =>
+                    setHumanRights({ ...humanRights, titleDe: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <label
+                  htmlFor="about_human_rights_description_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Açıklama (TR)
+                </label>
+                <textarea
+                  id="about_human_rights_description_tr"
+                  value={humanRights.descriptionTr}
+                  onChange={(e) =>
+                    setHumanRights({
+                      ...humanRights,
+                      descriptionTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <label
+                  htmlFor="about_human_rights_description_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Beschreibung (DE)
+                </label>
+                <textarea
+                  id="about_human_rights_description_de"
+                  value={humanRights.descriptionDe}
+                  onChange={(e) =>
+                    setHumanRights({
+                      ...humanRights,
+                      descriptionDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_human_rights_tenkil_museum_url"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Tenkil Müzesi URL
+                </label>
+                <input
+                  id="about_human_rights_tenkil_museum_url"
+                  type="text"
+                  value={humanRights.tenkilMuseumUrl}
+                  onChange={(e) =>
+                    setHumanRights({
+                      ...humanRights,
+                      tenkilMuseumUrl: e.target.value,
+                    })
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_human_rights_instagram_url"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Instagram URL
+                </label>
+                <input
+                  id="about_human_rights_instagram_url"
+                  type="text"
+                  value={humanRights.instagramUrl}
+                  onChange={(e) =>
+                    setHumanRights({
+                      ...humanRights,
+                      instagramUrl: e.target.value,
+                    })
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={saveHumanRights}
+              disabled={isSaving}
+              className="mt-6 flex items-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all disabled:opacity-50 font-bold"
+            >
+              <Save size={18} />
+              {isSaving ? t.saving : t.save}
+            </button>
+          </div>
+
+          {/* Partners Section */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Users size={24} className="text-indigo-600" />
+              {t.partners}
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              {partners.map((item, idx) => (
+                <div
+                  key={item.id ?? `${item.displayOrder ?? "new"}-${item.name}`}
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div className="flex-1 flex gap-4">
+                    {item.logoUrl && (
+                      <img
+                        src={item.logoUrl}
+                        alt={item.name}
+                        className="w-16 h-16 object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).alt = "Yüklenemedi";
+                        }}
+                      />
+                    )}
+                    <div>
+                      <p className="font-bold text-gray-800">{item.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {item.descriptionTr}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingPartner(item)}
+                      className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => deletePartner(item.id || "")}
+                      className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() =>
+                setEditingPartner({
+                  name: "",
+                  descriptionTr: "",
+                  descriptionDe: "",
+                  logoUrl: null,
+                  websiteUrl: null,
+                  displayOrder: partners.length,
+                  isActive: true,
+                })
+              }
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold"
+            >
+              <Plus size={18} />
+              {t.add}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modal: Core Value */}
+      {editingCoreValue && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <h3 className="text-xl font-bold mb-6">
+              {editingCoreValue.id ? t.edit : t.add} - {t.coreValues}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="about_modal_core_value_title_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Başlık (TR)
+                </label>
+                <input
+                  id="about_modal_core_value_title_tr"
+                  type="text"
+                  value={editingCoreValue.titleTr}
+                  onChange={(e) =>
+                    setEditingCoreValue({
+                      ...editingCoreValue,
+                      titleTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_core_value_title_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Titel (DE)
+                </label>
+                <input
+                  id="about_modal_core_value_title_de"
+                  type="text"
+                  value={editingCoreValue.titleDe}
+                  onChange={(e) =>
+                    setEditingCoreValue({
+                      ...editingCoreValue,
+                      titleDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_core_value_description_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Açıklama (TR)
+                </label>
+                <textarea
+                  id="about_modal_core_value_description_tr"
+                  value={editingCoreValue.descriptionTr}
+                  onChange={(e) =>
+                    setEditingCoreValue({
+                      ...editingCoreValue,
+                      descriptionTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_core_value_description_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Beschreibung (DE)
+                </label>
+                <textarea
+                  id="about_modal_core_value_description_de"
+                  value={editingCoreValue.descriptionDe}
+                  onChange={(e) =>
+                    setEditingCoreValue({
+                      ...editingCoreValue,
+                      descriptionDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingCoreValue(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-bold"
+              >
+                <X size={18} />
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => saveCoreValue(editingCoreValue)}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-bold"
+              >
+                <Save size={18} />
+                {isSaving ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Focus Area */}
+      {editingFocusArea && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <h3 className="text-xl font-bold mb-6">
+              {editingFocusArea.id ? t.edit : t.add} - {t.focusAreas}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="about_modal_focus_area_title_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Başlık (TR)
+                </label>
+                <input
+                  id="about_modal_focus_area_title_tr"
+                  type="text"
+                  value={editingFocusArea.titleTr}
+                  onChange={(e) =>
+                    setEditingFocusArea({
+                      ...editingFocusArea,
+                      titleTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_focus_area_title_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Titel (DE)
+                </label>
+                <input
+                  id="about_modal_focus_area_title_de"
+                  type="text"
+                  value={editingFocusArea.titleDe}
+                  onChange={(e) =>
+                    setEditingFocusArea({
+                      ...editingFocusArea,
+                      titleDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_focus_area_description_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Açıklama (TR)
+                </label>
+                <textarea
+                  id="about_modal_focus_area_description_tr"
+                  value={editingFocusArea.descriptionTr}
+                  onChange={(e) =>
+                    setEditingFocusArea({
+                      ...editingFocusArea,
+                      descriptionTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_focus_area_description_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Beschreibung (DE)
+                </label>
+                <textarea
+                  id="about_modal_focus_area_description_de"
+                  value={editingFocusArea.descriptionDe}
+                  onChange={(e) =>
+                    setEditingFocusArea({
+                      ...editingFocusArea,
+                      descriptionDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_focus_area_icon_file"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  İcon Dosyası Yükle
+                </label>
+                <input
+                  id="about_modal_focus_area_icon_file"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setEditingFocusArea({
+                          ...editingFocusArea,
+                          iconBase64: event.target?.result as string,
+                          iconFileName: file.name,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Veya URL ile açıkla:
+                </p>
+                <input
+                  id="about_modal_focus_area_icon_url"
+                  type="text"
+                  value={editingFocusArea.iconUrl || ""}
+                  onChange={(e) =>
+                    setEditingFocusArea({
+                      ...editingFocusArea,
+                      iconUrl: e.target.value,
+                    })
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 mt-2"
+                />
+                {(editingFocusArea.iconUrl || editingFocusArea.iconBase64) && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg flex items-center gap-3">
+                    <span className="text-sm text-gray-600">📸 Ön İzleme:</span>
+                    <img
+                      src={
+                        editingFocusArea.iconBase64 ||
+                        editingFocusArea.iconUrl ||
+                        ""
+                      }
+                      alt="Icon Preview"
+                      className="h-12 w-12 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).alt = "Yüklenemedi";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingFocusArea(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-bold"
+              >
+                <X size={18} />
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => saveFocusArea(editingFocusArea)}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-bold"
+              >
+                <Save size={18} />
+                {isSaving ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Activity Area */}
+      {editingActivityArea && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <h3 className="text-xl font-bold mb-6">
+              {editingActivityArea.id ? t.edit : t.add} - {t.activityAreas}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="about_modal_activity_area_title_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Başlık (TR)
+                </label>
+                <input
+                  id="about_modal_activity_area_title_tr"
+                  type="text"
+                  value={editingActivityArea.titleTr}
+                  onChange={(e) =>
+                    setEditingActivityArea({
+                      ...editingActivityArea,
+                      titleTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_activity_area_title_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Titel (DE)
+                </label>
+                <input
+                  id="about_modal_activity_area_title_de"
+                  type="text"
+                  value={editingActivityArea.titleDe}
+                  onChange={(e) =>
+                    setEditingActivityArea({
+                      ...editingActivityArea,
+                      titleDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_activity_area_description_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Açıklama (TR)
+                </label>
+                <textarea
+                  id="about_modal_activity_area_description_tr"
+                  value={editingActivityArea.descriptionTr}
+                  onChange={(e) =>
+                    setEditingActivityArea({
+                      ...editingActivityArea,
+                      descriptionTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_activity_area_description_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Beschreibung (DE)
+                </label>
+                <textarea
+                  id="about_modal_activity_area_description_de"
+                  value={editingActivityArea.descriptionDe}
+                  onChange={(e) =>
+                    setEditingActivityArea({
+                      ...editingActivityArea,
+                      descriptionDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingActivityArea(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-bold"
+              >
+                <X size={18} />
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => saveActivityArea(editingActivityArea)}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-bold"
+              >
+                <Save size={18} />
+                {isSaving ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Team Member */}
+      {editingTeamMember && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <h3 className="text-xl font-bold mb-6">
+              {editingTeamMember.id ? t.edit : t.add} - {t.teamMembers}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="about_modal_team_member_name"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Ad
+                </label>
+                <input
+                  id="about_modal_team_member_name"
+                  type="text"
+                  value={editingTeamMember.name?.value || ""}
+                  onChange={(e) =>
+                    setEditingTeamMember({
+                      ...editingTeamMember,
+                      name: { value: e.target.value },
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_team_member_title_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Ünvan (TR)
+                </label>
+                <input
+                  id="about_modal_team_member_title_tr"
+                  type="text"
+                  value={editingTeamMember.titleTr?.value || ""}
+                  onChange={(e) =>
+                    setEditingTeamMember({
+                      ...editingTeamMember,
+                      titleTr: { value: e.target.value },
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_team_member_title_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Titel (DE)
+                </label>
+                <input
+                  id="about_modal_team_member_title_de"
+                  type="text"
+                  value={editingTeamMember.titleDe?.value || ""}
+                  onChange={(e) =>
+                    setEditingTeamMember({
+                      ...editingTeamMember,
+                      titleDe: { value: e.target.value },
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_team_member_image_url"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Görsel URL
+                </label>
+                <input
+                  id="about_modal_team_member_image_url"
+                  type="text"
+                  value={editingTeamMember.imageUrl || ""}
+                  onChange={(e) =>
+                    setEditingTeamMember({
+                      ...editingTeamMember,
+                      imageUrl: e.target.value,
+                    })
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+                {editingTeamMember.imageUrl && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <img
+                      src={editingTeamMember.imageUrl}
+                      alt="Preview"
+                      className="h-24 w-24 object-cover rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).alt = "Yüklenemedi";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingTeamMember(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-bold"
+              >
+                <X size={18} />
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => saveTeamMember(editingTeamMember)}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-bold"
+              >
+                <Save size={18} />
+                {isSaving ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Partner */}
+      {editingPartner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+            <h3 className="text-xl font-bold mb-6">
+              {editingPartner.id ? t.edit : t.add} - {t.partners}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="about_modal_partner_name"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Ad
+                </label>
+                <input
+                  id="about_modal_partner_name"
+                  type="text"
+                  value={editingPartner.name}
+                  onChange={(e) =>
+                    setEditingPartner({
+                      ...editingPartner,
+                      name: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_partner_description_tr"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Açıklama (TR)
+                </label>
+                <textarea
+                  id="about_modal_partner_description_tr"
+                  value={editingPartner.descriptionTr}
+                  onChange={(e) =>
+                    setEditingPartner({
+                      ...editingPartner,
+                      descriptionTr: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_partner_description_de"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Beschreibung (DE)
+                </label>
+                <textarea
+                  id="about_modal_partner_description_de"
+                  value={editingPartner.descriptionDe}
+                  onChange={(e) =>
+                    setEditingPartner({
+                      ...editingPartner,
+                      descriptionDe: e.target.value,
+                    })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 resize-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_partner_logo_url"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Logo URL
+                </label>
+                <input
+                  id="about_modal_partner_logo_url"
+                  type="text"
+                  value={editingPartner.logoUrl || ""}
+                  onChange={(e) =>
+                    setEditingPartner({
+                      ...editingPartner,
+                      logoUrl: e.target.value,
+                    })
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+                {editingPartner.logoUrl && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <img
+                      src={editingPartner.logoUrl}
+                      alt="Logo Preview"
+                      className="h-16 w-16 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).alt = "Yüklenemedi";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="about_modal_partner_website_url"
+                  className="block text-sm font-bold text-gray-700 mb-2"
+                >
+                  Website URL
+                </label>
+                <input
+                  id="about_modal_partner_website_url"
+                  type="text"
+                  value={editingPartner.websiteUrl || ""}
+                  onChange={(e) =>
+                    setEditingPartner({
+                      ...editingPartner,
+                      websiteUrl: e.target.value,
+                    })
+                  }
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  id="about_modal_partner_is_active"
+                  type="checkbox"
+                  checked={editingPartner.isActive}
+                  onChange={(e) =>
+                    setEditingPartner({
+                      ...editingPartner,
+                      isActive: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4"
+                />
+                <label
+                  htmlFor="about_modal_partner_is_active"
+                  className="text-sm font-bold text-gray-700"
+                >
+                  Aktif
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingPartner(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-bold"
+              >
+                <X size={18} />
+                {t.cancel}
+              </button>
+              <button
+                onClick={() => savePartner(editingPartner)}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-bold"
+              >
+                <Save size={18} />
+                {isSaving ? t.saving : t.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quill Editor Styling */}
+      <style>{`
+        .quill-modern-container {
+          background: #f8fafc;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          overflow: hidden;
+        }
+        .quill-modern-container:focus-within {
+          background: #fff;
+          border-color: #14b8a6;
+        }
+        .ql-toolbar.ql-snow {
+          border: none !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          background: #fff;
+        }
+        .ql-container.ql-snow {
+          border: none !important;
+          min-height: 120px;
+          font-size: 15px;
+        }
+        .ql-editor {
+          padding: 12px !important;
+        }
+      `}</style>
     </div>
   );
 };

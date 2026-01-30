@@ -41,11 +41,21 @@ interface VolunteerData {
   updatedAt: string;
 }
 
+interface VolunteerSubmission {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string | null;
+  message?: string | null;
+  submittedAt: string;
+}
+
 const AdminVolunteers: React.FC = () => {
-  const [volunteers, setVolunteers] = useState<any[]>([]);
+  const [volunteers, setVolunteers] = useState<VolunteerSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVolunteer, setSelectedVolunteer] = useState<any | null>(null);
+  const [selectedVolunteer, setSelectedVolunteer] =
+    useState<VolunteerSubmission | null>(null);
   const [volunteerPage, setVolunteerPage] = useState<VolunteerData | null>(
     null,
   );
@@ -79,10 +89,10 @@ const AdminVolunteers: React.FC = () => {
   const loadVolunteers = async () => {
     try {
       setLoading(true);
-      const data = await volunteersApi.getAll();
+      const data: VolunteerSubmission[] = await volunteersApi.getAll();
       // Tarihe göre sırala (en yeni önce)
-      const sorted = data.sort(
-        (a: any, b: any) =>
+      const sorted = [...data].sort(
+        (a, b) =>
           new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
       );
       setVolunteers(sorted);
@@ -103,41 +113,42 @@ const AdminVolunteers: React.FC = () => {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("tr-TR", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Date(dateString).toLocaleDateString(
+      language === "de" ? "de-DE" : "tr-TR",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      },
+    );
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-red"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-teal"></div>
       </div>
     );
+  }
+
+  let pageTitle = t("admin_volunteers_title");
+  let pageSubtitle = `${t("admin_volunteers_total")}: ${volunteers.length}`;
+
+  if (volunteerPage) {
+    pageTitle =
+      language === "de" ? volunteerPage.titleDe : volunteerPage.titleTr;
+    pageSubtitle =
+      language === "de" ? volunteerPage.subtitleDe : volunteerPage.subtitleTr;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          {volunteerPage
-            ? language === "de"
-              ? volunteerPage.titleDe
-              : volunteerPage.titleTr
-            : t("admin_volunteers_title")}
-        </h1>
-        <p className="text-slate-600">
-          {volunteerPage
-            ? language === "de"
-              ? volunteerPage.subtitleDe
-              : volunteerPage.subtitleTr
-            : t("admin_volunteers_total") + ": " + volunteers.length}
-        </p>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">{pageTitle}</h1>
+        <p className="text-slate-600">{pageSubtitle}</p>
         <p className="text-slate-400 text-sm mt-1">
           {t("admin_volunteers_total")}: {volunteers.length}
         </p>
@@ -151,7 +162,7 @@ const AdminVolunteers: React.FC = () => {
         />
         <input
           type="text"
-          placeholder="Başvuru ara..."
+          placeholder={t("admin_volunteers_search_placeholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
@@ -163,15 +174,17 @@ const AdminVolunteers: React.FC = () => {
         {filteredVolunteers.length === 0 ? (
           <div className="col-span-2 text-center py-12 text-slate-500">
             {searchQuery
-              ? "Aramanıza uygun başvuru bulunamadı."
-              : "Henüz başvuru bulunmamaktadır."}
+              ? t("admin_volunteers_no_results")
+              : t("admin_volunteers_no_submissions")}
           </div>
         ) : (
           filteredVolunteers.map((volunteer) => (
-            <div
+            <button
+              type="button"
               key={volunteer.id}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer"
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left"
               onClick={() => setSelectedVolunteer(volunteer)}
+              aria-label={t("admin_volunteers_open_details")}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -208,7 +221,7 @@ const AdminVolunteers: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </button>
           ))
         )}
       </div>
@@ -219,7 +232,7 @@ const AdminVolunteers: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-slate-800">
-                Başvuru Detayları
+                {t("admin_volunteers_details_title")}
               </h2>
               <button
                 onClick={() => setSelectedVolunteer(null)}
@@ -233,13 +246,15 @@ const AdminVolunteers: React.FC = () => {
               {/* Kişi Bilgileri */}
               <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4">
-                  Kişi Bilgileri
+                  {t("admin_volunteers_person_info")}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <UserCheck className="text-slate-400" size={20} />
                     <div>
-                      <p className="text-sm text-slate-500">Ad Soyad</p>
+                      <p className="text-sm text-slate-500">
+                        {t("admin_volunteers_label_fullname")}
+                      </p>
                       <p className="font-semibold text-slate-800">
                         {selectedVolunteer.fullName}
                       </p>
@@ -248,7 +263,9 @@ const AdminVolunteers: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Mail className="text-slate-400" size={20} />
                     <div>
-                      <p className="text-sm text-slate-500">E-Mail</p>
+                      <p className="text-sm text-slate-500">
+                        {t("admin_volunteers_label_email")}
+                      </p>
                       <a
                         href={`mailto:${selectedVolunteer.email}`}
                         className="font-semibold text-kpf-teal hover:underline"
@@ -261,7 +278,9 @@ const AdminVolunteers: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <Phone className="text-slate-400" size={20} />
                       <div>
-                        <p className="text-sm text-slate-500">Telefon</p>
+                        <p className="text-sm text-slate-500">
+                          {t("admin_volunteers_label_phone")}
+                        </p>
                         <a
                           href={`tel:${selectedVolunteer.phoneNumber}`}
                           className="font-semibold text-kpf-teal hover:underline"
@@ -274,7 +293,9 @@ const AdminVolunteers: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Clock className="text-slate-400" size={20} />
                     <div>
-                      <p className="text-sm text-slate-500">Başvuru Tarihi</p>
+                      <p className="text-sm text-slate-500">
+                        {t("admin_volunteers_label_date")}
+                      </p>
                       <p className="font-semibold text-slate-800">
                         {formatDate(selectedVolunteer.submittedAt)}
                       </p>
@@ -287,7 +308,7 @@ const AdminVolunteers: React.FC = () => {
               {selectedVolunteer.message && (
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 mb-3">
-                    Mesaj / Başvuru
+                    {t("admin_volunteers_message_title")}
                   </h3>
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <p className="text-slate-700 whitespace-pre-wrap">
@@ -300,11 +321,13 @@ const AdminVolunteers: React.FC = () => {
               {/* Actions */}
               <div className="pt-6 border-t flex gap-3">
                 <a
-                  href={`mailto:${selectedVolunteer.email}?subject=KPF Gönüllülük Başvurusu`}
+                  href={`mailto:${selectedVolunteer.email}?subject=${encodeURIComponent(
+                    t("admin_volunteers_email_subject"),
+                  )}`}
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition-all font-semibold"
                 >
                   <Mail size={20} />
-                  E-Mail Gönder
+                  {t("admin_volunteers_send_email")}
                 </a>
                 {selectedVolunteer.phoneNumber && (
                   <a
@@ -312,7 +335,7 @@ const AdminVolunteers: React.FC = () => {
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-semibold"
                   >
                     <Phone size={20} />
-                    Ara
+                    {t("admin_volunteers_call")}
                   </a>
                 )}
               </div>

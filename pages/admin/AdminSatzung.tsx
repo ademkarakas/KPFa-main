@@ -1,8 +1,8 @@
 import { Book, Plus, Save, Trash2, CheckCircle } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { useLanguage } from "../../contexts/LanguageContext";
+import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-// Backend DTO yapısı
+// Backend DTO (backend contract is preserved)
 interface SectionContent {
   heading: string;
   bodyTurkish: string;
@@ -80,75 +80,275 @@ const EMPTY_STATE: SatzungDto = {
   updatedAt: "",
 };
 
+type AdminSatzungTab =
+  | "basic"
+  | "name"
+  | "purpose"
+  | "gemeinnuetzigkeit"
+  | "membership";
+
+const API_URL = "https://localhost:7189/api/Satzung";
+
+const createUiKey = () =>
+  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+
+const isAbortError = (err: unknown) =>
+  err instanceof DOMException && err.name === "AbortError";
+
+const SectionInput: React.FC<{
+  label: string;
+  section: SectionContent;
+  headingPlaceholder: string;
+  bodyTrPlaceholder: string;
+  bodyDePlaceholder: string;
+  onHeadingChange: (value: string) => void;
+  onBodyTrChange: (value: string) => void;
+  onBodyDeChange: (value: string) => void;
+}> = ({
+  label,
+  section,
+  headingPlaceholder,
+  bodyTrPlaceholder,
+  bodyDePlaceholder,
+  onHeadingChange,
+  onBodyTrChange,
+  onBodyDeChange,
+}) => (
+  <div className="space-y-3">
+    <label className="block text-sm font-semibold text-slate-700">
+      {label}
+    </label>
+    <input
+      type="text"
+      placeholder={headingPlaceholder}
+      value={section.heading}
+      onChange={(e) => onHeadingChange(e.target.value)}
+      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal text-sm"
+    />
+    <textarea
+      placeholder={bodyTrPlaceholder}
+      value={section.bodyTurkish}
+      onChange={(e) => onBodyTrChange(e.target.value)}
+      rows={3}
+      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none text-sm"
+    />
+    <textarea
+      placeholder={bodyDePlaceholder}
+      value={section.bodyGerman}
+      onChange={(e) => onBodyDeChange(e.target.value)}
+      rows={3}
+      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none text-sm"
+    />
+  </div>
+);
+
 const AdminSatzung: React.FC = () => {
+  const { t } = useTranslation();
   const [content, setContent] = useState<SatzungDto>(EMPTY_STATE);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("basic");
-  const { language } = useLanguage();
+  const [activeTab, setActiveTab] = useState<AdminSatzungTab>("basic");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [purposeUiKeys, setPurposeUiKeys] = useState<string[]>([]);
+  const [membershipUiKeys, setMembershipUiKeys] = useState<string[]>([]);
+
+  const tabs = useMemo(
+    () => [
+      { id: "basic" as const, label: t("satzung.tabs.basic") },
+      { id: "name" as const, label: t("satzung.tabs.name") },
+      { id: "purpose" as const, label: t("satzung.tabs.purpose") },
+      {
+        id: "gemeinnuetzigkeit" as const,
+        label: t("satzung.tabs.gemeinnuetzigkeit"),
+      },
+      { id: "membership" as const, label: t("satzung.tabs.membership") },
+    ],
+    [t],
+  );
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const parseSatzung = (data: any): SatzungDto => ({
+      ...EMPTY_STATE,
+      ...data,
+      purposes: Array.isArray(data?.purposes) ? data.purposes : [],
+      memberships: Array.isArray(data?.memberships) ? data.memberships : [],
+    });
+
+    const loadSatzung = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const token = globalThis.localStorage?.getItem("adminToken");
+        if (!token) {
+          setError(t("admin.loginRequired"));
+          return;
+        }
+
+        const res = await fetch(API_URL, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          if (isMounted) {
+            setContent(EMPTY_STATE);
+            setPurposeUiKeys([]);
+            setMembershipUiKeys([]);
+          }
+          return;
+        }
+
+        const contentType = res.headers.get("content-type");
+        if (!contentType?.includes("application/json")) {
+          setError(t("admin.errors.invalidServerResponse"));
+          return;
+        }
+
+        const dataArray: any = await res.json();
+        const data =
+          Array.isArray(dataArray) && dataArray.length > 0
+            ? dataArray[0]
+            : null;
+        const next = data ? parseSatzung(data) : EMPTY_STATE;
+
+        if (isMounted) {
+          setContent(next);
+          setPurposeUiKeys(next.purposes.map(() => createUiKey()));
+          setMembershipUiKeys(next.memberships.map(() => createUiKey()));
+        }
+      } catch (err) {
+        if (isAbortError(err)) return;
+        console.error("Satzung load error:", err);
+        setError(t("admin.errors.loadFailed"));
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
     loadSatzung();
-  }, []);
 
-  const loadSatzung = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("adminToken");
-      if (!token) {
-        console.warn("Token bulunamadı, giriş yapmalısınız.");
-        return; // finally bloğu çalışacaktır
-      }
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [t]);
 
-      const res = await fetch("https://localhost:7189/api/Satzung", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        console.warn("Satzung bulunamadı, boş başlatılıyor");
-        return;
-      }
-
-      const contentType = res.headers.get("content-type");
-      if (!contentType?.includes("application/json")) {
-        console.warn("Backend JSON döndürmedi");
-        return;
-      }
-
-      const dataArray = await res.json();
-      if (!dataArray || dataArray.length === 0) {
-        return;
-      }
-
-      const data = dataArray[0];
-      setContent({
-        ...EMPTY_STATE,
-        ...data,
-        purposes: data.purposes || [],
-        memberships: data.memberships || [],
-      });
-    } catch (err) {
-      console.error("Satzung yükleme hatası:", err);
-    } finally {
-      // Başarılı olsa da hata alsa da loading'i kapatırız
-      setLoading(false);
-    }
+  const updateSection = (
+    field: keyof SatzungDto,
+    prop: keyof SectionContent,
+    value: string,
+  ) => {
+    setContent((prev) => ({
+      ...prev,
+      [field]: {
+        ...(prev[field] as SectionContent),
+        [prop]: value,
+      },
+    }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const updatePurpose = (
+    index: number,
+    prop: keyof SectionContent,
+    value: string,
+  ) => {
+    setContent((prev) => {
+      const purposes = [...prev.purposes];
+      purposes[index] = {
+        ...purposes[index],
+        content: {
+          ...purposes[index].content,
+          [prop]: value,
+        },
+      };
+      return { ...prev, purposes };
+    });
+  };
+
+  const addPurpose = () => {
+    setContent((prev) => {
+      const nextLetter = String.fromCodePoint(97 + prev.purposes.length);
+      return {
+        ...prev,
+        purposes: [
+          ...prev.purposes,
+          {
+            letter: nextLetter,
+            content: createEmptySection(),
+          },
+        ],
+      };
+    });
+    setPurposeUiKeys((prev) => [...prev, createUiKey()]);
+  };
+
+  const removePurpose = (index: number) => {
+    setContent((prev) => ({
+      ...prev,
+      purposes: prev.purposes.filter((_, i) => i !== index),
+    }));
+    setPurposeUiKeys((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateMembership = (
+    index: number,
+    field: "type" | "descriptionTurkish" | "descriptionGerman",
+    prop: keyof SectionContent,
+    value: string,
+  ) => {
+    setContent((prev) => {
+      const memberships = [...prev.memberships];
+      memberships[index] = {
+        ...memberships[index],
+        [field]: {
+          ...memberships[index][field],
+          [prop]: value,
+        },
+      };
+      return { ...prev, memberships };
+    });
+  };
+
+  const addMembership = () => {
+    setContent((prev) => ({
+      ...prev,
+      memberships: [
+        ...prev.memberships,
+        {
+          type: createEmptySection(),
+          descriptionTurkish: createEmptySection(),
+          descriptionGerman: createEmptySection(),
+        },
+      ],
+    }));
+    setMembershipUiKeys((prev) => [...prev, createUiKey()]);
+  };
+
+  const removeMembership = (index: number) => {
+    setContent((prev) => ({
+      ...prev,
+      memberships: prev.memberships.filter((_, i) => i !== index),
+    }));
+    setMembershipUiKeys((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
+    setError(null);
 
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = globalThis.localStorage?.getItem("adminToken");
       if (!token) {
-        alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
-        setLoading(false); // Burayı ekledik
+        setError(t("admin.loginRequired"));
         return;
       }
 
-      const res = await fetch("https://localhost:7189/api/Satzung", {
+      const res = await fetch(API_URL, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -162,188 +362,68 @@ const AdminSatzung: React.FC = () => {
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
 
-      alert("Tüzük başarıyla güncellendi!");
-      await loadSatzung();
+      alert(t("satzung.saveSuccess"));
     } catch (err) {
-      console.error("Satzung kaydetme hatası:", err);
+      console.error("Satzung save error:", err);
       alert(
-        "İşlem başarısız: " +
-          (err instanceof Error ? err.message : "Bilinmeyen hata")
+        `${t("satzung.saveError")}: ` +
+          (err instanceof Error ? err.message : t("common.unknownError")),
       );
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const addPurpose = () => {
-    const newPurpose: Purpose = {
-      letter: String.fromCharCode(97 + content.purposes.length),
-      content: createEmptySection(),
-    };
-    setContent({
-      ...content,
-      purposes: [...content.purposes, newPurpose],
-    });
-  };
+  const headingPlaceholder = t("satzung.placeholders.heading");
+  const bodyTrPlaceholder = t("satzung.placeholders.bodyTr");
+  const bodyDePlaceholder = t("satzung.placeholders.bodyDe");
 
-  const removePurpose = (index: number) => {
-    setContent({
-      ...content,
-      purposes: content.purposes.filter((_, i) => i !== index),
-    });
-  };
-
-  const updatePurpose = (
-    index: number,
-    prop: keyof SectionContent,
-    value: string
-  ) => {
-    const updated = [...content.purposes];
-    updated[index] = {
-      ...updated[index],
-      content: {
-        ...updated[index].content,
-        [prop]: value,
-      },
-    };
-    setContent({ ...content, purposes: updated });
-  };
-
-  const addMembership = () => {
-    const newMembership: MembershipDetail = {
-      type: createEmptySection(),
-      descriptionTurkish: createEmptySection(),
-      descriptionGerman: createEmptySection(),
-    };
-    setContent({
-      ...content,
-      memberships: [...content.memberships, newMembership],
-    });
-  };
-
-  const removeMembership = (index: number) => {
-    setContent({
-      ...content,
-      memberships: content.memberships.filter((_, i) => i !== index),
-    });
-  };
-
-  const updateMembership = (
-    index: number,
-    field: "type" | "descriptionTurkish" | "descriptionGerman",
-    prop: keyof SectionContent,
-    value: string
-  ) => {
-    const updated = [...content.memberships];
-    updated[index] = {
-      ...updated[index],
-      [field]: {
-        ...updated[index][field],
-        [prop]: value,
-      },
-    };
-    setContent({ ...content, memberships: updated });
-  };
-
-  const updateSection = (
-    field: keyof SatzungDto,
-    prop: keyof SectionContent,
-    value: string
-  ) => {
-    setContent({
-      ...content,
-      [field]: {
-        ...(content[field] as SectionContent),
-        [prop]: value,
-      },
-    });
-  };
-
-  const SectionInput: React.FC<{
-    label: string;
-    field: keyof SatzungDto;
-    section: SectionContent;
-  }> = ({ label, field, section }) => (
-    <div className="space-y-3">
-      <label className="block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
-      <input
-        type="text"
-        placeholder="Başlık / Heading"
-        value={section.heading}
-        onChange={(e) => updateSection(field, "heading", e.target.value)}
-        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal text-sm"
-      />
-      <textarea
-        placeholder="Türkçe içerik"
-        value={section.bodyTurkish}
-        onChange={(e) => updateSection(field, "bodyTurkish", e.target.value)}
-        rows={3}
-        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none text-sm"
-      />
-      <textarea
-        placeholder="Deutscher Inhalt"
-        value={section.bodyGerman}
-        onChange={(e) => updateSection(field, "bodyGerman", e.target.value)}
-        rows={3}
-        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal resize-none text-sm"
-      />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-teal"></div>
+        <p className="mt-4 text-slate-500 font-medium">{t("common.loading")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto pb-20 px-4">
-      <form onSubmit={handleSubmit} className="space-y-10">
-        {/* Sticky Header */}
+      <form onSubmit={handleSave} className="space-y-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-kpf-red/10 rounded-2xl">
-              <Book className="text-kpf-red" size={28} />
+            <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+              <Book className="text-kpf-teal" size={28} />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-800">
-                {language === "tr" ? "Tüzük Yönetimi" : "Satzung Verwaltung"}
+                {t("satzung.pageTitle")}
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" />
-                {language === "tr"
-                  ? "Tüzük içeriğini düzenle"
-                  : "Satzung bearbeiten"}
+                {t("satzung.subtitle")}
               </p>
             </div>
           </div>
+
           <button
             type="submit"
-            disabled={loading}
-            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
           >
             <Save size={18} />
-            {loading ? "Kaydediliyor..." : "Sitede Yayınla"}
+            {saving ? t("common.saving") : t("common.publish")}
           </button>
         </div>
 
-        {/* Tabs */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
+            {error}
+          </div>
+        )}
+
         <div className="flex gap-2 border-b border-slate-200 overflow-x-auto bg-white rounded-2xl p-4">
-          {[
-            {
-              id: "basic",
-              label: language === "tr" ? "Temel Bilgiler" : "Grunddaten",
-            },
-            {
-              id: "name",
-              label: language === "tr" ? "Ad ve Merkez" : "Name und Sitz",
-            },
-            { id: "purpose", label: language === "tr" ? "Amaç" : "Zweck" },
-            {
-              id: "gemeinnuetzigkeit",
-              label: language === "tr" ? "Kamu Yararı" : "Gemeinnützigkeit",
-            },
-            {
-              id: "membership",
-              label: language === "tr" ? "Üyelik" : "Mitgliedschaft",
-            },
-          ].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -359,29 +439,34 @@ const AdminSatzung: React.FC = () => {
           ))}
         </div>
 
-        {/* Temel Bilgiler */}
         {activeTab === "basic" && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-bold text-slate-800 mb-4">
-              {language === "tr" ? "Başlıklar" : "Überschriften"}
+              {t("satzung.sections.titles")}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
-                placeholder="Başlık (Türkçe)"
+                placeholder={t("satzung.placeholders.titleTr")}
                 value={content.titleTurkish}
                 onChange={(e) =>
-                  setContent({ ...content, titleTurkish: e.target.value })
+                  setContent((prev) => ({
+                    ...prev,
+                    titleTurkish: e.target.value,
+                  }))
                 }
                 required
                 className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
               />
               <input
                 type="text"
-                placeholder="Titel (Deutsch)"
+                placeholder={t("satzung.placeholders.titleDe")}
                 value={content.titleGerman}
                 onChange={(e) =>
-                  setContent({ ...content, titleGerman: e.target.value })
+                  setContent((prev) => ({
+                    ...prev,
+                    titleGerman: e.target.value,
+                  }))
                 }
                 required
                 className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
@@ -390,132 +475,296 @@ const AdminSatzung: React.FC = () => {
           </div>
         )}
 
-        {/* Ad ve Merkez */}
         {activeTab === "name" && (
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
             <SectionInput
-              label={language === "tr" ? "Ad ve Merkez" : "Name und Sitz"}
-              field="nameAndSeatTurkish"
+              label={t("satzung.sections.nameAndSeatTr")}
               section={content.nameAndSeatTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("nameAndSeatTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("nameAndSeatTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("nameAndSeatTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Name und Sitz (DE)"
-              field="nameAndSeatGerman"
+              label={t("satzung.sections.nameAndSeatDe")}
               section={content.nameAndSeatGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("nameAndSeatGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("nameAndSeatGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("nameAndSeatGerman", "bodyGerman", v)
+              }
             />
+
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Ad Açıklaması (TR)"
-              field="nameDescTurkish"
+              label={t("satzung.sections.nameDescTr")}
               section={content.nameDescTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("nameDescTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("nameDescTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("nameDescTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Name Beschreibung (DE)"
-              field="nameDescGerman"
+              label={t("satzung.sections.nameDescDe")}
               section={content.nameDescGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("nameDescGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("nameDescGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("nameDescGerman", "bodyGerman", v)
+              }
             />
+
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Merkez (TR)"
-              field="seatTurkish"
+              label={t("satzung.sections.seatTr")}
               section={content.seatTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("seatTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("seatTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("seatTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Sitz (DE)"
-              field="seatGerman"
+              label={t("satzung.sections.seatDe")}
               section={content.seatGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) => updateSection("seatGerman", "heading", v)}
+              onBodyTrChange={(v) =>
+                updateSection("seatGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("seatGerman", "bodyGerman", v)
+              }
             />
+
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Merkez Açıklaması (TR)"
-              field="seatDescTurkish"
+              label={t("satzung.sections.seatDescTr")}
               section={content.seatDescTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("seatDescTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("seatDescTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("seatDescTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Sitz Beschreibung (DE)"
-              field="seatDescGerman"
+              label={t("satzung.sections.seatDescDe")}
               section={content.seatDescGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("seatDescGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("seatDescGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("seatDescGerman", "bodyGerman", v)
+              }
             />
+
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Mali Yıl (TR)"
-              field="fiscalYearTurkish"
+              label={t("satzung.sections.fiscalYearTr")}
               section={content.fiscalYearTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("fiscalYearTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("fiscalYearTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("fiscalYearTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Geschäftsjahr (DE)"
-              field="fiscalYearGerman"
+              label={t("satzung.sections.fiscalYearDe")}
               section={content.fiscalYearGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("fiscalYearGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("fiscalYearGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("fiscalYearGerman", "bodyGerman", v)
+              }
             />
+
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Mali Yıl Açıklaması (TR)"
-              field="fiscalYearDescTurkish"
+              label={t("satzung.sections.fiscalYearDescTr")}
               section={content.fiscalYearDescTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("fiscalYearDescTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("fiscalYearDescTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("fiscalYearDescTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Geschäftsjahr Beschreibung (DE)"
-              field="fiscalYearDescGerman"
+              label={t("satzung.sections.fiscalYearDescDe")}
               section={content.fiscalYearDescGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("fiscalYearDescGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("fiscalYearDescGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("fiscalYearDescGerman", "bodyGerman", v)
+              }
             />
           </div>
         )}
 
-        {/* Amaç */}
         {activeTab === "purpose" && (
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
             <SectionInput
-              label="Derneğin Amacı (TR)"
-              field="purposeOfAssociationTurkish"
+              label={t("satzung.sections.purposeOfAssociationTr")}
               section={content.purposeOfAssociationTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("purposeOfAssociationTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("purposeOfAssociationTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("purposeOfAssociationTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Vereinszweck (DE)"
-              field="purposeOfAssociationGerman"
+              label={t("satzung.sections.purposeOfAssociationDe")}
               section={content.purposeOfAssociationGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("purposeOfAssociationGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("purposeOfAssociationGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("purposeOfAssociationGerman", "bodyGerman", v)
+              }
             />
 
             <div className="border-t border-slate-200 pt-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-slate-800">Amaç Maddeleri</h3>
+                <h3 className="font-bold text-slate-800">
+                  {t("satzung.sections.purposeItems")}
+                </h3>
                 <button
                   type="button"
                   onClick={addPurpose}
-                  className="flex items-center gap-2 px-4 py-2 bg-kpf-red text-white rounded-lg hover:bg-red-700 transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all"
                 >
                   <Plus size={18} />
-                  Madde Ekle
+                  {t("common.add")}
                 </button>
               </div>
 
               <div className="space-y-4">
                 {content.purposes.map((purpose, idx) => (
                   <div
-                    key={idx}
+                    key={
+                      purposeUiKeys[idx] ?? purpose.letter ?? `purpose-${idx}`
+                    }
                     className="border border-slate-200 rounded-lg p-4 bg-slate-50"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-bold text-kpf-red">
-                        Madde {purpose.letter})
+                      <span className="font-bold text-kpf-teal">
+                        {t("satzung.purposeItemLabel", {
+                          letter: purpose.letter,
+                        })}
                       </span>
                       <button
                         type="button"
                         onClick={() => removePurpose(idx)}
                         className="text-red-600 hover:text-red-800 transition-colors"
+                        aria-label={t("common.delete")}
+                        data-size="icon"
                       >
                         <Trash2 size={18} />
                       </button>
                     </div>
+
                     <input
                       type="text"
-                      placeholder="Başlık"
+                      placeholder={t("satzung.placeholders.itemHeading")}
                       value={purpose.content.heading}
                       onChange={(e) =>
                         updatePurpose(idx, "heading", e.target.value)
@@ -523,7 +772,7 @@ const AdminSatzung: React.FC = () => {
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm bg-white"
                     />
                     <textarea
-                      placeholder="Türkçe"
+                      placeholder={t("satzung.placeholders.itemBodyTr")}
                       value={purpose.content.bodyTurkish}
                       onChange={(e) =>
                         updatePurpose(idx, "bodyTurkish", e.target.value)
@@ -532,7 +781,7 @@ const AdminSatzung: React.FC = () => {
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm bg-white resize-none"
                     />
                     <textarea
-                      placeholder="Deutsch"
+                      placeholder={t("satzung.placeholders.itemBodyDe")}
                       value={purpose.content.bodyGerman}
                       onChange={(e) =>
                         updatePurpose(idx, "bodyGerman", e.target.value)
@@ -547,77 +796,78 @@ const AdminSatzung: React.FC = () => {
           </div>
         )}
 
-        {/* Gemeinnützigkeit */}
         {activeTab === "gemeinnuetzigkeit" && (
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
             <SectionInput
-              label="Kamu Yararı (TR)"
+              labelKey="satzung.sections.gemeinnuetzigkeitTr"
               field="gemeinnuetzigkeitTurkish"
               section={content.gemeinnuetzigkeitTurkish}
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Gemeinnützigkeit (DE)"
+              labelKey="satzung.sections.gemeinnuetzigkeitDe"
               field="gemeinnuetzigkeitGerman"
               section={content.gemeinnuetzigkeitGerman}
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Politik Tarafsızlık (TR)"
+              labelKey="satzung.sections.politicalNeutralityTr"
               field="politicalNeutralityTurkish"
               section={content.politicalNeutralityTurkish}
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              label="Politische Neutralität (DE)"
+              labelKey="satzung.sections.politicalNeutralityDe"
               field="politicalNeutralityGerman"
               section={content.politicalNeutralityGerman}
             />
           </div>
         )}
 
-        {/* Üyelik */}
         {activeTab === "membership" && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-800">Üyelik Türleri</h3>
+              <h3 className="font-bold text-slate-800">
+                {t("satzung.sections.membershipTypes")}
+              </h3>
               <button
                 type="button"
                 onClick={addMembership}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all"
               >
                 <Plus size={18} />
-                Üyelik Türü Ekle
+                {t("common.add")}
               </button>
             </div>
 
             <div className="space-y-6">
               {content.memberships.map((membership, idx) => (
                 <div
-                  key={idx}
+                  key={membershipUiKeys[idx] ?? `membership-${idx}`}
                   className="border border-slate-200 rounded-lg p-4 space-y-4 bg-slate-50"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-purple-600">
-                      Üyelik {idx + 1}
+                    <span className="font-bold text-kpf-teal">
+                      {t("satzung.membershipItemLabel", { index: idx + 1 })}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeMembership(idx)}
                       className="text-red-600 hover:text-red-800 transition-colors"
+                      aria-label={t("common.delete")}
+                      data-size="icon"
                     >
                       <Trash2 size={18} />
                     </button>
                   </div>
 
-                  {/* Tip */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Tip
+                      {t("satzung.sections.membershipType")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Başlık"
+                      placeholder={t("satzung.placeholders.itemHeading")}
                       value={membership.type.heading}
                       onChange={(e) =>
                         updateMembership(idx, "type", "heading", e.target.value)
@@ -625,28 +875,28 @@ const AdminSatzung: React.FC = () => {
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm bg-white"
                     />
                     <textarea
-                      placeholder="Türkçe"
+                      placeholder={t("satzung.placeholders.itemBodyTr")}
                       value={membership.type.bodyTurkish}
                       onChange={(e) =>
                         updateMembership(
                           idx,
                           "type",
                           "bodyTurkish",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       rows={2}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm bg-white resize-none"
                     />
                     <textarea
-                      placeholder="Deutsch"
+                      placeholder={t("satzung.placeholders.itemBodyDe")}
                       value={membership.type.bodyGerman}
                       onChange={(e) =>
                         updateMembership(
                           idx,
                           "type",
                           "bodyGerman",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       rows={2}
@@ -654,34 +904,33 @@ const AdminSatzung: React.FC = () => {
                     />
                   </div>
 
-                  {/* Açıklama TR */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Açıklama (TR)
+                      {t("satzung.sections.descriptionTr")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Başlık"
+                      placeholder={t("satzung.placeholders.itemHeading")}
                       value={membership.descriptionTurkish.heading}
                       onChange={(e) =>
                         updateMembership(
                           idx,
                           "descriptionTurkish",
                           "heading",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm bg-white"
                     />
                     <textarea
-                      placeholder="Türkçe"
+                      placeholder={t("satzung.placeholders.itemBodyTr")}
                       value={membership.descriptionTurkish.bodyTurkish}
                       onChange={(e) =>
                         updateMembership(
                           idx,
                           "descriptionTurkish",
                           "bodyTurkish",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       rows={2}
@@ -689,34 +938,33 @@ const AdminSatzung: React.FC = () => {
                     />
                   </div>
 
-                  {/* Açıklama DE */}
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Beschreibung (DE)
+                      {t("satzung.sections.descriptionDe")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Heading"
+                      placeholder={t("satzung.placeholders.itemHeading")}
                       value={membership.descriptionGerman.heading}
                       onChange={(e) =>
                         updateMembership(
                           idx,
                           "descriptionGerman",
                           "heading",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg mb-2 text-sm bg-white"
                     />
                     <textarea
-                      placeholder="Deutsch"
+                      placeholder={t("satzung.placeholders.itemBodyDe")}
                       value={membership.descriptionGerman.bodyGerman}
                       onChange={(e) =>
                         updateMembership(
                           idx,
                           "descriptionGerman",
                           "bodyGerman",
-                          e.target.value
+                          e.target.value,
                         )
                       }
                       rows={2}

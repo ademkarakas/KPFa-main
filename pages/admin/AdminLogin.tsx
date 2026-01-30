@@ -2,20 +2,20 @@ import React, { useState } from "react";
 import { Lock, Mail, AlertCircle, Eye, EyeOff, Languages } from "lucide-react";
 import { authApi } from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
-import { TEXTS } from "../../constants";
+import { useTranslation } from "react-i18next";
 
 interface AdminLoginProps {
   onLoginSuccess: () => void;
 }
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { language, setLanguage } = useLanguage();
-  const t = (key: string) => TEXTS[key]?.[language] || key;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,13 +48,17 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
           >
             <Languages size={18} />
-            <span>{language === "tr" ? "Deutsch" : "Türkçe"}</span>
+            <span>
+              {language === "tr"
+                ? t("common_language_de")
+                : t("common_language_tr")}
+            </span>
           </button>
         </div>
 
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-kpf-red rounded-2xl mb-4 shadow-2xl">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-kpf-teal rounded-2xl mb-4 shadow-2xl">
             <Lock className="text-white" size={40} />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
@@ -93,7 +97,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-transparent transition-all"
-                  placeholder="admin@kpf.de"
+                  placeholder={t("admin_login_email_placeholder")}
                 />
               </div>
             </div>
@@ -114,7 +118,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full pl-12 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-transparent transition-all"
-                  placeholder="••••••••"
+                  placeholder={t("admin_login_password_placeholder")}
                 />
                 <button
                   type="button"
@@ -130,7 +134,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-kpf-red text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              className="w-full bg-kpf-teal text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
               {loading ? t("admin_logging_in") : t("admin_login")}
             </button>
@@ -139,8 +143,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
           {/* Demo Credentials Info */}
           <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
             <p className="text-xs text-slate-600 text-center">
-              <strong>{t("admin_demo_credentials")}:</strong> admin@kpf.de /
-              Admin123!
+              <strong>{t("admin_demo_credentials")}:</strong>{" "}
+              {t("admin_demo_credentials_value")}
             </p>
           </div>
         </div>

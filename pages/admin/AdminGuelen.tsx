@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Save, FileText, Image as ImageIcon, CheckCircle } from "lucide-react";
-import { useLanguage } from "../../contexts/LanguageContext";
+import { useTranslation } from "react-i18next";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -27,7 +27,7 @@ const QuillEditor = ({
     if (containerRef.current && !quillRef.current) {
       const quill = new Quill(containerRef.current, {
         theme: "snow",
-        placeholder: placeholder || "İçerik yazın...",
+        placeholder: placeholder ?? "",
         modules: {
           toolbar: [
             [{ header: [1, 2, false] }],
@@ -87,6 +87,13 @@ interface GuelenSection {
   contentDe: string;
 }
 
+type GuelenSectionKey =
+  | "philosophy"
+  | "dialog"
+  | "network"
+  | "spiritual"
+  | "vision";
+
 interface GuelenContent {
   id: string;
   titleTr: string;
@@ -102,7 +109,7 @@ interface GuelenContent {
 }
 
 const AdminGuelen: React.FC = () => {
-  useLanguage();
+  const { t } = useTranslation();
   const [data, setData] = useState<GuelenContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -177,7 +184,7 @@ const AdminGuelen: React.FC = () => {
   };
 
   const handleSectionChange = (
-    sectionKey: "philosophy" | "dialog" | "network" | "spiritual" | "vision",
+    sectionKey: GuelenSectionKey,
     field: keyof GuelenSection,
     value: any,
   ) => {
@@ -222,7 +229,7 @@ const AdminGuelen: React.FC = () => {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) {
-        alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
+        alert(t("adminGuelen.alerts.sessionExpired"));
         return;
       }
 
@@ -268,12 +275,11 @@ const AdminGuelen: React.FC = () => {
         },
       );
       if (!res.ok) throw new Error("Kaydetme başarısız");
-      alert("Gülen Hareketi sayfası başarıyla güncellendi!");
+      alert(t("adminGuelen.alerts.updated"));
     } catch (err) {
-      alert(
-        "Kaydetme başarısız: " +
-          (err instanceof Error ? err.message : "Bilinmeyen hata"),
-      );
+      const message =
+        err instanceof Error ? err.message : t("common.unknownError");
+      alert(`${t("adminGuelen.alerts.saveFailed")}: ${message}`);
     } finally {
       setSaving(false);
     }
@@ -282,17 +288,28 @@ const AdminGuelen: React.FC = () => {
   if (loading)
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-red"></div>
-        <p className="mt-4 text-slate-500 font-medium">Veriler yükleniyor...</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-kpf-teal"></div>
+        <p className="mt-4 text-slate-500 font-medium">{t("common.loading")}</p>
       </div>
     );
 
   if (!data)
     return (
       <div className="text-center p-10 text-red-500 font-bold">
-        Veri bulunamadı.
+        {t("adminGuelen.noData")}
       </div>
     );
+
+  const sectionMeta: Array<{
+    key: GuelenSectionKey;
+    label: string;
+  }> = [
+    { key: "philosophy", label: t("adminGuelen.sections.philosophy") },
+    { key: "dialog", label: t("adminGuelen.sections.dialog") },
+    { key: "network", label: t("adminGuelen.sections.network") },
+    { key: "spiritual", label: t("adminGuelen.sections.spiritual") },
+    { key: "vision", label: t("adminGuelen.sections.vision") },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto pb-20 px-4">
@@ -300,26 +317,26 @@ const AdminGuelen: React.FC = () => {
         {/* Üst Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-kpf-red/10 rounded-2xl">
-              <FileText className="text-kpf-red" size={28} />
+            <div className="p-3 bg-kpf-teal/10 rounded-2xl">
+              <FileText className="text-kpf-teal" size={28} />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-800">
-                Gülen Hareketi / Gülen-Bewegung
+                {t("adminGuelen.pageTitle")}
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" /> React 19
-                Editor Mode
+                {t("adminGuelen.editorMode")}
               </p>
             </div>
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-red text-white rounded-2xl hover:bg-red-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-red/20 font-bold"
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-teal-700 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
           >
             <Save size={18} />
-            {saving ? "Kaydediliyor..." : "Sitede Yayınla"}
+            {saving ? t("common.saving") : t("common.publish")}
           </button>
         </div>
 
@@ -330,24 +347,24 @@ const AdminGuelen: React.FC = () => {
             <div className="space-y-6">
               <div className="flex items-center gap-2 text-blue-600 mb-4 border-b border-blue-50 pb-2 italic">
                 <span className="font-bold text-xs uppercase tracking-widest">
-                  Türkçe (TR) İçerik
+                  {t("adminGuelen.labels.contentTr")}
                 </span>
               </div>
               <input
                 type="text"
                 value={data.titleTr}
                 onChange={(e) => handleChange("titleTr", e.target.value)}
-                placeholder="Başlık (TR)"
+                placeholder={t("adminGuelen.placeholders.titleTr")}
                 className="w-full text-4xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200"
               />
               <div className="pt-4 border-t border-slate-50">
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                  Giriş Metni
+                  {t("adminGuelen.labels.introductionTr")}
                 </p>
                 <QuillEditor
                   value={data.introductionTr}
                   onChange={(val) => handleChange("introductionTr", val)}
-                  placeholder="Giriş metni (TR)"
+                  placeholder={t("adminGuelen.placeholders.introductionTr")}
                 />
               </div>
             </div>
@@ -356,24 +373,24 @@ const AdminGuelen: React.FC = () => {
             <div className="space-y-6 lg:border-l lg:border-slate-50 lg:pl-16">
               <div className="flex items-center gap-2 text-amber-600 mb-4 border-b border-amber-50 pb-2 italic">
                 <span className="font-bold text-xs uppercase tracking-widest">
-                  Almanca (DE) İçerik
+                  {t("adminGuelen.labels.contentDe")}
                 </span>
               </div>
               <input
                 type="text"
                 value={data.titleDe}
                 onChange={(e) => handleChange("titleDe", e.target.value)}
-                placeholder="Titel (DE)"
+                placeholder={t("adminGuelen.placeholders.titleDe")}
                 className="w-full text-4xl font-black border-none focus:ring-0 p-0 placeholder:text-slate-200"
               />
               <div className="pt-4 border-t border-slate-50">
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">
-                  Einleitungstext
+                  {t("adminGuelen.labels.introductionDe")}
                 </p>
                 <QuillEditor
                   value={data.introductionDe}
                   onChange={(val) => handleChange("introductionDe", val)}
-                  placeholder="Einleitungstext (DE)"
+                  placeholder={t("adminGuelen.placeholders.introductionDe")}
                 />
               </div>
             </div>
@@ -385,20 +402,20 @@ const AdminGuelen: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <ImageIcon className="text-kpf-teal" size={24} />
             <h3 className="text-lg font-bold text-slate-800">
-              Başlık Görseli / Header-Bild
+              {t("adminGuelen.labels.headerImage")}
             </h3>
           </div>
           <input
             type="url"
             value={data.imageUrl}
             onChange={(e) => handleChange("imageUrl", e.target.value)}
-            placeholder="https://example.com/image.jpg"
+            placeholder={t("adminGuelen.placeholders.imageUrl")}
             className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal transition-all"
           />
           {data.imageUrl && (
             <img
               src={data.imageUrl}
-              alt="Preview"
+              alt={t("adminGuelen.labels.imagePreviewAlt")}
               className="mt-4 w-full max-w-2xl rounded-xl shadow-md object-cover h-64"
             />
           )}
@@ -406,25 +423,7 @@ const AdminGuelen: React.FC = () => {
 
         {/* Dinamik Bölümler */}
         <div className="space-y-12">
-          {(
-            [
-              { key: "philosophy", label: "Temel Felsefe / Grundphilosophie" },
-              {
-                key: "dialog",
-                label:
-                  "Diyalog ve Toplumsal Uzlaşı / Dialog und gesellschaftlicher Zusammenhalt",
-              },
-              { key: "network", label: "Küresel Ağ / Globales Netzwerk" },
-              {
-                key: "spiritual",
-                label: "Manevi Derinlik / Spirituelle Wurzeln",
-              },
-              {
-                key: "vision",
-                label: "Gelecek Vizyonu / Vision für die Zukunft",
-              },
-            ] as const
-          ).map(({ key, label }) => {
+          {sectionMeta.map(({ key, label }) => {
             const section = data[key];
             return (
               <div key={key} className="group">
@@ -441,7 +440,9 @@ const AdminGuelen: React.FC = () => {
                   {/* Türkçe */}
                   <div className="space-y-5">
                     <div className="flex items-center gap-2 text-blue-600 pb-2 border-b border-blue-50 italic">
-                      <span className="text-xs font-bold uppercase">TR</span>
+                      <span className="text-xs font-bold uppercase">
+                        {t("adminGuelen.labels.trAbbr")}
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -449,22 +450,26 @@ const AdminGuelen: React.FC = () => {
                       onChange={(e) =>
                         handleSectionChange(key, "titleTr", e.target.value)
                       }
-                      placeholder="Başlık (TR)"
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-red outline-none pb-2 transition-all"
+                      placeholder={t("adminGuelen.placeholders.sectionTitleTr")}
+                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-teal outline-none pb-2 transition-all"
                     />
                     <QuillEditor
                       value={section.contentTr}
                       onChange={(val) =>
                         handleSectionChange(key, "contentTr", val)
                       }
-                      placeholder="İçerik yazın..."
+                      placeholder={t(
+                        "adminGuelen.placeholders.sectionContentTr",
+                      )}
                     />
                   </div>
 
                   {/* Almanca */}
                   <div className="space-y-5">
                     <div className="flex items-center gap-2 text-amber-600 pb-2 border-b border-amber-50 italic">
-                      <span className="text-xs font-bold uppercase">DE</span>
+                      <span className="text-xs font-bold uppercase">
+                        {t("adminGuelen.labels.deAbbr")}
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -472,7 +477,7 @@ const AdminGuelen: React.FC = () => {
                       onChange={(e) =>
                         handleSectionChange(key, "titleDe", e.target.value)
                       }
-                      placeholder="Titel (DE)"
+                      placeholder={t("adminGuelen.placeholders.sectionTitleDe")}
                       className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-50 focus:border-kpf-teal outline-none pb-2 transition-all"
                     />
                     <QuillEditor
@@ -480,7 +485,9 @@ const AdminGuelen: React.FC = () => {
                       onChange={(val) =>
                         handleSectionChange(key, "contentDe", val)
                       }
-                      placeholder="Inhalt schreiben..."
+                      placeholder={t(
+                        "adminGuelen.placeholders.sectionContentDe",
+                      )}
                     />
                   </div>
                 </div>
@@ -493,7 +500,7 @@ const AdminGuelen: React.FC = () => {
       {/* Editor Özelleştirme CSS */}
       <style>{`
         .quill-modern-container { background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; overflow: hidden; }
-        .quill-modern-container:focus-within { background: #fff; border-color: #ef4444; }
+        .quill-modern-container:focus-within { background: #fff; border-color: #0d9488; }
         .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f1f5f9 !important; background: #fff; }
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }

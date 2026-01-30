@@ -8,8 +8,7 @@ import {
   Mail,
   Clock,
 } from "lucide-react";
-import { useLanguage } from "../../contexts/LanguageContext";
-import { TEXTS } from "../../constants";
+import { useTranslation } from "react-i18next";
 
 interface DashboardStats {
   totalActivities: number;
@@ -42,6 +41,9 @@ interface AdminDashboardProps {
   onNavigate: (page: string) => void;
 }
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "https://localhost:7189/api";
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const [stats, setStats] = useState<DashboardStats>({
     totalActivities: 0,
@@ -64,40 +66,58 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     RecentSubmission[]
   >([]);
   const [loading, setLoading] = useState(true);
-  const { language } = useLanguage();
-  const t = (key: string) => TEXTS[key]?.[language] || key;
+  const [error, setError] = useState<string | null>(null);
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
-    loadDashboardData();
+    void loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const token = localStorage.getItem("adminToken");
 
-      const response = await fetch(
-        "https://localhost:7189/api/Dashboard/overview",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
+      const response = await fetch(`${API_BASE_URL}/Dashboard/overview`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
-      );
+      });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+      if (response.status === 401) {
+        localStorage.removeItem("adminToken");
+        setError("UNAUTHORIZED");
+        return;
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(
+          text
+            ? `HTTP ${response.status}: ${text}`
+            : `HTTP ${response.status}: ${response.statusText}`,
+        );
+      }
+
+      const data = (await response.json()) as {
+        stats?: DashboardStats;
+        recentSubmissions?: RecentSubmission[];
+      };
+
+      if (!data?.stats) {
+        throw new Error("Dashboard response missing 'stats'");
+      }
 
       setStats(data.stats);
       setRecentSubmissions(data.recentSubmissions || []);
     } catch (error) {
       console.error("Dashboard verisi yüklenirken hata:", error);
-      // Hatayı sessizce işle, loading state devam etmesin
+      setError(
+        error instanceof Error ? error.message : t("admin_error_occurred"),
+      );
     } finally {
       setLoading(false);
     }
@@ -107,7 +127,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     {
       title: t("admin_stats_activities"),
       value: stats.totalActivities,
-      subText: `${stats.activeActivities} aktif`,
+      subText: `${stats.activeActivities} ${t("admin_active")}`,
       icon: Calendar,
       color: "bg-blue-500",
       bgColor: "bg-blue-50",
@@ -116,7 +136,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     {
       title: t("admin_stats_courses"),
       value: stats.totalCourses,
-      subText: `${stats.activeCourses} aktif`,
+      subText: `${stats.activeCourses} ${t("admin_active")}`,
       icon: GraduationCap,
       color: "bg-green-500",
       bgColor: "bg-green-50",
@@ -125,7 +145,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     {
       title: t("admin_stats_team"),
       value: stats.totalTeamMembers,
-      subText: `${stats.activeTeamMembers} aktif`,
+      subText: `${stats.activeTeamMembers} ${t("admin_active")}`,
       icon: Users,
       color: "bg-purple-500",
       bgColor: "bg-purple-50",
@@ -134,7 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     {
       title: t("admin_stats_partners"),
       value: stats.totalPartners,
-      subText: `${stats.activePartners} aktif`,
+      subText: `${stats.activePartners} ${t("admin_active")}`,
       icon: Handshake,
       color: "bg-orange-500",
       bgColor: "bg-orange-50",
@@ -143,18 +163,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     {
       title: t("admin_stats_volunteers"),
       value: stats.totalVolunteerSubmissions,
-      subText: "başvuru",
+      subText: t("admin_application"),
       icon: TrendingUp,
-      color: "bg-red-500",
-      bgColor: "bg-red-50",
-      textColor: "text-red-600",
+      color: "bg-teal-500",
+      bgColor: "bg-teal-50",
+      textColor: "text-teal-700",
     },
   ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-red"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-teal"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    const isUnauthorized = error === "UNAUTHORIZED";
+
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <h2 className="text-lg font-bold text-slate-800">
+          {t("admin_error_occurred")}
+        </h2>
+        <p className="text-slate-600 mt-2">
+          {isUnauthorized ? t("admin_login_error") : error}
+        </p>
+        <div className="flex flex-wrap gap-3 mt-6">
+          <button
+            onClick={() => void loadDashboardData()}
+            className="px-4 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 font-bold"
+          >
+            {t("admin_login")}
+          </button>
+          {isUnauthorized && (
+            <button
+              onClick={() => globalThis.location.reload()}
+              className="px-4 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 font-bold"
+            >
+              Reload
+            </button>
+          )}
+          <button
+            onClick={() => onNavigate("dashboard")}
+            className="px-4 py-3 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 font-bold"
+          >
+            Dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -200,7 +257,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       {/* Recent Submissions */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
-          <Mail className="text-kpf-red" size={24} />
+          <Mail className="text-kpf-teal" size={24} />
           <h2 className="text-xl font-bold text-slate-800">
             {t("admin_recent_submissions")} ({recentSubmissions.length})
           </h2>
@@ -243,7 +300,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     <Clock size={14} />
                     <span>
                       {new Date(submission.submittedAt).toLocaleDateString(
-                        language === "de" ? "de-DE" : "tr-TR",
+                        i18n.resolvedLanguage === "de" ? "de-DE" : "tr-TR",
                       )}
                     </span>
                   </div>
