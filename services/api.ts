@@ -20,7 +20,7 @@ export const clearAuthToken = (): void => {
 // Generic fetch wrapper with error handling
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const token = getAuthToken();
 
@@ -97,12 +97,12 @@ export const authApi = {
   },
 };
 
-// Activities API
+// Activities API - Backend Guid tipi ile uyumlu
 export const activitiesApi = {
   getAll: (includeInactive = false) =>
     apiFetch<any[]>(`/activities?includeInactive=${includeInactive}`),
 
-  getById: (id: number) => apiFetch<any>(`/activities/${id}`),
+  getById: (id: string) => apiFetch<any>(`/activities/${id}`),
 
   create: (activity: any) =>
     apiFetch<any>("/activities", {
@@ -110,24 +110,24 @@ export const activitiesApi = {
       body: JSON.stringify(activity),
     }),
 
-  update: (id: number, activity: any) =>
+  update: (id: string, activity: any) =>
     apiFetch<any>(`/activities/${id}`, {
       method: "PUT",
       body: JSON.stringify(activity),
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/activities/${id}`, {
       method: "DELETE",
     }),
 };
 
-// Courses API
+// Courses API - Backend Guid tipi ile uyumlu - Backend Guid tipi ile uyumlu
 export const coursesApi = {
   getAll: (includeInactive = false) =>
     apiFetch<any[]>(`/courses?includeInactive=${includeInactive}`),
 
-  getById: (id: number) => apiFetch<any>(`/courses/${id}`),
+  getById: (id: string) => apiFetch<any>(`/courses/${id}`),
 
   create: (course: any) =>
     apiFetch<any>("/courses", {
@@ -135,24 +135,24 @@ export const coursesApi = {
       body: JSON.stringify(course),
     }),
 
-  update: (id: number, course: any) =>
+  update: (id: string, course: any) =>
     apiFetch<any>(`/courses/${id}`, {
       method: "PUT",
       body: JSON.stringify(course),
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/courses/${id}`, {
       method: "DELETE",
     }),
 };
 
-// Team Members API
+// Team Members API - Backend Guid tipi ile uyumlu
 export const teamMembersApi = {
   getAll: (includeInactive = false) =>
     apiFetch<any[]>(`/teammembers?includeInactive=${includeInactive}`),
 
-  getById: (id: number) => apiFetch<any>(`/teammembers/${id}`),
+  getById: (id: string) => apiFetch<any>(`/teammembers/${id}`),
 
   create: (teamMember: any) =>
     apiFetch<any>("/teammembers", {
@@ -160,24 +160,24 @@ export const teamMembersApi = {
       body: JSON.stringify(teamMember),
     }),
 
-  update: (id: number, teamMember: any) =>
+  update: (id: string, teamMember: any) =>
     apiFetch<any>(`/teammembers/${id}`, {
       method: "PUT",
       body: JSON.stringify(teamMember),
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/teammembers/${id}`, {
       method: "DELETE",
     }),
 };
 
-// Value Items API
+// Value Items API - Backend Guid tipi ile uyumlu
 export const valueItemsApi = {
   getAll: (includeInactive = false) =>
     apiFetch<any[]>(`/valueitems?includeInactive=${includeInactive}`),
 
-  getById: (id: number) => apiFetch<any>(`/valueitems/${id}`),
+  getById: (id: string) => apiFetch<any>(`/valueitems/${id}`),
 
   create: (valueItem: any) =>
     apiFetch<any>("/valueitems", {
@@ -185,24 +185,24 @@ export const valueItemsApi = {
       body: JSON.stringify(valueItem),
     }),
 
-  update: (id: number, valueItem: any) =>
+  update: (id: string, valueItem: any) =>
     apiFetch<any>(`/valueitems/${id}`, {
       method: "PUT",
       body: JSON.stringify(valueItem),
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/valueitems/${id}`, {
       method: "DELETE",
     }),
 };
 
-// Partners API
+// Partners API - Backend Guid tipi ile uyumlu
 export const partnersApi = {
   getAll: (includeInactive = false) =>
     apiFetch<any[]>(`/partners?includeInactive=${includeInactive}`),
 
-  getById: (id: number) => apiFetch<any>(`/partners/${id}`),
+  getById: (id: string) => apiFetch<any>(`/partners/${id}`),
 
   create: (partner: any) =>
     apiFetch<any>("/partners", {
@@ -210,19 +210,19 @@ export const partnersApi = {
       body: JSON.stringify(partner),
     }),
 
-  update: (id: number, partner: any) =>
+  update: (id: string, partner: any) =>
     apiFetch<any>(`/partners/${id}`, {
       method: "PUT",
       body: JSON.stringify(partner),
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/partners/${id}`, {
       method: "DELETE",
     }),
 };
 
-// Page Contents API
+// Page Contents API - Backend Guid tipi ile uyumlu
 export const pageContentsApi = {
   getAll: () => apiFetch<any[]>("/pagecontents"),
 
@@ -237,19 +237,19 @@ export const pageContentsApi = {
       body: JSON.stringify(pageContent),
     }),
 
-  update: (id: number, pageContent: any) =>
+  update: (id: string, pageContent: any) =>
     apiFetch<any>(`/pagecontents/${id}`, {
       method: "PUT",
       body: JSON.stringify(pageContent),
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/pagecontents/${id}`, {
       method: "DELETE",
     }),
 };
 
-// Volunteers API
+// Volunteers API - Backend Guid tipi ile uyumlu
 export const volunteersApi = {
   submit: (submission: any) =>
     apiFetch<any>("/volunteersubmissions", {
@@ -260,14 +260,14 @@ export const volunteersApi = {
   getAll: (processedOnly = false) =>
     apiFetch<any[]>(`/volunteersubmissions?processedOnly=${processedOnly}`),
 
-  getById: (id: number) => apiFetch<any>(`/volunteersubmissions/${id}`),
+  getById: (id: string) => apiFetch<any>(`/volunteersubmissions/${id}`),
 
-  markAsProcessed: (id: number) =>
+  markAsProcessed: (id: string) =>
     apiFetch<{ message: string }>(`/volunteersubmissions/${id}/process`, {
       method: "PATCH",
     }),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     apiFetch<void>(`/volunteersubmissions/${id}`, {
       method: "DELETE",
     }),
@@ -276,7 +276,7 @@ export const volunteersApi = {
 // File Upload API
 export const uploadApi = {
   uploadFile: async (
-    file: File
+    file: File,
   ): Promise<{ fileName: string; url: string; size: number }> => {
     const token = getAuthToken();
     const formData = new FormData();
@@ -358,14 +358,130 @@ export const localizationApi = {
     }),
 };
 
+// Imprint API - Backend ile %100 Uyumlu
 export const imprintApi = {
   // Künye bilgilerini getir
-  get: () => apiFetch<any>("/Imprint"),
+  get: () => apiFetch<any>("/imprint"),
+
+  // Künye oluştur (Admin)
+  create: (data: any) =>
+    apiFetch<any>("/imprint", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Künye bilgilerini güncelle (Admin)
-  update: (data: any) =>
-    apiFetch<any>("/Imprint", {
+  update: (id: string, data: any) =>
+    apiFetch<any>(`/imprint/${id}`, {
       method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  // Künye sil (Admin)
+  delete: (id: string) =>
+    apiFetch<void>(`/imprint/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// TeaEvent API - Backend ile %100 Uyumlu
+export const teaEventApi = {
+  getAll: () => apiFetch<any[]>("/teaevent"),
+
+  getById: (id: string) => apiFetch<any>(`/teaevent/${id}`),
+
+  create: (teaEvent: any) =>
+    apiFetch<any>("/teaevent", {
+      method: "POST",
+      body: JSON.stringify(teaEvent),
+    }),
+
+  update: (id: string, teaEvent: any) =>
+    apiFetch<any>(`/teaevent/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(teaEvent),
+    }),
+
+  delete: (id: string) =>
+    apiFetch<void>(`/teaevent/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Satzung API - Backend ile %100 Uyumlu
+export const satzungApi = {
+  getAll: () => apiFetch<any[]>("/satzung"),
+
+  getById: (id: string) => apiFetch<any>(`/satzung/${id}`),
+
+  getByKey: (key: string) => apiFetch<any>(`/satzung/${key}`),
+
+  create: (satzung: any) =>
+    apiFetch<any>("/satzung", {
+      method: "POST",
+      body: JSON.stringify(satzung),
+    }),
+
+  update: (id: string, satzung: any) =>
+    apiFetch<any>(`/satzung/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(satzung),
+    }),
+
+  delete: (id: string) =>
+    apiFetch<void>(`/satzung/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// GuelenMovement API - Backend ile %100 Uyumlu
+export const guelenMovementApi = {
+  getAll: () => apiFetch<any[]>("/guelenmovement"),
+
+  getById: (id: string) => apiFetch<any>(`/guelenmovement/${id}`),
+
+  create: (data: any) =>
+    apiFetch<any>("/guelenmovement", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: any) =>
+    apiFetch<any>(`/guelenmovement/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    apiFetch<void>(`/guelenmovement/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// DonatePage API - Backend ile %100 Uyumlu
+export const donatePageApi = {
+  get: () => apiFetch<any>("/donatepage"),
+
+  update: (id: string, data: any) =>
+    apiFetch<any>(`/donatepage/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// AboutUs API - Backend ile %100 Uyumlu
+export const aboutUsApi = {
+  get: () => apiFetch<any>("/aboutus"),
+
+  update: (data: any) =>
+    apiFetch<any>("/aboutus", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  createOrUpdate: (data: any) =>
+    apiFetch<any>("/aboutus", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 };

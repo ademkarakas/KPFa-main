@@ -126,7 +126,7 @@ const AdminActivities: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const { language } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
@@ -245,61 +245,50 @@ const AdminActivities: React.FC = () => {
       );
     });
 
-  const buildAddressDto = (
-    address: ActivityFormData["address"] | undefined,
-    location: string,
-  ) => {
-    let addressObj = address;
-    if (!addressObj && location) {
-      addressObj = {
-        street: location,
-        houseNo: "",
-        zipCode: "",
-        city: "",
-        state: "",
-        country: "Deutschland",
-      };
-    }
+  // Build activity DTO that matches backend CreateActivityCommand / UpdateActivityCommand
+  // Backend uses flat fields: DateTr, DateDe, DateISO, Street, HouseNo, City, State, Country, ZipCode
+  const buildActivityDto = (id: string | null, data: ActivityFormData) => {
+    // Parse date and generate localized date strings
+    const dateISO = data.date ? new Date(data.date) : new Date();
+    const dateTr = dateISO.toLocaleDateString("tr-TR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    const dateDe = dateISO.toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
 
-    return addressObj
-      ? {
-          Street: addressObj.street || "",
-          HouseNo: addressObj.houseNo || "",
-          ZipCode: addressObj.zipCode || "",
-          City: addressObj.city || "",
-          State: addressObj.state || "",
-          Country: addressObj.country || "Deutschland",
-        }
-      : null;
-  };
+    // Extract address components - backend uses flat fields, not nested Address object
+    const address = data.address || {};
 
-  const buildGalleryImagesDto = (images: GalleryImage[]) =>
-    images
-      .filter((img) => img.url || img.base64Data)
-      .map((img) => ({
-        url: img.url || null,
-        base64Data: img.base64Data || null,
-        fileName: img.fileName || null,
-      }));
-
-  const buildActivityDto = (id: number | null, data: ActivityFormData) => {
-    const addressDto = buildAddressDto(data.address, data.location);
     return {
       ...(id && { id }),
       titleTr: data.titleTr,
       titleDe: data.titleDe,
       descriptionTr: data.descriptionTr,
       descriptionDe: data.descriptionDe,
-      detailedContentTr: data.detailedContentTr,
-      detailedContentDe: data.detailedContentDe,
-      date: data.date,
-      address: addressDto,
+      detailedContentTr: data.detailedContentTr || null,
+      detailedContentDe: data.detailedContentDe || null,
+      // Backend expects separate date fields
+      dateTr: dateTr,
+      dateDe: dateDe,
+      dateISO: dateISO.toISOString(),
+      // Backend expects flat address fields (not nested Address object)
+      street: address.street || data.location || "",
+      houseNo: address.houseNo || "",
+      city: address.city || "",
+      state: address.state || "",
+      country: address.country || "Deutschland",
+      zipCode: address.zipCode || "",
       category: data.category,
       imageUrl: data.imageBase64 ? null : data.imageUrl || null,
-      imageBase64: data.imageBase64 || null,
-      imageFileName: data.imageBase64 ? data.imageFileName : null,
+      galleryImages: data.galleryImages
+        .filter((img) => img.url || img.base64Data)
+        .map((img) => img.url || img.base64Data || ""),
       videoUrl: data.videoUrl || null,
-      galleryImages: buildGalleryImagesDto(data.galleryImages),
       isActive: data.isActive,
     };
   };
@@ -582,7 +571,7 @@ const AdminActivities: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm(t("admin_activities_delete_confirm"))) return;
 
     try {
@@ -595,7 +584,7 @@ const AdminActivities: React.FC = () => {
     }
   };
 
-  const toggleActive = async (id: number, currentStatus: boolean) => {
+  const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       console.log("Toggle Active çağrıldı:", { id, currentStatus });
       const activity = activities.find((a) => a.id === id);
@@ -607,16 +596,23 @@ const AdminActivities: React.FC = () => {
 
       console.log("Bulunan etkinlik:", activity);
 
-      const addressDto = activity.address
-        ? {
-            Street: activity.address.street || "",
-            HouseNo: activity.address.houseNo || "",
-            ZipCode: activity.address.zipCode || "",
-            City: activity.address.city || "",
-            State: activity.address.state || "",
-            Country: activity.address.country || "Deutschland",
-          }
-        : null;
+      // Parse date and generate localized date strings
+      const dateISO = activity.originalDate
+        ? new Date(activity.originalDate)
+        : new Date();
+      const dateTr = dateISO.toLocaleDateString("tr-TR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+      const dateDe = dateISO.toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      });
+
+      // Backend expects flat address fields, not nested Address object
+      const address = activity.address || {};
 
       const dto = {
         id: id,
@@ -624,21 +620,25 @@ const AdminActivities: React.FC = () => {
         titleDe: activity.titleDe,
         descriptionTr: activity.descriptionTr,
         descriptionDe: activity.descriptionDe,
-        detailedContentTr: activity.detailedContentTr,
-        detailedContentDe: activity.detailedContentDe,
-        date: activity.originalDate || activity.date, // Orijinal ISO formatını kullan
-        address: addressDto,
+        detailedContentTr: activity.detailedContentTr || null,
+        detailedContentDe: activity.detailedContentDe || null,
+        // Backend expects separate date fields
+        dateTr: dateTr,
+        dateDe: dateDe,
+        dateISO: dateISO.toISOString(),
+        // Backend expects flat address fields
+        street: address.street || activity.location || "",
+        houseNo: address.houseNo || "",
+        city: address.city || "",
+        state: address.state || "",
+        country: address.country || "Deutschland",
+        zipCode: address.zipCode || "",
         category: activity.category,
         imageUrl: activity.imageUrl,
         videoUrl: activity.videoUrl || null,
-        // WICHTIG: Bei UPDATE - nur URL-Galerien senden, keine Base64!
         galleryImages: (activity.galleryImages || [])
-          .filter((img: any) => img.url) // Nur URLs für Updates
-          .map((img: any) => ({
-            url: img.url || null,
-            base64Data: null, // Base64 für Updates nicht unterstützt
-            fileName: null,
-          })),
+          .filter((img: any) => img.url)
+          .map((img: any) => img.url || ""),
         isActive: !currentStatus,
       };
 

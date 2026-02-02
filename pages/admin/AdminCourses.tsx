@@ -173,7 +173,8 @@ interface CourseFormData {
   icon: string;
   instructor: string;
   date: string;
-  courseLocation?: {
+  time: string; // Backend requires Time field for UpdateCourseCommand
+  address?: {
     street?: string;
     houseNo?: string;
     zipCode?: string;
@@ -181,7 +182,7 @@ interface CourseFormData {
     state?: string;
     country?: string;
   };
-  courseCategory: string;
+  category: string; // Backend uses 'Category' not 'CourseCategory'
   imageUrl: string;
   isActive: boolean;
 }
@@ -191,7 +192,7 @@ const AdminCourses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const { language } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
@@ -217,7 +218,8 @@ const AdminCourses: React.FC = () => {
     icon: "BookOpen",
     instructor: "",
     date: "",
-    courseLocation: {
+    time: "", // Backend Time field
+    address: {
       street: "",
       houseNo: "",
       zipCode: "",
@@ -225,7 +227,7 @@ const AdminCourses: React.FC = () => {
       state: "",
       country: "",
     },
-    courseCategory: "",
+    category: "",
     imageUrl: "",
     isActive: true,
   });
@@ -265,17 +267,17 @@ const AdminCourses: React.FC = () => {
   };
 
   const formatAdminCourse = (item: any) => {
-    const formatcourseLocation = (courseLocation: any) => {
-      if (!courseLocation) return "";
-      if (typeof courseLocation === "string") return courseLocation;
+    const formatAddress = (address: any) => {
+      if (!address) return "";
+      if (typeof address === "string") return address;
 
       const parts = [];
-      if (courseLocation.street) parts.push(courseLocation.street);
-      if (courseLocation.houseNo) parts.push(courseLocation.houseNo);
-      if (courseLocation.zipCode) parts.push(courseLocation.zipCode);
-      if (courseLocation.city) parts.push(courseLocation.city);
-      if (courseLocation.state) parts.push(courseLocation.state);
-      if (courseLocation.country) parts.push(courseLocation.country);
+      if (address.street) parts.push(address.street);
+      if (address.houseNo) parts.push(address.houseNo);
+      if (address.zipCode) parts.push(address.zipCode);
+      if (address.city) parts.push(address.city);
+      if (address.state) parts.push(address.state);
+      if (address.country) parts.push(address.country);
       return parts.join(", ");
     };
 
@@ -297,14 +299,14 @@ const AdminCourses: React.FC = () => {
       scheduleTr: item.scheduleTr || "",
       scheduleDe: item.scheduleDe || "",
 
-      // 🟢 Adres / Lokasyon
-      location: formatcourseLocation(item.courseLocation) || "",
-      courseLocation: item.courseLocation || null,
+      // 🟢 Adres / Lokasyon - Backend returns address in courseLocation field
+      location: formatAddress(item.address || item.courseLocation) || "",
+      address: item.address || item.courseLocation || null,
 
       duration: item.duration || "",
       capacity: item.capacity ?? 0,
       price: item.price || "",
-      courseCategory: item.courseCategory || "",
+      category: item.courseCategory || item.category || "",
       imageUrl: item.imageUrl || "",
       isActive: item.isActive ?? true,
     };
@@ -314,33 +316,41 @@ const AdminCourses: React.FC = () => {
     e.preventDefault();
 
     try {
+      // Backend Command structure - camelCase for JSON
       const dto = {
-        ...(editingId && { Id: editingId }),
-        TitleTr: formData.titleTr,
-        TitleDe: formData.titleDe,
-        DescriptionTr: formData.descriptionTr,
-        DescriptionDe: formData.descriptionDe,
-        DetailsTr: formData.detailsTr || null,
-        DetailsDe: formData.detailsDe || null,
-        ScheduleTr: formData.scheduleTr || null,
-        ScheduleDe: formData.scheduleDe || null,
-        Icon: formData.icon || null,
-        Instructor: formData.instructor || null,
-        Date: formData.date ? new Date(formData.date).toISOString() : null,
-        CourseLocation:
-          formData.courseLocation?.street || formData.courseLocation?.city
+        ...(editingId && { id: editingId }),
+        titleTr: formData.titleTr,
+        titleDe: formData.titleDe,
+        descriptionTr: formData.descriptionTr,
+        descriptionDe: formData.descriptionDe,
+        detailsTr: formData.detailsTr || null,
+        detailsDe: formData.detailsDe || null,
+        scheduleTr: formData.scheduleTr || null,
+        scheduleDe: formData.scheduleDe || null,
+        icon: formData.icon || null,
+        instructor: formData.instructor || null,
+        date: formData.date ? new Date(formData.date).toISOString() : null,
+        // Backend UpdateCourseCommand requires Time field
+        ...(editingId && {
+          time: formData.time
+            ? new Date(`1970-01-01T${formData.time}:00`).toISOString()
+            : new Date().toISOString(),
+        }),
+        // Backend uses 'Address' not 'CourseLocation'
+        address:
+          formData.address?.street || formData.address?.city
             ? {
-                Street: formData.courseLocation.street || null,
-                HouseNo: formData.courseLocation.houseNo || null,
-                ZipCode: formData.courseLocation.zipCode || null,
-                City: formData.courseLocation.city || null,
-                State: formData.courseLocation.state || null,
-                Country: formData.courseLocation.country || null,
+                street: formData.address.street || null,
+                houseNo: formData.address.houseNo || null,
+                zipCode: formData.address.zipCode || null,
+                city: formData.address.city || null,
+                state: formData.address.state || null,
+                country: formData.address.country || null,
               }
             : null,
-        CourseCategory: formData.courseCategory || null,
-        ImageUrl: formData.imageUrl,
-        IsActive: formData.isActive,
+        // Backend uses 'Category' not 'CourseCategory'
+        category: formData.category || null,
+        isActive: formData.isActive,
       };
 
       if (editingId) {
@@ -362,21 +372,24 @@ const AdminCourses: React.FC = () => {
     }
   };
 
-  const normalizeCourseLocationFormValue = (course: any) => {
-    if (course.courseLocation && typeof course.courseLocation === "object") {
+  // Helper function to normalize address data from backend (courseLocation) to form (address)
+  const normalizeAddressFormValue = (course: any) => {
+    // Backend returns courseLocation, we map to address
+    const location = course.courseLocation || course.address;
+    if (location && typeof location === "object") {
       return {
-        street: course.courseLocation.street || "",
-        houseNo: course.courseLocation.houseNo || "",
-        zipCode: course.courseLocation.zipCode || "",
-        city: course.courseLocation.city || "",
-        state: course.courseLocation.state || "",
-        country: course.courseLocation.country || "",
+        street: location.street || "",
+        houseNo: location.houseNo || "",
+        zipCode: location.zipCode || "",
+        city: location.city || "",
+        state: location.state || "",
+        country: location.country || "",
       };
     }
 
-    if (typeof course.courseLocation === "string") {
+    if (typeof location === "string") {
       return {
-        street: course.courseLocation,
+        street: location,
         houseNo: "",
         zipCode: "",
         city: "",
@@ -408,8 +421,9 @@ const AdminCourses: React.FC = () => {
       icon: course.icon || "BookOpen",
       instructor: course.instructor || "",
       date: course.date || "",
-      courseLocation: normalizeCourseLocationFormValue(course),
-      courseCategory: course.courseCategory || "",
+      time: course.time || "",
+      address: normalizeAddressFormValue(course),
+      category: course.courseCategory || course.category || "",
       imageUrl: course.imageUrl || "",
       isActive: course.isActive ?? true,
     });
@@ -417,7 +431,7 @@ const AdminCourses: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm(t("admin_courses_delete_confirm"))) return;
 
     try {
@@ -443,7 +457,8 @@ const AdminCourses: React.FC = () => {
       icon: "BookOpen",
       instructor: "",
       date: "",
-      courseLocation: {
+      time: "",
+      address: {
         street: "",
         houseNo: "",
         zipCode: "",
@@ -451,7 +466,7 @@ const AdminCourses: React.FC = () => {
         state: "",
         country: "",
       },
-      courseCategory: "",
+      category: "",
       imageUrl: "",
       isActive: true,
     });
@@ -466,7 +481,7 @@ const AdminCourses: React.FC = () => {
       c.instructor.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const toggleActive = async (id: any, currentStatus: boolean) => {
+  const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       const course = courses.find((c) => c.id === id);
       if (!course) {
@@ -476,23 +491,24 @@ const AdminCourses: React.FC = () => {
 
       const nextIsActive = !currentStatus;
 
+      // Backend Command structure - camelCase for JSON
       const dto: any = {
-        ...(id && { Id: id }),
-        TitleTr: course.titleTr,
-        TitleDe: course.titleDe,
-        DescriptionTr: course.descriptionTr,
-        DescriptionDe: course.descriptionDe,
-        DetailsTr: course.detailsTr || null,
-        DetailsDe: course.detailsDe || null,
-        ScheduleTr: course.scheduleTr || null,
-        ScheduleDe: course.scheduleDe || null,
-        Icon: course.icon || null,
-        Instructor: course.instructor || null,
-        Date: course.date ? new Date(course.date).toISOString() : null,
-        CourseLocation: course.courseLocation || null,
-        CourseCategory: course.courseCategory || null,
-        ImageUrl: course.imageUrl || null,
-        IsActive: nextIsActive,
+        id: id,
+        titleTr: course.titleTr,
+        titleDe: course.titleDe,
+        descriptionTr: course.descriptionTr,
+        descriptionDe: course.descriptionDe,
+        detailsTr: course.detailsTr || null,
+        detailsDe: course.detailsDe || null,
+        scheduleTr: course.scheduleTr || null,
+        scheduleDe: course.scheduleDe || null,
+        icon: course.icon || null,
+        instructor: course.instructor || null,
+        date: course.date ? new Date(course.date).toISOString() : null,
+        time: new Date().toISOString(), // Required by UpdateCourseCommand
+        address: course.courseLocation || null, // Backend uses 'Address'
+        category: course.courseCategory || null, // Backend uses 'Category'
+        isActive: nextIsActive,
       };
 
       await coursesApi.update(id, dto);
@@ -1061,24 +1077,24 @@ const AdminCourses: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={formData.courseLocation?.street || ""}
+                        value={formData.address?.street || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            courseLocation: {
+                            address: {
                               street: e.target.value,
-                              houseNo: formData.courseLocation?.houseNo || "",
-                              zipCode: formData.courseLocation?.zipCode || "",
-                              city: formData.courseLocation?.city || "",
-                              state: formData.courseLocation?.state || "",
-                              country: formData.courseLocation?.country || "",
+                              houseNo: formData.address?.houseNo || "",
+                              zipCode: formData.address?.zipCode || "",
+                              city: formData.address?.city || "",
+                              state: formData.address?.state || "",
+                              country: formData.address?.country || "",
                             },
                             location: `${e.target.value}${
-                              formData.courseLocation?.houseNo
-                                ? " " + formData.courseLocation.houseNo
+                              formData.address?.houseNo
+                                ? " " + formData.address.houseNo
                                 : ""
-                            }, ${formData.courseLocation?.zipCode || ""} ${
-                              formData.courseLocation?.city || ""
+                            }, ${formData.address?.zipCode || ""} ${
+                              formData.address?.city || ""
                             }`.trim(),
                           })
                         }
@@ -1096,23 +1112,23 @@ const AdminCourses: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={formData.courseLocation?.houseNo || ""}
+                        value={formData.address?.houseNo || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            courseLocation: {
-                              street: formData.courseLocation?.street || "",
+                            address: {
+                              street: formData.address?.street || "",
                               houseNo: e.target.value,
-                              zipCode: formData.courseLocation?.zipCode || "",
-                              city: formData.courseLocation?.city || "",
-                              state: formData.courseLocation?.state || "",
-                              country: formData.courseLocation?.country || "",
+                              zipCode: formData.address?.zipCode || "",
+                              city: formData.address?.city || "",
+                              state: formData.address?.state || "",
+                              country: formData.address?.country || "",
                             },
                             location: `${
-                              formData.courseLocation?.street || ""
+                              formData.address?.street || ""
                             } ${e.target.value}, ${
-                              formData.courseLocation?.zipCode || ""
-                            } ${formData.courseLocation?.city || ""}`.trim(),
+                              formData.address?.zipCode || ""
+                            } ${formData.address?.city || ""}`.trim(),
                           })
                         }
                         placeholder={t(
@@ -1130,23 +1146,23 @@ const AdminCourses: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={formData.courseLocation?.zipCode || ""}
+                        value={formData.address?.zipCode || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            courseLocation: {
-                              street: formData.courseLocation?.street || "",
-                              houseNo: formData.courseLocation?.houseNo || "",
+                            address: {
+                              street: formData.address?.street || "",
+                              houseNo: formData.address?.houseNo || "",
                               zipCode: e.target.value,
-                              city: formData.courseLocation?.city || "",
-                              state: formData.courseLocation?.state || "",
-                              country: formData.courseLocation?.country || "",
+                              city: formData.address?.city || "",
+                              state: formData.address?.state || "",
+                              country: formData.address?.country || "",
                             },
                             location: `${
-                              formData.courseLocation?.street || ""
-                            } ${formData.courseLocation?.houseNo || ""}, ${
+                              formData.address?.street || ""
+                            } ${formData.address?.houseNo || ""}, ${
                               e.target.value
-                            } ${formData.courseLocation?.city || ""}`.trim(),
+                            } ${formData.address?.city || ""}`.trim(),
                           })
                         }
                         placeholder={t("admin_courses_address_zip_placeholder")}
@@ -1162,22 +1178,22 @@ const AdminCourses: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={formData.courseLocation?.city || ""}
+                        value={formData.address?.city || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            courseLocation: {
-                              street: formData.courseLocation?.street || "",
-                              houseNo: formData.courseLocation?.houseNo || "",
-                              zipCode: formData.courseLocation?.zipCode || "",
+                            address: {
+                              street: formData.address?.street || "",
+                              houseNo: formData.address?.houseNo || "",
+                              zipCode: formData.address?.zipCode || "",
                               city: e.target.value,
-                              state: formData.courseLocation?.state || "",
-                              country: formData.courseLocation?.country || "",
+                              state: formData.address?.state || "",
+                              country: formData.address?.country || "",
                             },
                             location: `${
-                              formData.courseLocation?.street || ""
-                            } ${formData.courseLocation?.houseNo || ""}, ${
-                              formData.courseLocation?.zipCode || ""
+                              formData.address?.street || ""
+                            } ${formData.address?.houseNo || ""}, ${
+                              formData.address?.zipCode || ""
                             } ${e.target.value}`.trim(),
                           })
                         }
@@ -1195,17 +1211,17 @@ const AdminCourses: React.FC = () => {
                       </label>
                       <input
                         type="text"
-                        value={formData.courseLocation?.state || ""}
+                        value={formData.address?.state || ""}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            courseLocation: {
-                              street: formData.courseLocation?.street || "",
-                              houseNo: formData.courseLocation?.houseNo || "",
-                              zipCode: formData.courseLocation?.zipCode || "",
-                              city: formData.courseLocation?.city || "",
+                            address: {
+                              street: formData.address?.street || "",
+                              houseNo: formData.address?.houseNo || "",
+                              zipCode: formData.address?.zipCode || "",
+                              city: formData.address?.city || "",
                               state: e.target.value,
-                              country: formData.courseLocation?.country || "",
+                              country: formData.address?.country || "",
                             },
                           })
                         }
@@ -1224,18 +1240,16 @@ const AdminCourses: React.FC = () => {
                       <input
                         type="text"
                         required
-                        value={
-                          formData.courseLocation?.country || "Deutschland"
-                        }
+                        value={formData.address?.country || "Deutschland"}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            courseLocation: {
-                              street: formData.courseLocation?.street || "",
-                              houseNo: formData.courseLocation?.houseNo || "",
-                              zipCode: formData.courseLocation?.zipCode || "",
-                              city: formData.courseLocation?.city || "",
-                              state: formData.courseLocation?.state || "",
+                            address: {
+                              street: formData.address?.street || "",
+                              houseNo: formData.address?.houseNo || "",
+                              zipCode: formData.address?.zipCode || "",
+                              city: formData.address?.city || "",
+                              state: formData.address?.state || "",
                               country: e.target.value,
                             },
                           })
@@ -1260,11 +1274,11 @@ const AdminCourses: React.FC = () => {
                   <input
                     id="courseCategory"
                     type="text"
-                    value={formData.courseCategory}
+                    value={formData.category}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        courseCategory: e.target.value,
+                        category: e.target.value,
                       })
                     }
                     placeholder={t("admin_courses_category_placeholder")}

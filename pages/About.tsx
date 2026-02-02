@@ -201,6 +201,9 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       {/* Header */}
       <div className="bg-kpf-teal text-white py-20 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div className="absolute -top-12 -right-12 opacity-10 pointer-events-none transform -rotate-12">
+          <Users size={400} strokeWidth={0.5} />
+        </div>
         <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6 tracking-tight">
             {lang === "tr" ? "Hakkımızda" : "Über uns"}
@@ -631,7 +634,6 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       {aboutData?.teamMembers && aboutData.teamMembers.length > 0 && (
         <div className="bg-slate-50 py-24 border-t border-slate-200">
           <div className="container mx-auto px-6 md:px-12 max-w-7xl">
-            {/* Başlık */}
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-800 mb-4">
                 {lang === "tr" ? "Ekibimiz" : "Unser Team"}
@@ -639,8 +641,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
               <div className="w-20 h-1.5 bg-kpf-teal mx-auto rounded-full opacity-60"></div>
             </div>
 
-            {/* Kartlar Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {[...aboutData.teamMembers]
                 .sort((a, b) => a.order - b.order)
                 .map((member) => {
@@ -655,45 +656,43 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                     <button
                       key={member.id}
                       type="button"
-                      onClick={() => setSelectedMember(member)} // Detayı açan tetikleyici
-                      className="group relative flex flex-col md:flex-row items-center bg-white p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left border border-slate-100 overflow-visible w-full outline-none focus:ring-2 focus:ring-kpf-teal/20"
+                      onClick={() => setSelectedMember(member)}
+                      className="group relative flex items-center bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 text-left w-full outline-none hover:-translate-y-1"
                     >
-                      {/* Sol: Büyük Teal Avatar */}
-                      <div className="relative flex-shrink-0 w-40 h-40 md:w-44 md:h-44 bg-gradient-to-br from-kpf-teal via-kpf-teal to-teal-800 rounded-[2rem] flex items-center justify-center text-white text-4xl md:text-5xl font-bold tracking-tighter overflow-hidden shadow-xl shadow-kpf-teal/20 transition-all duration-500 group-hover:scale-105">
-                        <span className="relative z-10 drop-shadow-md">
-                          {initials}
-                        </span>
-                        <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      {/* Sol: Monogram Kutusu - Kartın Tam İçinde */}
+                      <div className="flex-shrink-0 w-24 h-24 md:w-28 md:h-28 bg-kpf-teal rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-inner">
+                        <span>{initials}</span>
                       </div>
 
-                      {/* Sağ: Bilgiler */}
-                      <div className="mt-8 md:mt-0 md:ml-10 flex-grow text-center md:text-left">
-                        <h3 className="font-bold text-3xl text-slate-800 group-hover:text-kpf-teal transition-colors duration-300">
+                      {/* Sağ: Metin Alanı */}
+                      <div className="ml-6 flex-grow">
+                        <h3 className="font-bold text-2xl text-slate-800 group-hover:text-kpf-teal transition-colors duration-300">
                           {member.name?.value || ""}
                         </h3>
-                        <div className="h-1 w-12 bg-kpf-teal/20 my-4 mx-auto md:mx-0 rounded-full group-hover:w-20 transition-all duration-500"></div>
-                        <p className="text-kpf-teal font-bold uppercase tracking-[0.2em] text-sm mb-6">
+
+                        <div className="h-0.5 w-8 bg-kpf-teal/30 my-2 rounded-full group-hover:w-12 transition-all duration-300"></div>
+
+                        <p className="text-kpf-teal font-bold uppercase tracking-widest text-[11px] mb-3">
                           {lang === "tr"
                             ? member.titleTr?.value || ""
                             : member.titleDe?.value || ""}
                         </p>
-                        <div className="inline-flex items-center text-xs font-black text-slate-400 group-hover:text-kpf-teal transition-colors tracking-widest">
+
+                        <div className="flex items-center text-[10px] font-black text-slate-400 group-hover:text-kpf-teal transition-colors tracking-widest">
                           {lang === "tr" ? "DETAYLI İNCELE" : "DETAILS ANSEHEN"}
-                          <div className="ml-3 p-1 rounded-full border border-slate-200 group-hover:border-kpf-teal transition-colors">
-                            <svg
-                              className="w-3 h-3 transform group-hover:translate-x-1 transition-transform"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                          </div>
+                          <svg
+                            className="ml-1 w-3 h-3 transform group-hover:translate-x-1 transition-transform"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
                         </div>
                       </div>
                     </button>
@@ -701,7 +700,6 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                 })}
             </div>
           </div>
-
           {/* Team Member Detail Modal (Açılan Pencere) */}
           {selectedMember && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

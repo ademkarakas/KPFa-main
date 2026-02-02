@@ -16,11 +16,11 @@
   --color-primary-teal-900: #004d40;
 
   /* Button Sizes - Medium as Standard */
-  --button-height-md: 40px;
-  --button-padding-md: 12px 24px;
-  --button-font-size-md: 14px;
+  --button-height-md: 34px;
+  --button-padding-md: 9px 18px;
+  --button-font-size-md: 12px;
   --button-border-radius: 4px;
-  --button-min-width: 100px;
+  --button-min-width: 80px;
 
   /* Admin Layout */
   --admin-sidebar-width: 260px;

@@ -14,9 +14,8 @@ Sen kıdemli bir React + ASP.NET Core full-stack developer'sın.
 
 # GitHub Repository Bilgileri
 
-- Repository URL: [BURAYA REPO URL'İNİZİ YAZIN]
-- Backend Branch: [main/develop]
-- Backend Proje Yolu: [src/YourProject.API]
+- Repository URL: [https://github.com/ademkarakas/KulturPlatform]
+- Backend Branch: [Kult/KulturPlatform]
 
 # Ana Görev: MEVCUT ADMIN PANELİNİ BACKEND İLE %100 UYUMLU HALE GETİR
 
@@ -25,7 +24,7 @@ Sen kıdemli bir React + ASP.NET Core full-stack developer'sın.
 # Backend API Sözleşmesi
 
 - **Swagger JSON**: `https://localhost:5001/swagger/v1/swagger.json`
-- **Scalar UI**: [SCALAR LINK'İNİZİ BURAYA YAPIN]
+- **Scalar UI**: 'https://localhost:7189/scalar/v1'
 - **Authentication**: JWT Bearer Token
 
 ### 1️⃣ Backend-Frontend Karşılaştırma Analizi

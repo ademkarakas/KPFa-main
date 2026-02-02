@@ -102,9 +102,7 @@ interface TeaEvent {
   date: string;
   time: string;
   location: string;
-  imageSource?: string;
-  imageBase64?: string | null;
-  imageFileName?: string | null;
+  imageUrl?: string; // Backend uses 'imageUrl' not 'imageUrl'
   contactEmail: string;
   isActive: boolean;
 }
@@ -130,9 +128,7 @@ const AdminTeegespraeche: React.FC = () => {
     date: "",
     time: "",
     location: "",
-    imageSource: "",
-    imageBase64: null,
-    imageFileName: null,
+    imageUrl: "", // Backend uses 'imageUrl' not 'imageUrl'
     contactEmail: "",
     isActive: true,
   };
@@ -432,14 +428,14 @@ const AdminTeegespraeche: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  {!editingEvent.imageBase64 && editingEvent.imageSource && (
+                  {!editingEvent.imageBase64 && editingEvent.imageUrl && (
                     <div className="mt-6 space-y-2">
                       <p className="text-xs font-black text-slate-600 uppercase tracking-widest">
                         Mevcut Resim
                       </p>
                       <div className="relative rounded-2xl overflow-hidden border-2 border-slate-300 shadow-lg">
                         <img
-                          src={editingEvent.imageSource}
+                          src={editingEvent.imageUrl}
                           alt="Current"
                           className="w-full h-64 object-cover"
                         />
