@@ -259,7 +259,7 @@ const AdminHome: React.FC = () => {
           subtitleDe: heroContent.subtitleDe,
           descriptionTr: heroContent.descriptionTr,
           descriptionDe: heroContent.descriptionDe,
-          // Hem URL hem Base64 göndermeyin - sadece birini gönder
+          // Eğer yeni dosya yüklendiyse Base64 gönder, yoksa mevcut URL'yi koru
           backgroundImageUrl: heroContent.backgroundImageBase64
             ? null
             : heroContent.backgroundImageUrl,
@@ -279,30 +279,25 @@ const AdminHome: React.FC = () => {
       if (!response.ok) throw new Error("Save failed");
 
       // Response'tan güncellenmiş verileri al
-      if (heroContent.id) {
-        // PUT işlemi - backend yeni URL'yi döndürüyor
-        const updatedHero = await response.json();
-        setHeroContent({
-          id: updatedHero.id,
-          titleTr: updatedHero.titleTr,
-          titleDe: updatedHero.titleDe,
-          subtitleTr: updatedHero.subtitleTr,
-          subtitleDe: updatedHero.subtitleDe,
-          descriptionTr: updatedHero.descriptionTr,
-          descriptionDe: updatedHero.descriptionDe,
-          backgroundImageUrl: updatedHero.backgroundImageUrl || "",
-          backgroundImageBase64: "", // Kaydedildikten sonra base64'ü temizle
-          backgroundImageFileName: "",
-          primaryButtonTextTr: updatedHero.primaryButtonTextTr,
-          primaryButtonTextDe: updatedHero.primaryButtonTextDe,
-          secondaryButtonTextTr: updatedHero.secondaryButtonTextTr,
-          secondaryButtonTextDe: updatedHero.secondaryButtonTextDe,
-        });
-        console.log("✅ Hero updated:", updatedHero);
-      } else {
-        // POST işlemi - verileri yeniden yükle
-        await loadHomeContent();
-      }
+      const updatedHero = await response.json();
+      console.log("✅ Backend'den gelen hero:", updatedHero);
+
+      setHeroContent({
+        id: updatedHero.id,
+        titleTr: updatedHero.titleTr,
+        titleDe: updatedHero.titleDe,
+        subtitleTr: updatedHero.subtitleTr,
+        subtitleDe: updatedHero.subtitleDe,
+        descriptionTr: updatedHero.descriptionTr,
+        descriptionDe: updatedHero.descriptionDe,
+        backgroundImageUrl: updatedHero.backgroundImageUrl || "",
+        backgroundImageBase64: "", // Kaydedildikten sonra base64'ü temizle
+        backgroundImageFileName: "",
+        primaryButtonTextTr: updatedHero.primaryButtonTextTr,
+        primaryButtonTextDe: updatedHero.primaryButtonTextDe,
+        secondaryButtonTextTr: updatedHero.secondaryButtonTextTr,
+        secondaryButtonTextDe: updatedHero.secondaryButtonTextDe,
+      });
 
       setMessage({
         type: "success",

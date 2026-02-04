@@ -305,18 +305,38 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
                     label: lang === "tr" ? "Yer" : "Ort",
                     value: selectedCourse.address,
                     show: !!selectedCourse.address,
+                    clickable: true,
+                    onClick: () => {
+                      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedCourse.address)}`;
+                      window.open(mapsUrl, "_blank");
+                    },
                   },
                 ].map(
                   (item, i) =>
                     item.show && (
                       <div
-                        key={i}
-                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100 transition-hover hover:bg-teal-50/50 duration-300"
+                        key={`${selectedCourse.id}-detail-${i}`}
+                        className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100 transition-all duration-300 ${
+                          item.clickable
+                            ? "cursor-pointer hover:bg-teal-50 hover:border-teal-200 hover:shadow-md hover:-translate-y-0.5"
+                            : "hover:bg-teal-50/50"
+                        }`}
+                        onClick={item.clickable ? item.onClick : undefined}
+                        onKeyDown={
+                          item.clickable
+                            ? (e) => {
+                                if (e.key === "Enter" || e.key === " ")
+                                  item.onClick?.();
+                              }
+                            : undefined
+                        }
+                        role={item.clickable ? "button" : undefined}
+                        tabIndex={item.clickable ? 0 : undefined}
                       >
                         <div className="w-10 h-10 rounded-lg sm:rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
                           {item.icon}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
                             {item.label}
                           </p>
@@ -324,6 +344,9 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
                             {item.value}
                           </p>
                         </div>
+                        {item.clickable && (
+                          <ChevronRight className="text-teal-500 w-5 h-5 flex-shrink-0" />
+                        )}
                       </div>
                     ),
                 )}

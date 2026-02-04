@@ -16,9 +16,9 @@
   --color-primary-teal-900: #004d40;
 
   /* Button Sizes - Medium as Standard */
-  --button-height-md: 34px;
-  --button-padding-md: 9px 18px;
-  --button-font-size-md: 12px;
+  --button-height-sm: 34px;
+  --button-padding-sm: 9px 18px;
+  --button-font-size-sm: 12px;
   --button-border-radius: 4px;
   --button-min-width: 80px;
 

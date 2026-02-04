@@ -336,22 +336,28 @@ const AdminCourses: React.FC = () => {
             ? new Date(`1970-01-01T${formData.time}:00`).toISOString()
             : new Date().toISOString(),
         }),
-        // Backend uses 'Address' not 'CourseLocation'
-        address:
-          formData.address?.street || formData.address?.city
+        // Backend uses 'CourseLocation' for update, 'Address' for create
+        courseLocation:
+          formData.address?.street &&
+          formData.address?.city &&
+          formData.address?.houseNo &&
+          formData.address?.country
             ? {
-                street: formData.address.street || null,
-                houseNo: formData.address.houseNo || null,
-                zipCode: formData.address.zipCode || null,
-                city: formData.address.city || null,
-                state: formData.address.state || null,
-                country: formData.address.country || null,
+                street: formData.address.street,
+                houseNo: formData.address.houseNo,
+                zipCode: formData.address.zipCode || "",
+                city: formData.address.city,
+                state: formData.address.state || "",
+                country: formData.address.country,
               }
             : null,
         // Backend uses 'Category' not 'CourseCategory'
         category: formData.category || null,
         isActive: formData.isActive,
       };
+
+      console.log("� FormData.address:", formData.address);
+      console.log("�📤 Gönderilen DTO:", JSON.stringify(dto, null, 2));
 
       if (editingId) {
         await coursesApi.update(editingId, dto);
@@ -376,6 +382,14 @@ const AdminCourses: React.FC = () => {
   const normalizeAddressFormValue = (course: any) => {
     // Backend returns courseLocation, we map to address
     const location = course.courseLocation || course.address;
+
+    console.log("🏠 normalizeAddressFormValue çağrıldı:", {
+      courseId: course.id,
+      courseLocation: course.courseLocation,
+      address: course.address,
+      selectedLocation: location,
+    });
+
     if (location && typeof location === "object") {
       return {
         street: location.street || "",

@@ -296,7 +296,7 @@ const Layout: React.FC<LayoutProps> = ({
                   onClick={() => {
                     globalThis.location.hash = "donate";
                   }}
-                  className="relative overflow-hidden bg-gradient-to-r from-kpf-teal to-kpf-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transform hover:-translate-y-0.5 transition-all group"
+                  className="relative overflow-hidden bg-gradient-to-r from-kpf-teal to-kpf-teal text-white px-3 py-1.5 rounded-full font-semibold text-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transform hover:-translate-y-0.5 transition-all group"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     <Heart

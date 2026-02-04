@@ -7,9 +7,9 @@ button,
 .btn,
 .button,
 .admin-btn {
-  min-height: var(--button-height-md);
-  padding: var(--button-padding-md);
-  font-size: var(--button-font-size-md);
+  min-height: var(--button-height-sm);
+  padding: var(--button-padding-sm);
+  font-size: var(--button-font-size-sm);
   border-radius: var(--button-border-radius);
 }
 

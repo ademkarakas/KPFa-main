@@ -110,8 +110,8 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
       try {
         // Ana Home verilerini, Hero verisini ve Aktiviteleri paralel olarak çek
         const [homeResponse, heroResponse, activitiesData] = await Promise.all([
-          fetch("https://localhost:7189/api/Home"),
-          fetch("https://localhost:7189/api/Home/hero"),
+          fetch("https://localhost:7189/api/Home", { cache: "no-store" }),
+          fetch("https://localhost:7189/api/Home/hero", { cache: "no-store" }),
           activitiesApi.getAll(false), // Sadece aktif aktiviteler
         ]);
 
@@ -248,7 +248,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
       <section className="relative h-[85vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src={homeData.hero.backgroundImageUrl}
+            src={`${homeData.hero.backgroundImageUrl}?t=${Date.now()}`}
             alt="Culture Hero"
             className="w-full h-full object-cover scale-105 animate-slow-zoom"
           />
@@ -296,7 +296,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 onClick={() => setPage("activities")}
                 className="
       bg-kpf-teal hover:bg-kpf-teal text-white
-      px-2 py-1 sm:px-6 sm:py-3
+      px-2 py-1 sm:px-3 sm:py-2.5
       text-xs sm:text-base
       rounded-lg sm:rounded-2xl
       font-bold transition-all
@@ -317,15 +317,16 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               <button
                 onClick={() => setPage("volunteer")}
                 className="
-      bg-white/10 hover:bg-white/20 backdrop-blur-md
-      text-white border border-white/30
-      px-2 py-1 sm:px-6 sm:py-3
-      text-xs sm:text-base
-      rounded-lg sm:rounded-2xl
-      font-bold transition-all
-      flex items-center justify-center
-      whitespace-nowrap
-    "
+    bg-white hover:bg-slate-100
+    text-teal-700
+    border border-white
+    px-2 py-1 sm:px-3 sm:py-2.5
+    text-xs sm:text-base
+    rounded-lg sm:rounded-2xl
+    font-bold transition-all
+    flex items-center justify-center
+    whitespace-nowrap
+  "
               >
                 {lang === "tr"
                   ? homeData.hero.secondaryButtonTextTr
@@ -511,7 +512,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               href="https://instagram.com/kulturplattformfreiburg"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-slate-100 hover:scale-105 transition-all shadow-lg"
+              className="inline-flex items-center gap-3 bg-white text-purple-600 px-5 py-2.5 rounded-full font-bold text-lg hover:bg-slate-100 hover:scale-105 transition-all shadow-lg"
             >
               <Instagram size={22} />
               @kulturplattformfreiburg
@@ -542,17 +543,16 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <button
                   onClick={() => setPage("activities")}
-                  className="bg-white text-teal-700 px-8 py-3 rounded-xl font-bold hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-lg"
+                  className="bg-white text-teal-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-md"
                 >
-                  <ArrowRight size={20} />
+                  <ArrowRight size={18} />
                   {lang === "tr"
                     ? homeData.cta.primaryButtonTr
                     : homeData.cta.primaryButtonDe}
                 </button>
-
                 <button
                   onClick={() => setPage("contact")}
-                  className="bg-white/10 text-white border border-white/30 px-8 py-3 rounded-xl font-bold hover:bg-white/20 transition-all"
+                  className="bg-amber-400 text-amber-900 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-amber-300 transition-all shadow-md"
                 >
                   {lang === "tr"
                     ? homeData.cta.secondaryButtonTr
