@@ -657,31 +657,31 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                       key={member.id}
                       type="button"
                       onClick={() => setSelectedMember(member)}
-                      className="group relative flex items-center bg-white p-6 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 text-left w-full outline-none hover:-translate-y-1"
+                      className="group relative flex items-center bg-white p-8 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 text-left w-full outline-none hover:-translate-y-1"
                     >
                       {/* Sol: Monogram Kutusu - Kartın Tam İçinde */}
-                      <div className="flex-shrink-0 w-24 h-24 md:w-28 md:h-28 bg-kpf-teal rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-inner">
+                      <div className="flex-shrink-0 w-32 h-32 md:w-44 md:h-44 bg-kpf-teal rounded-2xl flex items-center justify-center text-white text-4xl font-bold shadow-inner">
                         <span>{initials}</span>
                       </div>
 
                       {/* Sağ: Metin Alanı */}
-                      <div className="ml-6 flex-grow">
-                        <h3 className="font-bold text-2xl text-slate-800 group-hover:text-kpf-teal transition-colors duration-300">
+                      <div className="ml-8 flex-grow">
+                        <h3 className="font-bold text-3xl text-slate-800 group-hover:text-kpf-teal transition-colors duration-300">
                           {member.name?.value || ""}
                         </h3>
 
-                        <div className="h-0.5 w-8 bg-kpf-teal/30 my-2 rounded-full group-hover:w-12 transition-all duration-300"></div>
+                        <div className="h-0.5 w-10 bg-kpf-teal/30 my-3 rounded-full group-hover:w-14 transition-all duration-300"></div>
 
-                        <p className="text-kpf-teal font-bold uppercase tracking-widest text-[11px] mb-3">
+                        <p className="text-kpf-teal font-bold uppercase tracking-widest text-xs mb-4">
                           {lang === "tr"
                             ? member.titleTr?.value || ""
                             : member.titleDe?.value || ""}
                         </p>
 
-                        <div className="flex items-center text-[10px] font-black text-slate-400 group-hover:text-kpf-teal transition-colors tracking-widest">
+                        <div className="flex items-center text-[11px] font-black text-slate-400 group-hover:text-kpf-teal transition-colors tracking-widest">
                           {lang === "tr" ? "DETAYLI İNCELE" : "DETAILS ANSEHEN"}
                           <svg
-                            className="ml-1 w-3 h-3 transform group-hover:translate-x-1 transition-transform"
+                            className="ml-1.5 w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
