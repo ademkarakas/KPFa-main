@@ -275,5 +275,108 @@
       "updated": "Gülen Hareketi sayfası başarıyla güncellendi!",
       "saveFailed": "Kaydetme başarısız"
     }
+  },
+  "newsletter": {
+    "footer": {
+      "title": "Haberdar Olun",
+      "subtitle": "En son güncellemeler ve etkinlikler için bültenimize abone olun",
+      "emailPlaceholder": "E-posta adresiniz",
+      "namePlaceholder": "Adınız (opsiyonel)",
+      "subscribeButton": "Abone Ol",
+      "subscribing": "Abone olunuyor..."
+    },
+    "verify": {
+      "title": "Bülten Aboneliğini Onayla",
+      "loading": "Doğrulanıyor...",
+      "successTitle": "Başarıyla Doğrulandı!",
+      "successMessage": "Bülten aboneliğiniz onaylandı. Teşekkür ederiz!",
+      "errorTitle": "Doğrulama Başarısız",
+      "errorMessage": "Doğrulama linki geçersiz veya süresi dolmuş.",
+      "backToHome": "Ana Sayfaya Dön",
+      "subscribeAgain": "Tekrar Abone Ol"
+    },
+    "unsubscribe": {
+      "title": "Bülten Aboneliğinden Çık",
+      "loading": "İşleniyor...",
+      "successTitle": "Başarıyla Çıkış Yapıldı",
+      "successMessage": "Bülten aboneliğinizden çıkış yaptınız. Gitmene üzüldük!",
+      "errorTitle": "Hata",
+      "errorMessage": "Çıkış yapılamadı. Lütfen tekrar deneyin.",
+      "backToHome": "Ana Sayfaya Dön",
+      "resubscribe": "Tekrar Abone Ol"
+    },
+    "messages": {
+      "subscribeSuccess": "Teşekkürler! Lütfen onay için e-postanızı kontrol edin.",
+      "subscribeError": "Abonelik başarısız. Lütfen daha sonra tekrar deneyin.",
+      "invalidEmail": "Lütfen geçerli bir e-posta adresi girin.",
+      "alreadySubscribed": "Bu e-posta adresi zaten abone."
+    },
+    "admin": {
+      "menu": {
+        "subscribers": "Bülten Aboneleri",
+        "campaigns": "Bülten Kampanyaları"
+      },
+      "subscribers": {
+        "pageTitle": "Bülten Aboneleri",
+        "totalSubscribers": "Toplam Abone",
+        "activeSubscribers": "Aktif Aboneler",
+        "verifiedSubscribers": "Doğrulanmış Aboneler",
+        "searchPlaceholder": "E-posta veya isme göre ara...",
+        "email": "E-posta",
+        "name": "İsim",
+        "status": "Durum",
+        "subscribedAt": "Abone Tarihi",
+        "verifiedAt": "Doğrulama Tarihi",
+        "source": "Kaynak",
+        "active": "Aktif",
+        "inactive": "Pasif",
+        "verified": "Doğrulandı",
+        "pending": "Bekliyor",
+        "noSubscribers": "Henüz abone yok",
+        "exportCsv": "CSV Olarak Dışa Aktar"
+      },
+      "campaigns": {
+        "pageTitle": "Bülten Kampanyaları",
+        "createNew": "Yeni Kampanya Oluştur",
+        "listView": "Kampanya Listesi",
+        "createView": "Kampanya Oluştur",
+        "subject": "Konu",
+        "subjectPlaceholder": "Bülten konusunu girin",
+        "contentTr": "İçerik (Türkçe)",
+        "contentDe": "İçerik (Almanca)",
+        "headerImage": "Başlık Görseli URL (opsiyonel)",
+        "headerImagePlaceholder": "https://example.com/image.jpg",
+        "scheduledAt": "Planlanma Tarihi (opsiyonel)",
+        "status": "Durum",
+        "createdAt": "Oluşturulma Tarihi",
+        "sentAt": "Gönderilme Tarihi",
+        "recipients": "Alıcılar",
+        "successRate": "Başarı Oranı",
+        "actions": "İşlemler",
+        "send": "Gönder",
+        "sendTest": "Test Gönder",
+        "preview": "Önizleme",
+        "draft": "Taslak",
+        "scheduled": "Planlandı",
+        "sending": "Gönderiliyor",
+        "sent": "Gönderildi",
+        "failed": "Başarısız",
+        "noCampaigns": "Henüz kampanya oluşturulmadı",
+        "sendConfirm": "Bu kampanyayı tüm abonelere göndermek istediğinizden emin misiniz?",
+        "sendSuccess": "Kampanya başarıyla gönderildi!",
+        "sendError": "Kampanya gönderilirken hata oluştu",
+        "testEmailPlaceholder": "test@example.com",
+        "testEmailSent": "Test e-postası gönderildi!",
+        "createSuccess": "Kampanya başarıyla oluşturuldu",
+        "createError": "Kampanya oluşturulurken hata oluştu",
+        "variablesHelp": "Kullanılabilir değişkenler: {{name}}, {{email}}"
+      },
+      "stats": {
+        "totalSubscribers": "Toplam Abone",
+        "activeSubscribers": "Aktif",
+        "campaignsSent": "Gönderilen Kampanyalar",
+        "totalEmailsSent": "Toplam E-posta"
+      }
+    }
   }
 }

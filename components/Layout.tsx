@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Language, PageView } from "../types";
 import { TEXTS } from "../constants";
+import NewsletterSubscribeForm from "./NewsletterSubscribeForm";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -629,9 +630,9 @@ const Layout: React.FC<LayoutProps> = ({
       </button>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-300 pt-20 pb-12">
+      <footer className="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-300 pt-24 pb-16">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 lg:gap-20 max-w-7xl mx-auto">
             {/* Brand - Daha geniş kolon */}
             <div className="lg:col-span-4 space-y-6">
               <div className="flex items-center space-x-3">
@@ -716,7 +717,7 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
 
             {/* Contact - Daha geniş kolon */}
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-3">
               <h4 className="text-white font-bold mb-8 text-lg relative pb-3">
                 {t("footer_contact_header")}
                 <div className="absolute bottom-0 left-0 w-12 h-0.5 bg-gradient-to-r from-kpf-red to-orange-500 rounded-full"></div>
@@ -756,26 +757,8 @@ const Layout: React.FC<LayoutProps> = ({
             </div>
 
             {/* Newsletter / CTA */}
-            <div className="lg:col-span-2">
-              <h4 className="text-white font-bold mb-8 text-lg relative pb-3">
-                {lang === "tr" ? "Bize Katılın" : "Werden Sie Teil"}
-                <div className="absolute bottom-0 left-0 w-12 h-0.5 bg-gradient-to-r from-kpf-red to-orange-500 rounded-full"></div>
-              </h4>
-              <p className="text-sm text-slate-400 mb-6">
-                {lang === "tr"
-                  ? "Gönüllü olun ve kültürel projelerimizde yer alın."
-                  : "Werden Sie Freiwilliger und beteiligen Sie sich an unseren Kulturprojekten."}
-              </p>
-              <button
-                onClick={() => {
-                  setPage("volunteer");
-                  scrollToTop();
-                }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-kpf-teal to-teal-700 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:-translate-y-1 transition-all"
-              >
-                <Heart size={18} />
-                {lang === "tr" ? "Gönüllü Ol" : "Freiwilliger werden"}
-              </button>
+            <div className="lg:col-span-3">
+              <NewsletterSubscribeForm />
             </div>
           </div>
 

@@ -17,10 +17,13 @@ import AdminTranslations from "./AdminTranslations";
 import AdminImprint from "./AdminImprint";
 import AdminAbout from "./AdminAbout";
 import AdminHome from "./AdminHome";
+import AdminNewsletterSubscribers from "./AdminNewsletterSubscribers";
+import AdminNewsletterCampaigns from "./AdminNewsletterCampaigns";
 
 const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [authKey, setAuthKey] = useState(0); // Force remount on login
 
   useEffect(() => {
     // Token kontrolü
@@ -32,6 +35,9 @@ const Admin: React.FC = () => {
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+    setAuthKey((prev) => prev + 1); // Force remount all components
+    // Force remount of all admin components by resetting current page
+    setCurrentPage("dashboard");
   };
 
   const handleLogout = () => {
@@ -74,6 +80,10 @@ const Admin: React.FC = () => {
         return <AdminTranslations />;
       case "imprint":
         return <AdminImprint />;
+      case "newsletter-subscribers":
+        return <AdminNewsletterSubscribers />;
+      case "newsletter-campaigns":
+        return <AdminNewsletterCampaigns />;
       default:
         return <AdminDashboard onNavigate={setCurrentPage} />;
     }
@@ -85,6 +95,7 @@ const Admin: React.FC = () => {
 
   return (
     <AdminLayout
+      key={authKey}
       currentPage={currentPage}
       onNavigate={setCurrentPage}
       onLogout={handleLogout}

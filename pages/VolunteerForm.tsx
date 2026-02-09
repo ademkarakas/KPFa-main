@@ -8,6 +8,7 @@ import {
   Send,
 } from "lucide-react";
 import { Language } from "../types";
+import { newsletterApi } from "../services/newsletterApi";
 
 interface VolunteerFormProps {
   lang: Language;
@@ -23,6 +24,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
     phone: "",
     interest: "events",
     message: "",
+    subscribeToNewsletter: false,
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -44,6 +46,12 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
     message: isGerman
       ? "Nachricht / Motivationsschreiben"
       : "Mesaj / Motivasyon Yazısı",
+    newsletter_subscribe: isGerman
+      ? "Ich möchte den Newsletter erhalten"
+      : "Bülten almak istiyorum",
+    newsletter_info: isGerman
+      ? "Bleiben Sie über unsere Aktivitäten und Veranstaltungen informiert"
+      : "Etkinlikler ve faaliyetlerimizden haberdar olun",
     submit: isGerman ? "Abschicken" : "Gönder",
     required_fields: isGerman
       ? "Alle mit * gekennzeichneten Felder sind erforderlich"
@@ -106,6 +114,21 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
           console.error("Error sending volunteer submission:", err),
         );
 
+      // Subscribe to newsletter if checkbox is checked
+      if (formData.subscribeToNewsletter) {
+        newsletterApi
+          .subscribe(
+            formData.email,
+            `${formData.firstName} ${formData.lastName}`,
+          )
+          .then((result) => {
+            if (result.success) {
+              console.log("Newsletter subscription successful");
+            }
+          })
+          .catch((err) => console.error("Newsletter subscription error:", err));
+      }
+
       setSubmitted(true);
       setFormData({
         firstName: "",
@@ -114,6 +137,7 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
         phone: "",
         interest: "events",
         message: "",
+        subscribeToNewsletter: false,
       });
       setTimeout(() => setSubmitted(false), 5000);
     }
@@ -124,11 +148,14 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
+
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -351,6 +378,34 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
                         : "Bize daha fazlasını anlatın..."
                     }
                   ></textarea>
+                </div>
+
+                {/* Newsletter Checkbox */}
+                <div className="bg-gradient-to-br from-teal-50/50 to-slate-50/50 border border-teal-100/50 p-6 rounded-2xl">
+                  <label
+                    htmlFor="subscribeToNewsletter"
+                    className="flex items-start gap-4 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      id="subscribeToNewsletter"
+                      name="subscribeToNewsletter"
+                      checked={formData.subscribeToNewsletter}
+                      onChange={handleChange}
+                      className="mt-1 w-5 h-5 rounded-lg border-2 border-teal-300 text-teal-600 focus:ring-4 focus:ring-teal-500/20 transition-all cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Mail size={18} className="text-teal-600" />
+                        <span className="font-bold text-slate-800 group-hover:text-teal-600 transition-colors">
+                          {t.newsletter_subscribe}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        {t.newsletter_info}
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Submit Button */}

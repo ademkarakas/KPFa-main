@@ -275,5 +275,108 @@
       "updated": "Die Gülen-Seite wurde erfolgreich aktualisiert!",
       "saveFailed": "Speichern fehlgeschlagen"
     }
+  },
+  "newsletter": {
+    "footer": {
+      "title": "Bleiben Sie informiert",
+      "subtitle": "Abonnieren Sie unseren Newsletter für die neuesten Updates und Events",
+      "emailPlaceholder": "Ihre E-Mail-Adresse",
+      "namePlaceholder": "Ihr Name (optional)",
+      "subscribeButton": "Abonnieren",
+      "subscribing": "Wird abonniert..."
+    },
+    "verify": {
+      "title": "Newsletter-Abonnement bestätigen",
+      "loading": "Verifizierung läuft...",
+      "successTitle": "Erfolgreich verifiziert!",
+      "successMessage": "Ihr Newsletter-Abonnement wurde bestätigt. Vielen Dank!",
+      "errorTitle": "Verifizierung fehlgeschlagen",
+      "errorMessage": "Der Verifizierungs-Link ist ungültig oder abgelaufen.",
+      "backToHome": "Zurück zur Startseite",
+      "subscribeAgain": "Erneut abonnieren"
+    },
+    "unsubscribe": {
+      "title": "Newsletter abbestellen",
+      "loading": "Verarbeitung läuft...",
+      "successTitle": "Erfolgreich abgemeldet",
+      "successMessage": "Sie wurden vom Newsletter abgemeldet. Schade, dass Sie gehen!",
+      "errorTitle": "Fehler",
+      "errorMessage": "Abmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "backToHome": "Zurück zur Startseite",
+      "resubscribe": "Erneut abonnieren"
+    },
+    "messages": {
+      "subscribeSuccess": "Vielen Dank! Bitte überprüfen Sie Ihre E-Mails zur Bestätigung.",
+      "subscribeError": "Abonnement fehlgeschlagen. Bitte versuchen Sie es später erneut.",
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "alreadySubscribed": "Diese E-Mail-Adresse ist bereits abonniert."
+    },
+    "admin": {
+      "menu": {
+        "subscribers": "Newsletter-Abonnenten",
+        "campaigns": "Newsletter-Kampagnen"
+      },
+      "subscribers": {
+        "pageTitle": "Newsletter-Abonnenten",
+        "totalSubscribers": "Gesamt-Abonnenten",
+        "activeSubscribers": "Aktive Abonnenten",
+        "verifiedSubscribers": "Verifizierte Abonnenten",
+        "searchPlaceholder": "Suche nach E-Mail oder Name...",
+        "email": "E-Mail",
+        "name": "Name",
+        "status": "Status",
+        "subscribedAt": "Abonniert am",
+        "verifiedAt": "Verifiziert am",
+        "source": "Quelle",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "verified": "Verifiziert",
+        "pending": "Ausstehend",
+        "noSubscribers": "Noch keine Abonnenten",
+        "exportCsv": "Als CSV exportieren"
+      },
+      "campaigns": {
+        "pageTitle": "Newsletter-Kampagnen",
+        "createNew": "Neue Kampagne erstellen",
+        "listView": "Kampagnenliste",
+        "createView": "Kampagne erstellen",
+        "subject": "Betreff",
+        "subjectPlaceholder": "Newsletter-Betreff eingeben",
+        "contentTr": "Inhalt (Türkisch)",
+        "contentDe": "Inhalt (Deutsch)",
+        "headerImage": "Header-Bild URL (optional)",
+        "headerImagePlaceholder": "https://example.com/image.jpg",
+        "scheduledAt": "Geplant für (optional)",
+        "status": "Status",
+        "createdAt": "Erstellt am",
+        "sentAt": "Gesendet am",
+        "recipients": "Empfänger",
+        "successRate": "Erfolgsquote",
+        "actions": "Aktionen",
+        "send": "Senden",
+        "sendTest": "Test senden",
+        "preview": "Vorschau",
+        "draft": "Entwurf",
+        "scheduled": "Geplant",
+        "sending": "Wird gesendet",
+        "sent": "Gesendet",
+        "failed": "Fehlgeschlagen",
+        "noCampaigns": "Noch keine Kampagnen erstellt",
+        "sendConfirm": "Möchten Sie diese Kampagne an alle Abonnenten senden?",
+        "sendSuccess": "Kampagne erfolgreich gesendet!",
+        "sendError": "Fehler beim Senden der Kampagne",
+        "testEmailPlaceholder": "test@example.com",
+        "testEmailSent": "Test-E-Mail gesendet!",
+        "createSuccess": "Kampagne erfolgreich erstellt",
+        "createError": "Fehler beim Erstellen der Kampagne",
+        "variablesHelp": "Verfügbare Variablen: {{name}}, {{email}}"
+      },
+      "stats": {
+        "totalSubscribers": "Gesamt-Abonnenten",
+        "activeSubscribers": "Aktive",
+        "campaignsSent": "Kampagnen gesendet",
+        "totalEmailsSent": "Gesamt-E-Mails"
+      }
+    }
   }
 }

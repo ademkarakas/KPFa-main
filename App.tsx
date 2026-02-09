@@ -14,6 +14,8 @@ import Satzung from "./pages/Satzung";
 import GuelenMovement from "./pages/GuelenMovement";
 import Volunteer from "./pages/Volunteer";
 import VolunteerForm from "./pages/VolunteerForm";
+import NewsletterVerify from "./pages/NewsletterVerify";
+import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import Admin from "./pages/admin/Admin";
 import { Language, PageView } from "./types";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -53,6 +55,14 @@ const App: React.FC = () => {
             element.scrollIntoView({ behavior: "smooth", block: "start" });
           }
         }, 100);
+      } else if (hash.startsWith("newsletter/verify")) {
+        // Newsletter verification page
+        setCurrentPage("newsletter-verify" as PageView);
+        setActivityId(null);
+      } else if (hash.startsWith("newsletter/unsubscribe")) {
+        // Newsletter unsubscribe page
+        setCurrentPage("newsletter-unsubscribe" as PageView);
+        setActivityId(null);
       } else if (hash) {
         setCurrentPage(hash as PageView);
         setActivityId(null);
@@ -132,6 +142,10 @@ const App: React.FC = () => {
         return <Volunteer lang={lang} setPage={setCurrentPage} />;
       case "volunteer-form":
         return <VolunteerForm lang={lang} />;
+      case "newsletter-verify":
+        return <NewsletterVerify lang={lang} setPage={setCurrentPage} />;
+      case "newsletter-unsubscribe":
+        return <NewsletterUnsubscribe lang={lang} setPage={setCurrentPage} />;
       default:
         return <Home lang={lang} setPage={setCurrentPage} />;
     }

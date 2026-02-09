@@ -6,6 +6,7 @@ import {
   Languages,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   Settings,
   Users,
@@ -101,6 +102,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       ],
     },
     {
+      id: "newsletter-dropdown",
+      label: t("admin_menu_newsletter"),
+      icon: Mail,
+      isDropdown: true,
+      children: [
+        {
+          id: "newsletter-subscribers",
+          label: t("admin_menu_newsletter_subscribers"),
+        },
+        {
+          id: "newsletter-campaigns",
+          label: t("admin_menu_newsletter_campaigns"),
+        },
+      ],
+    },
+    {
       id: "settings-dropdown",
       label: t("admin_menu_system"),
       icon: Settings,
@@ -125,7 +142,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         {/* Header */}
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           {sidebarOpen && (
-            <h1 className="text-xl font-bold text-kpf-teal">
+            <h1 className="text-xl font-bold text-kpf-light">
               {t("admin_title")}
             </h1>
           )}

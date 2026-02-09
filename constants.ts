@@ -57,6 +57,15 @@ export const TEXTS: Record<string, Translation> = {
   admin_menu_team: { tr: "Kullanıcılar", de: "Benutzer" },
   admin_menu_partners: { tr: "Partnerler", de: "Partner" },
   admin_menu_volunteers: { tr: "Gönüllüler", de: "Freiwillige" },
+  admin_menu_newsletter: { tr: "Bülten", de: "Newsletter" },
+  admin_menu_newsletter_subscribers: {
+    tr: "Bülten Aboneleri",
+    de: "Newsletter-Abonnenten",
+  },
+  admin_menu_newsletter_campaigns: {
+    tr: "Bülten Kampanyaları",
+    de: "Newsletter-Kampagnen",
+  },
   admin_imprint_title: { tr: "Künye", de: "Impressum" },
   admin_donate_title: { tr: "Bağış", de: "Spende" },
 

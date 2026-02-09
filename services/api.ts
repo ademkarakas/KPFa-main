@@ -31,8 +31,6 @@ export async function apiFetch<T>(
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
-  } else {
-    console.warn("⚠️ API Request WITHOUT TOKEN:", endpoint);
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -49,11 +47,7 @@ export async function apiFetch<T>(
 
   // 204 No Content veya boş body kontrolü
   const contentType = response.headers.get("content-type");
-  if (
-    response.status === 204 ||
-    !contentType ||
-    !contentType.includes("application/json")
-  ) {
+  if (response.status === 204 || !contentType?.includes("application/json")) {
     return {} as T; // Boş obje döndür
   }
 

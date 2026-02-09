@@ -252,7 +252,12 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             alt="Culture Hero"
             className="w-full h-full object-cover scale-105 animate-slow-zoom"
           />
-          <div className="absolute inset-0 bg-gradient-to-tr from-slate-900 via-slate-900/80 to-transparent"></div>
+          <div
+            className="absolute inset-0 bg-gradient-to-tr 
+  from-slate-800/80 
+  via-slate-700/60 
+  to-transparent"
+          ></div>
         </div>
 
         <div className="container mx-auto px-4 z-10 relative text-white ">
@@ -552,7 +557,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 </button>
                 <button
                   onClick={() => setPage("contact")}
-                  className="bg-amber-400 text-amber-900 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-amber-300 transition-all shadow-md"
+                  className="bg-white text-teal-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-teal-50 transition-all shadow-md"
                 >
                   {lang === "tr"
                     ? homeData.cta.secondaryButtonTr
