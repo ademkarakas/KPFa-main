@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       role: response.role,
     });
 
-    // Store in localStorage
+    // Store in localStorage (adminId is already stored in authApi.login)
     localStorage.setItem("adminEmail", response.email);
     if (response.name) {
       localStorage.setItem("adminName", response.name);

@@ -2,31 +2,17 @@ import { ArrowRight, Calendar, MapPin, Search } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { TEXTS } from "../constants";
 import { activitiesApi } from "../services/api";
-import { Activity, Language, ParticipantForm, PageView } from "../types";
+import { Activity, Language } from "../types";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
 import { navigateTo } from "../utils/navigation";
 
 interface ActivitiesProps {
   lang: Language;
-  currentPage?: PageView;
 }
 
-const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
+const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
   const [filter, setFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null,
-  );
-  const [showParticipationForm, setShowParticipationForm] =
-    useState<boolean>(false);
-  const [formData, setFormData] = useState<ParticipantForm>({
-    name: "",
-    email: "",
-    phone: "",
-    message: "",
-  });
-  const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
-  const [formSuccess, setFormSuccess] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -205,77 +191,6 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
     { id: "culture", label: t("activities_filter_culture") },
     { id: "workshop", label: t("activities_filter_workshop") },
   ];
-
-  // Open Google Calendar with event details
-  const addToGoogleCalendar = (activity: Activity) => {
-    const eventTitle = activity.title[lang];
-    const eventDescription = activity.description[lang];
-    const eventLocation = activity.location;
-    const eventDate = activity.dateISO;
-
-    // Parse date for Google Calendar (YYYYMMDD format)
-    const [year, month, day] = eventDate.split("-");
-    const startTime = `${year}${month}${day}T100000Z`;
-    const endTime = `${year}${month}${day}T120000Z`;
-
-    // Create Google Calendar URL
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-      eventTitle,
-    )}&dates=${startTime}/${endTime}&details=${encodeURIComponent(
-      eventDescription,
-    )}&location=${encodeURIComponent(eventLocation)}&sf=true&output=xml`;
-
-    window.open(googleCalendarUrl, "_blank");
-  };
-
-  // Send participation email
-  const handleSubmitParticipation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedActivity || !formData.name || !formData.email) return;
-
-    setFormSubmitting(true);
-    try {
-      // Simulate email sending (in production, this would call a backend API)
-      const emailData = {
-        to: formData.email,
-        subject: `${
-          lang === "tr" ? "Katılım Onayı" : "Teilnahmebestätigung"
-        }: ${selectedActivity.title[lang]}`,
-        activity: {
-          title: selectedActivity.title[lang],
-          date: selectedActivity.date[lang],
-          location: selectedActivity.location,
-          description: selectedActivity.description[lang],
-        },
-        participant: {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-        },
-        message: formData.message,
-      };
-
-      // Uncomment when backend is ready:
-      // const response = await fetch('/api/send-participation-email', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(emailData),
-      // });
-
-      setFormSuccess(true);
-      setTimeout(() => {
-        setFormSuccess(false);
-        setShowParticipationForm(false);
-        setFormData({ name: "", email: "", phone: "", message: "" });
-        // Add to Google Calendar
-        addToGoogleCalendar(selectedActivity);
-      }, 2000);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
 
   // Backend'e etkinlik kaydederken/put/post ederken date ve address alanlarını eklemeniz gerekir.
   // Örnek: (PUT veya POST için)

@@ -101,7 +101,27 @@
     "phonePlaceholder": "Telefonnummer eingeben",
     "statusLabel": "Status",
     "activeStatus": "Aktiv",
-    "inactiveStatus": "Inaktiv"
+    "inactiveStatus": "Inaktiv",
+    "admin": {
+      "trContent": "Türkischer Inhalt",
+      "deContent": "Deutscher Inhalt",
+      "labels": {
+        "introTr": "Einleitungstext (TR)",
+        "introDe": "Einleitungstext (DE)"
+      },
+      "placeholders": {
+        "titleTr": "Titel (Türkçe)",
+        "titleDe": "Titel (Deutsch)",
+        "subtitleTr": "Untertitel (Türkçe)",
+        "subtitleDe": "Untertitel (Deutsch)",
+        "editor": "Inhalt schreiben...",
+        "sectionHeadingTr": "Abschnittstitel (TR)",
+        "sectionHeadingDe": "Abschnittstitel (DE)",
+        "icon": "Icon (z.B: Heart, Users)",
+        "itemTr": "Element Text (TR)",
+        "itemDe": "Element Text (DE)"
+      }
+    }
   },
   "form": {
     "requiredField": "Dieses Feld ist erforderlich",
@@ -145,9 +165,7 @@
   "admin_logging_in": "Anmeldung läuft...",
   "admin_login_error": "Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Daten.",
   "admin_error_occurred": "Ein Fehler ist aufgetreten.",
-  "admin_demo_credentials": "Demo-Zugangsdaten",
-  "admin_demo_credentials_value": "admin@kpf.de / Admin123!",
-  "admin_login_email_placeholder": "admin@kpf.de",
+  "admin_login_email_placeholder": "E-Mail-Adresse eingeben",
   "admin_login_password_placeholder": "••••••••",
 
   "admin_address_street": "Straße",

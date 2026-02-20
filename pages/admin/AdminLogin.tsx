@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Lock, Mail, AlertCircle, Eye, EyeOff, Languages } from "lucide-react";
+import { Lock, Mail, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { authApi } from "../../services/api";
-import { useLanguage } from "../../contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 
 interface AdminLoginProps {
@@ -15,9 +14,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { language, setLanguage } = useLanguage();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -48,21 +46,21 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-kpf-dark flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-kpf-teal rounded-2xl mb-4 shadow-2xl">
-            <Lock className="text-white" size={40} />
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-kpf-teal rounded-2xl mb-6 shadow-2xl">
+            <Lock className="text-white" size={48} />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold text-slate-800 mb-2">
             {t("admin_title")}
           </h1>
-          <p className="text-slate-400">{t("admin_subtitle")}</p>
+          <p className="text-slate-600">{t("admin_subtitle")}</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-lg p-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
@@ -133,14 +131,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
               {loading ? t("admin_logging_in") : t("admin_login")}
             </button>
           </form>
-
-          {/* Demo Credentials Info */}
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <p className="text-xs text-slate-600 text-center">
-              <strong>{t("admin_demo_credentials")}:</strong>{" "}
-              {t("admin_demo_credentials_value")}
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -201,7 +201,7 @@ const AdminVolunteerPage: React.FC = () => {
     });
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!data) return;
     setSaving(true);

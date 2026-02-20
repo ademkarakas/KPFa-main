@@ -36,6 +36,7 @@ Backend projeniz Visual Studio'da hazır olmalıdır. Backend klasörü bu front
    ```bash
    npm run dev
    ```
+
    - Uygulama: `http://localhost:5173`
 
 ## 🔐 Admin Paneli
@@ -43,8 +44,6 @@ Backend projeniz Visual Studio'da hazır olmalıdır. Backend klasörü bu front
 ### Erişim:
 
 - **URL:** `http://localhost:5173/#admin`
-- **Email:** admin@kpf.de
-- **Şifre:** Admin123!
 
 ### Özellikler:
 

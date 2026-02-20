@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Language } from "../types";
 import { newsletterApi } from "../services/newsletterApi";
+import { volunteersApi } from "../services/api";
 
 interface VolunteerFormProps {
   lang: Language;
@@ -17,6 +18,8 @@ interface VolunteerFormProps {
 const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
   const isGerman = lang === "de";
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -62,6 +65,9 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
     error_email: isGerman
       ? "Bitte geben Sie eine gültige E-Mail-Adresse ein"
       : "Lütfen geçerli bir e-mail adresi girin",
+    error_submit: isGerman
+      ? "Fehler beim Senden der Bewerbung. Bitte versuchen Sie es erneut."
+      : "Başvuru gönderilirken hata oluştu. Lütfen tekrar deneyin.",
     success_title: isGerman
       ? "Vielen Dank für Ihre Bewerbung!"
       : "Başvurunuz İçin Teşekkür Ederiz!",
@@ -92,43 +98,42 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      // Send volunteer submission via API
-      fetch("https://localhost:7189/api/VolunteerSubmissions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phoneNumber: formData.phone,
-          message: `İlgi Alanı: ${formData.interest}\n\n${formData.message}`,
-        }),
-      })
-        .then((res) => res.json())
-        .catch((err) =>
-          console.error("Error sending volunteer submission:", err),
-        );
+    if (!validateForm()) {
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Send volunteer submission via volunteersApi
+      await volunteersApi.submit({
+        fullName: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone || "",
+        message: `${isGerman ? "Interessensgebiet" : "İlgi Alanı"}: ${formData.interest}\n\n${formData.message}`,
+      });
 
       // Subscribe to newsletter if checkbox is checked
       if (formData.subscribeToNewsletter) {
-        newsletterApi
-          .subscribe(
+        try {
+          const result = await newsletterApi.subscribe(
             formData.email,
             `${formData.firstName} ${formData.lastName}`,
-          )
-          .then((result) => {
-            if (result.success) {
-              console.log("Newsletter subscription successful");
-            }
-          })
-          .catch((err) => console.error("Newsletter subscription error:", err));
+          );
+          if (result.success) {
+            console.log("Newsletter subscription successful");
+          }
+        } catch (err) {
+          console.error("Newsletter subscription error:", err);
+          // Don't block the main flow if newsletter subscription fails
+        }
       }
 
+      // Success!
       setSubmitted(true);
       setFormData({
         firstName: "",
@@ -140,6 +145,11 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
         subscribeToNewsletter: false,
       });
       setTimeout(() => setSubmitted(false), 5000);
+    } catch (error: any) {
+      console.error("Error sending volunteer submission:", error);
+      setSubmitError(error.message || t.error_submit);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -408,16 +418,41 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
                   </label>
                 </div>
 
+                {/* Error Message */}
+                {submitError && (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-start gap-3">
+                    <AlertCircle
+                      size={20}
+                      className="text-red-600 flex-shrink-0 mt-0.5"
+                    />
+                    <p className="text-red-700 text-sm font-medium">
+                      {submitError}
+                    </p>
+                  </div>
+                )}
+
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-teal-600 to-slate-900 text-white px-8 py-5 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-teal-900/20 transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3 group"
+                  disabled={submitting}
+                  className="w-full bg-gradient-to-r from-teal-600 to-slate-900 text-white px-8 py-5 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-teal-900/20 transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                 >
-                  <span>{t.submit}</span>
-                  <Send
-                    size={20}
-                    className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
-                  />
+                  {submitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>
+                        {isGerman ? "Wird gesendet..." : "Gönderiliyor..."}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{t.submit}</span>
+                      <Send
+                        size={20}
+                        className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
+                      />
+                    </>
+                  )}
                 </button>
               </form>
             </div>

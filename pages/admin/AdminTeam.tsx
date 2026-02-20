@@ -44,6 +44,7 @@ const API_BASE_URL = "https://localhost:7189/api";
 const AdminTeam: React.FC = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -108,6 +109,9 @@ const AdminTeam: React.FC = () => {
       saveSuccess: "Kullanıcı kaydedildi!",
       saveError: "Kayıt başarısız!",
       noUsersFound: "Kullanıcı bulunamadı",
+      accessDeniedTitle: "Erişim Yok",
+      accessDeniedMessage:
+        "Bu sayfaya erişim yetkiniz bulunmamaktadır. Sadece Sistem Yöneticileri kullanıcı yönetimi yapabilir.",
     },
     de: {
       pageTitle: "Benutzerverwaltung",
@@ -145,6 +149,9 @@ const AdminTeam: React.FC = () => {
       saveSuccess: "Benutzer gespeichert!",
       saveError: "Speichern fehlgeschlagen!",
       noUsersFound: "Keine Benutzer gefunden",
+      accessDeniedTitle: "Kein Zugriff",
+      accessDeniedMessage:
+        "Sie haben keine Berechtigung für diese Seite. Nur Systemadministratoren können Benutzer verwalten.",
     },
   };
 
@@ -182,6 +189,11 @@ const AdminTeam: React.FC = () => {
 
       if (res.status === 401) {
         handleUnauthorized();
+        return;
+      }
+
+      if (res.status === 403) {
+        setAccessDenied(true);
         return;
       }
 
@@ -398,6 +410,30 @@ const AdminTeam: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-kpf-teal"></div>
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-lg p-12 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="p-6 bg-red-100 rounded-full">
+              <Shield size={64} className="text-red-600" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-slate-800 mb-4">
+            {t.accessDeniedTitle}
+          </h2>
+          <p className="text-lg text-slate-600 mb-8">{t.accessDeniedMessage}</p>
+          <button
+            onClick={() => (globalThis.location.href = "/admin")}
+            className="px-8 py-3 bg-kpf-teal text-white rounded-xl hover:bg-kpf-teal/90 transition-all font-bold text-base"
+          >
+            {language === "tr" ? "Ana Sayfaya Dön" : "Zur Startseite"}
+          </button>
+        </div>
       </div>
     );
   }

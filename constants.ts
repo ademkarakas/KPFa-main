@@ -40,7 +40,6 @@ export const TEXTS: Record<string, Translation> = {
     tr: "Bir hata oluştu. Lütfen tekrar deneyin.",
     de: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
   },
-  admin_demo_credentials: { tr: "Demo", de: "Demo" },
   admin_logout: { tr: "Çıkış Yap", de: "Abmelden" },
   admin_website: { tr: "Siteyi Görüntüle", de: "Website ansehen" },
 
@@ -74,8 +73,137 @@ export const TEXTS: Record<string, Translation> = {
     tr: "Bülten Kampanyaları",
     de: "Newsletter-Kampagnen",
   },
+  admin_menu_change_password: { tr: "Şifre Değiştir", de: "Passwort ändern" },
   admin_imprint_title: { tr: "Künye", de: "Impressum" },
   admin_donate_title: { tr: "Bağış", de: "Spende" },
+
+  // Admin Change Password
+  admin_change_password_title: { tr: "Şifre Değiştir", de: "Passwort ändern" },
+  admin_change_password_subtitle: {
+    tr: "Hesap güvenliğiniz için şifrenizi güncelleyin",
+    de: "Aktualisieren Sie Ihr Passwort für die Kontosicherheit",
+  },
+  admin_change_password_current: {
+    tr: "Mevcut Şifre",
+    de: "Aktuelles Passwort",
+  },
+  admin_change_password_current_placeholder: {
+    tr: "Mevcut şifrenizi girin",
+    de: "Geben Sie Ihr aktuelles Passwort ein",
+  },
+  admin_change_password_new: { tr: "Yeni Şifre", de: "Neues Passwort" },
+  admin_change_password_new_placeholder: {
+    tr: "Yeni şifrenizi girin",
+    de: "Geben Sie Ihr neues Passwort ein",
+  },
+  admin_change_password_confirm: {
+    tr: "Yeni Şifreyi Onayla",
+    de: "Neues Passwort bestätigen",
+  },
+  admin_change_password_confirm_placeholder: {
+    tr: "Yeni şifrenizi tekrar girin",
+    de: "Geben Sie Ihr neues Passwort erneut ein",
+  },
+  admin_change_password_requirements: {
+    tr: "Şifre en az 6 karakter olmalıdır",
+    de: "Das Passwort muss mindestens 6 Zeichen lang sein",
+  },
+  admin_change_password_submit: {
+    tr: "Şifreyi Güncelle",
+    de: "Passwort aktualisieren",
+  },
+  admin_change_password_updating: {
+    tr: "Güncelleniyor...",
+    de: "Wird aktualisiert...",
+  },
+  admin_change_password_success: {
+    tr: "Şifreniz başarıyla güncellendi",
+    de: "Ihr Passwort wurde erfolgreich aktualisiert",
+  },
+  admin_change_password_error: {
+    tr: "Şifre güncellenirken bir hata oluştu",
+    de: "Beim Aktualisieren des Passworts ist ein Fehler aufgetreten",
+  },
+  admin_change_password_all_fields_required: {
+    tr: "Tüm alanları doldurun",
+    de: "Alle Felder müssen ausgefüllt werden",
+  },
+  admin_change_password_min_length: {
+    tr: "Yeni şifre en az 6 karakter olmalıdır",
+    de: "Das neue Passwort muss mindestens 6 Zeichen lang sein",
+  },
+  admin_change_password_no_match: {
+    tr: "Yeni şifreler eşleşmiyor",
+    de: "Die neuen Passwörter stimmen nicht überein",
+  },
+  admin_change_password_same_as_current: {
+    tr: "Yeni şifre mevcut şifreden farklı olmalıdır",
+    de: "Das neue Passwort muss sich vom aktuellen unterscheiden",
+  },
+  admin_change_password_security_tips_title: {
+    tr: "Güvenlik İpuçları",
+    de: "Sicherheitstipps",
+  },
+  admin_change_password_tip_1: {
+    tr: "Güçlü bir şifre için büyük harf, küçük harf, rakam ve özel karakterler kullanın",
+    de: "Verwenden Sie Groß- und Kleinbuchstaben, Zahlen und Sonderzeichen für ein sicheres Passwort",
+  },
+  admin_change_password_tip_2: {
+    tr: "Şifrenizi başka hiçbir yerde kullanmayın",
+    de: "Verwenden Sie Ihr Passwort nirgendwo anders",
+  },
+  admin_change_password_tip_3: {
+    tr: "Şifrenizi düzenli olarak güncelleyin",
+    de: "Aktualisieren Sie Ihr Passwort regelmäßig",
+  },
+
+  // Admin Settings
+  admin_settings_title: { tr: "Ayarlar", de: "Einstellungen" },
+  admin_settings_subtitle: {
+    tr: "Hesap ayarlarınızı yönetin",
+    de: "Verwalten Sie Ihre Kontoeinstellungen",
+  },
+  admin_settings_menu: { tr: "Ayarlar", de: "Einstellungen" },
+  admin_settings_name: { tr: "İsim", de: "Name" },
+  admin_settings_email: { tr: "E-posta", de: "E-Mail" },
+  admin_settings_role: { tr: "Rol", de: "Rolle" },
+  admin_settings_password: { tr: "Şifre", de: "Passwort" },
+  admin_settings_name_placeholder: {
+    tr: "İsminizi girin",
+    de: "Geben Sie Ihren Namen ein",
+  },
+  admin_settings_email_placeholder: {
+    tr: "E-posta adresinizi girin",
+    de: "Geben Sie Ihre E-Mail-Adresse ein",
+  },
+  admin_settings_name_required: {
+    tr: "İsim gereklidir",
+    de: "Name ist erforderlich",
+  },
+  admin_settings_email_required: {
+    tr: "E-posta gereklidir",
+    de: "E-Mail ist erforderlich",
+  },
+  admin_settings_email_invalid: {
+    tr: "Geçersiz e-posta adresi",
+    de: "Ungültige E-Mail-Adresse",
+  },
+  admin_settings_update_success: {
+    tr: "Bilgileriniz başarıyla güncellendi",
+    de: "Ihre Informationen wurden erfolgreich aktualisiert",
+  },
+  admin_settings_update_error: {
+    tr: "Güncelleme sırasında bir hata oluştu",
+    de: "Beim Aktualisieren ist ein Fehler aufgetreten",
+  },
+  admin_settings_security_tips: {
+    tr: "Güvenlik İpuçları",
+    de: "Sicherheitstipps",
+  },
+  admin_settings_relogin_required: {
+    tr: "Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.",
+    de: "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+  },
 
   // Admin Dashboard
   admin_dashboard_title: { tr: "Kontrol Paneli", de: "Dashboard" },

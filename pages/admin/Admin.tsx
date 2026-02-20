@@ -17,6 +17,7 @@ import AdminAbout from "./AdminAbout";
 import AdminHome from "./AdminHome";
 import AdminNewsletterSubscribers from "./AdminNewsletterSubscribers";
 import AdminNewsletterCampaigns from "./AdminNewsletterCampaigns";
+import AdminSettings from "./AdminSettings";
 
 const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,6 +41,7 @@ const Admin: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminId");
     localStorage.removeItem("adminName");
     localStorage.removeItem("adminEmail");
     localStorage.removeItem("adminRole");
@@ -81,6 +83,8 @@ const Admin: React.FC = () => {
         return <AdminNewsletterSubscribers />;
       case "newsletter-campaigns":
         return <AdminNewsletterCampaigns />;
+      case "settings":
+        return <AdminSettings />;
       default:
         return <AdminDashboard onNavigate={setCurrentPage} />;
     }

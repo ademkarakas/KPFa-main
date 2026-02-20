@@ -64,6 +64,7 @@ export const setAuthToken = (token: string): void => {
 // Helper function to clear auth token
 export const clearAuthToken = (): void => {
   localStorage.removeItem("adminToken");
+  localStorage.removeItem("adminId");
   localStorage.removeItem("adminName");
   localStorage.removeItem("adminEmail");
   localStorage.removeItem("adminRole");
@@ -144,6 +145,30 @@ export const authApi = {
     });
     if (response.token) {
       setAuthToken(response.token);
+
+      // Store admin ID for future API calls
+      let adminId = response.id;
+
+      // If ID is not in response, try to decode from JWT token
+      if (!adminId) {
+        const decoded = decodeJWT(response.token);
+        // Try common JWT claim names for user ID
+        adminId =
+          decoded?.sub ||
+          decoded?.userId ||
+          decoded?.nameid ||
+          decoded?.[
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+          ];
+      }
+
+      if (adminId) {
+        localStorage.setItem("adminId", adminId);
+      } else {
+        console.warn(
+          "Could not extract admin ID from login response or JWT token",
+        );
+      }
     }
     return response;
   },
@@ -153,6 +178,30 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
     });
+  },
+
+  updateProfile: async (data: { name?: string; email?: string }) => {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) {
+      throw new Error("Admin ID not found. Please login again.");
+    }
+
+    const response = await apiFetch<AdminDto>(`/Admins/${adminId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        id: adminId,
+        email: data.email || localStorage.getItem("adminEmail") || "",
+        name: data.name || localStorage.getItem("adminName") || "",
+      }),
+    });
+    // Update localStorage with new values
+    if (data.name) {
+      localStorage.setItem("adminName", data.name);
+    }
+    if (data.email) {
+      localStorage.setItem("adminEmail", data.email);
+    }
+    return response;
   },
 
   logout: () => {
@@ -359,7 +408,7 @@ export const pageContentsApi = {
 // Volunteers API - Backend Guid tipi ile uyumlu
 interface VolunteerSubmissionDto {
   id: string;
-  name: string;
+  fullName: string; // Backend returns FullName (PascalCase)
   email: string;
   phone: string;
   message: string;
@@ -368,10 +417,10 @@ interface VolunteerSubmissionDto {
 }
 
 interface CreateVolunteerSubmissionCommand {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
+  fullName: string; // Backend expects FullName (PascalCase)
+  email: string; // Backend expects Email
+  phone: string; // Backend expects Phone
+  message: string; // Backend expects Message
 }
 
 export const volunteersApi = {

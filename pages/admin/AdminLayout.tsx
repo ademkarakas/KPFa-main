@@ -31,12 +31,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
 
   // Get current admin info from localStorage on every render for consistency
   const adminName = localStorage.getItem("adminName") || "Admin User";
-  const adminEmail = localStorage.getItem("adminEmail") || "";
   const adminRole = localStorage.getItem("adminRole") || "Administrator";
 
   const getUserInitials = (name: string) => {
@@ -104,7 +104,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       icon: Users,
       isDropdown: true,
       children: [
-        { id: "team", label: t("admin_menu_team") },
+        { id: "team", label: t("admin_menu_team"), requiresSystemAdmin: true },
         { id: "volunteers", label: t("admin_menu_volunteers") },
         {
           id: "volunteer-page",
@@ -204,22 +204,33 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                   {/* Dropdown Items */}
                   {sidebarOpen && isExpanded && (
                     <div className="pl-6 space-y-1 mt-1">
-                      {item.children?.map((child: any) => {
-                        const isChildActive = currentPage === child.id;
-                        return (
-                          <button
-                            key={child.id}
-                            onClick={() => onNavigate(child.id)}
-                            className={`w-full text-left px-4 py-2 rounded-lg transition-all text-sm ${
-                              isChildActive
-                                ? "bg-kpf-teal text-white"
-                                : "text-slate-500 hover:bg-teal-50 hover:text-teal-600"
-                            }`}
-                          >
-                            {child.label}
-                          </button>
-                        );
-                      })}
+                      {item.children
+                        ?.filter((child: any) => {
+                          // Filter out items that require SystemAdmin role
+                          if (
+                            child.requiresSystemAdmin &&
+                            adminRole !== "SystemAdmin"
+                          ) {
+                            return false;
+                          }
+                          return true;
+                        })
+                        .map((child: any) => {
+                          const isChildActive = currentPage === child.id;
+                          return (
+                            <button
+                              key={child.id}
+                              onClick={() => onNavigate(child.id)}
+                              className={`w-full text-left px-4 py-2 rounded-lg transition-all text-sm ${
+                                isChildActive
+                                  ? "bg-kpf-teal text-white"
+                                  : "text-slate-500 hover:bg-teal-50 hover:text-teal-600"
+                              }`}
+                            >
+                              {child.label}
+                            </button>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
@@ -249,35 +260,77 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 space-y-2">
-          {/* Admin User Info */}
-          <div
-            className={`flex items-center gap-3 px-3 py-3 mb-2 rounded-2xl transition-all duration-300 ${
-              sidebarOpen
-                ? "bg-white/70 backdrop-blur-md shadow-sm"
-                : "justify-center"
-            }`}
-          >
-            <div className="relative flex-shrink-0">
-              <div
-                className={`flex items-center justify-center bg-gradient-to-br from-teal-500 to-blue-600 text-white font-semibold transition-all duration-300 ${
-                  sidebarOpen
-                    ? "w-10 h-10 rounded-2xl text-sm"
-                    : "w-12 h-12 rounded-2xl text-lg hover:scale-105"
-                }`}
-              >
-                {getUserInitials(adminName)}
+          {/* Admin User Info with Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+              className={`w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-2xl transition-all duration-300 hover:bg-slate-50 ${
+                sidebarOpen
+                  ? "bg-white/70 backdrop-blur-md shadow-sm"
+                  : "justify-center"
+              }`}
+            >
+              <div className="relative flex-shrink-0">
+                <div
+                  className={`flex items-center justify-center bg-gradient-to-br from-teal-500 to-teal-700 text-white font-semibold transition-all duration-300 ${
+                    sidebarOpen
+                      ? "w-10 h-10 rounded-2xl text-sm"
+                      : "w-12 h-12 rounded-2xl text-lg hover:scale-105"
+                  }`}
+                >
+                  {getUserInitials(adminName)}
+                </div>
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></div>
               </div>
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></div>
-            </div>
 
-            {sidebarOpen && (
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-sm font-semibold text-slate-800 truncate">
-                  {adminName}
-                </span>
-                <span className="text-xs text-slate-500 truncate">
-                  {adminRole}
-                </span>
+              {sidebarOpen && (
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm font-semibold text-slate-800 truncate">
+                    {adminName}
+                  </span>
+                  <span className="text-xs text-slate-500 truncate">
+                    {adminRole}
+                  </span>
+                </div>
+              )}
+
+              {sidebarOpen && (
+                <ChevronDown
+                  size={16}
+                  className={`text-slate-400 transition-transform ${
+                    userDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              )}
+            </button>
+
+            {/* User Dropdown Menu */}
+            {userDropdownOpen && sidebarOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+                <button
+                  onClick={() => {
+                    onNavigate("settings");
+                    setUserDropdownOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-slate-700 transition-colors ${
+                    currentPage === "settings"
+                      ? "bg-kpf-teal/10 text-kpf-teal font-semibold"
+                      : ""
+                  }`}
+                >
+                  <Settings size={18} />
+                  <span className="text-sm">{t("admin_settings_menu")}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onLogout();
+                    setUserDropdownOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 transition-colors border-t border-slate-100"
+                >
+                  <LogOut size={18} />
+                  <span className="text-sm">{t("admin_logout")}</span>
+                </button>
               </div>
             )}
           </div>
@@ -304,18 +357,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             <Home size={20} />
             {sidebarOpen && (
               <span className="font-medium">{t("admin_website")}</span>
-            )}
-          </button>
-          <button
-            onClick={onLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 hover:text-white text-slate-600 transition-all ${
-              !sidebarOpen && "justify-center"
-            }`}
-            title={sidebarOpen ? undefined : t("admin_logout")}
-          >
-            <LogOut size={20} />
-            {sidebarOpen && (
-              <span className="font-medium">{t("admin_logout")}</span>
             )}
           </button>
         </div>

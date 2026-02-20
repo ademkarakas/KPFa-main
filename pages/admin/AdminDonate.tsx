@@ -118,7 +118,39 @@ const AdminDonate: React.FC = () => {
 
         if (res.ok) {
           const json: DonatePageData = await res.json();
-          setData(json);
+          // Convert null values to empty strings for React inputs
+          setData({
+            ...json,
+            heroTitleTr: json.heroTitleTr || "",
+            heroTitleDe: json.heroTitleDe || "",
+            heroSubtitleTr: json.heroSubtitleTr || "",
+            heroSubtitleDe: json.heroSubtitleDe || "",
+            heroImageUrl: json.heroImageUrl || "",
+            feature1TitleTr: json.feature1TitleTr || "",
+            feature1TitleDe: json.feature1TitleDe || "",
+            feature2TitleTr: json.feature2TitleTr || "",
+            feature2TitleDe: json.feature2TitleDe || "",
+            feature3TitleTr: json.feature3TitleTr || "",
+            feature3TitleDe: json.feature3TitleDe || "",
+            whyDonateTitleTr: json.whyDonateTitleTr || "",
+            whyDonateTitleDe: json.whyDonateTitleDe || "",
+            whyDonateDescriptionTr: json.whyDonateDescriptionTr || "",
+            whyDonateDescriptionDe: json.whyDonateDescriptionDe || "",
+            whereTitleTr: json.whereTitleTr || "",
+            whereTitleDe: json.whereTitleDe || "",
+            whereDescriptionTr: json.whereDescriptionTr || "",
+            whereDescriptionDe: json.whereDescriptionDe || "",
+            taxInfoTr: json.taxInfoTr || "",
+            taxInfoDe: json.taxInfoDe || "",
+            accountHolder: json.accountHolder || "",
+            iban: json.iban || "",
+            bicSwift: json.bicSwift || "",
+            bankName: json.bankName || "",
+            payPalUrl: json.payPalUrl || "",
+            payPalHandle: json.payPalHandle || "",
+            contentTr: json.contentTr || "",
+            contentDe: json.contentDe || "",
+          });
         }
       } catch (error) {
         console.error("DonatePage verisi yüklenemedi:", error);

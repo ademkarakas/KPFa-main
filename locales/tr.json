@@ -101,7 +101,27 @@
     "phonePlaceholder": "Telefon numarasını girin",
     "statusLabel": "Durum",
     "activeStatus": "Aktif",
-    "inactiveStatus": "Pasif"
+    "inactiveStatus": "Pasif",
+    "admin": {
+      "trContent": "Türkçe İçerik",
+      "deContent": "Almanca İçerik",
+      "labels": {
+        "introTr": "Giriş Metni (TR)",
+        "introDe": "Giriş Metni (DE)"
+      },
+      "placeholders": {
+        "titleTr": "Başlık (Türkçe)",
+        "titleDe": "Başlık (Deutsch)",
+        "subtitleTr": "Alt başlık (Türkçe)",
+        "subtitleDe": "Alt başlık (Deutsch)",
+        "editor": "İçerik yazın...",
+        "sectionHeadingTr": "Bölüm Başlığı (TR)",
+        "sectionHeadingDe": "Abschnittstitel (DE)",
+        "icon": "İkon (ör: Heart, Users)",
+        "itemTr": "Madde metni (TR)",
+        "itemDe": "Element Text (DE)"
+      }
+    }
   },
   "form": {
     "requiredField": "Bu alan zorunludur",
@@ -145,9 +165,7 @@
   "admin_logging_in": "Giriş yapılıyor...",
   "admin_login_error": "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.",
   "admin_error_occurred": "Bir hata oluştu.",
-  "admin_demo_credentials": "Demo Bilgileri",
-  "admin_demo_credentials_value": "admin@kpf.de / Admin123!",
-  "admin_login_email_placeholder": "admin@kpf.de",
+  "admin_login_email_placeholder": "E-posta adresinizi girin",
   "admin_login_password_placeholder": "••••••••",
 
   "admin_address_street": "Sokak",
@@ -379,6 +397,10 @@
         "campaignsSent": "Gönderilen Kampanyalar",
         "totalEmailsSent": "Toplam E-posta"
       }
+    },
+    "adminVolunteers": {
+      "trcontent": "Türkçe İçerik",
+      "decontent": "Almanca İçerik"
     }
   }
 }

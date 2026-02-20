@@ -16,7 +16,7 @@ interface VolunteerSubmission {
   id: string;
   fullName: string;
   email: string;
-  phoneNumber?: string | null;
+  phone?: string | null;
   message?: string | null;
   submittedAt: string;
 }
@@ -39,10 +39,11 @@ const AdminVolunteers: React.FC = () => {
       setLoading(true);
       const data: VolunteerSubmission[] = await volunteersApi.getAll();
       // Tarihe göre sırala (en yeni önce)
-      const sorted = [...data].sort(
-        (a, b) =>
-          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-      );
+      const sorted = [...data].sort((a, b) => {
+        const dateA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+        const dateB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+        return dateB - dateA;
+      });
       setVolunteers(sorted);
     } catch (error: any) {
       console.error("Gönüllü başvuruları yüklenirken hata:", error);
@@ -61,16 +62,21 @@ const AdminVolunteers: React.FC = () => {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(
-      language === "de" ? "de-DE" : "tr-TR",
-      {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      },
-    );
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString(
+        language === "de" ? "de-DE" : "tr-TR",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        },
+      );
+    } catch {
+      return "Invalid Date";
+    }
   };
 
   if (loading) {
@@ -110,61 +116,169 @@ const AdminVolunteers: React.FC = () => {
         />
       </div>
 
-      {/* Volunteers List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredVolunteers.length === 0 ? (
-          <div className="col-span-2 text-center py-12 text-slate-500">
-            {searchQuery
-              ? t("admin_volunteers_no_results")
-              : t("admin_volunteers_no_submissions")}
-          </div>
-        ) : (
-          filteredVolunteers.map((volunteer) => (
-            <button
-              type="button"
-              key={volunteer.id}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left"
-              onClick={() => setSelectedVolunteer(volunteer)}
-              aria-label={t("admin_volunteers_open_details")}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-kpf-teal/10 rounded-lg">
-                    <UserCheck className="text-kpf-teal" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800">
-                      {volunteer.fullName}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                      <Clock size={14} />
-                      <span>{formatDate(volunteer.submittedAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* Volunteers Table */}
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b-2 border-slate-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+                  {t("admin_volunteers_label_fullname")}
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+                  {t("admin_volunteers_label_email")}
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+                  {t("admin_volunteers_label_phone")}
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+                  {t("admin_volunteers_message_title")}
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">
+                  {t("admin_volunteers_label_date")}
+                </th>
+                <th className="px-6 py-4 text-right text-sm font-bold text-slate-700">
+                  {language === "de" ? "Aktionen" : "İşlemler"}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredVolunteers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <UserCheck
+                      size={64}
+                      className="mx-auto mb-4 opacity-20 text-slate-400"
+                    />
+                    <p className="text-lg font-semibold text-slate-500">
+                      {searchQuery
+                        ? t("admin_volunteers_no_results")
+                        : t("admin_volunteers_no_submissions")}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredVolunteers.map((volunteer) => {
+                  const initials =
+                    (volunteer.fullName || "?")
+                      .split(" ")
+                      .map((n: string) => n[0] || "")
+                      .filter(Boolean)
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2) || "??";
 
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Mail size={16} />
-                  <span>{volunteer.email}</span>
-                </div>
-                {volunteer.phoneNumber && (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Phone size={16} />
-                    <span>{volunteer.phoneNumber}</span>
-                  </div>
-                )}
-                {volunteer.message && (
-                  <div className="flex items-start gap-2 text-slate-600 mt-3">
-                    <MessageSquare size={16} className="flex-shrink-0 mt-0.5" />
-                    <p className="line-clamp-2">{volunteer.message}</p>
-                  </div>
-                )}
-              </div>
-            </button>
-          ))
-        )}
+                  return (
+                    <tr
+                      key={volunteer.id}
+                      className="hover:bg-slate-50 transition-colors group cursor-pointer"
+                      onClick={() => setSelectedVolunteer(volunteer)}
+                    >
+                      {/* Name with Avatar */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-kpf-teal to-teal-600 flex items-center justify-center shadow-md flex-shrink-0">
+                            <span className="text-white font-bold text-sm">
+                              {initials}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 truncate">
+                              {volunteer.fullName || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Email */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Mail
+                            size={14}
+                            className="text-kpf-teal flex-shrink-0"
+                          />
+                          <span className="text-sm truncate max-w-[200px]">
+                            {volunteer.email || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Phone */}
+                      <td className="px-6 py-4">
+                        {volunteer.phone ? (
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Phone
+                              size={14}
+                              className="text-green-600 flex-shrink-0"
+                            />
+                            <span className="text-sm">{volunteer.phone}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400">-</span>
+                        )}
+                      </td>
+
+                      {/* Message Preview */}
+                      <td className="px-6 py-4">
+                        {volunteer.message ? (
+                          <div className="flex items-center gap-2">
+                            <MessageSquare
+                              size={14}
+                              className="text-slate-400 flex-shrink-0"
+                            />
+                            <span className="text-sm text-slate-600 truncate max-w-[250px]">
+                              {volunteer.message}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-400">-</span>
+                        )}
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-500">
+                          <Clock size={14} />
+                          <span className="text-sm whitespace-nowrap">
+                            {formatDate(volunteer.submittedAt || "")}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              globalThis.location.href = `mailto:${volunteer.email}`;
+                            }}
+                            className="p-2 text-kpf-teal hover:bg-kpf-teal/10 rounded-lg transition-colors"
+                            title={t("admin_volunteers_send_email")}
+                          >
+                            <Mail size={18} />
+                          </button>
+                          {volunteer.phone && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                globalThis.location.href = `tel:${volunteer.phone}`;
+                              }}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title={t("admin_volunteers_call")}
+                            >
+                              <Phone size={18} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Detail Modal */}
@@ -197,7 +311,7 @@ const AdminVolunteers: React.FC = () => {
                         {t("admin_volunteers_label_fullname")}
                       </p>
                       <p className="font-semibold text-slate-800">
-                        {selectedVolunteer.fullName}
+                        {selectedVolunteer.fullName || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -208,14 +322,14 @@ const AdminVolunteers: React.FC = () => {
                         {t("admin_volunteers_label_email")}
                       </p>
                       <a
-                        href={`mailto:${selectedVolunteer.email}`}
+                        href={`mailto:${selectedVolunteer.email || ""}`}
                         className="font-semibold text-kpf-teal hover:underline"
                       >
-                        {selectedVolunteer.email}
+                        {selectedVolunteer.email || "N/A"}
                       </a>
                     </div>
                   </div>
-                  {selectedVolunteer.phoneNumber && (
+                  {selectedVolunteer.phone && (
                     <div className="flex items-center gap-3">
                       <Phone className="text-slate-400" size={20} />
                       <div>
@@ -223,10 +337,10 @@ const AdminVolunteers: React.FC = () => {
                           {t("admin_volunteers_label_phone")}
                         </p>
                         <a
-                          href={`tel:${selectedVolunteer.phoneNumber}`}
+                          href={`tel:${selectedVolunteer.phone}`}
                           className="font-semibold text-kpf-teal hover:underline"
                         >
-                          {selectedVolunteer.phoneNumber}
+                          {selectedVolunteer.phone}
                         </a>
                       </div>
                     </div>
@@ -238,7 +352,7 @@ const AdminVolunteers: React.FC = () => {
                         {t("admin_volunteers_label_date")}
                       </p>
                       <p className="font-semibold text-slate-800">
-                        {formatDate(selectedVolunteer.submittedAt)}
+                        {formatDate(selectedVolunteer.submittedAt || "")}
                       </p>
                     </div>
                   </div>
@@ -262,7 +376,7 @@ const AdminVolunteers: React.FC = () => {
               {/* Actions */}
               <div className="pt-6 border-t flex gap-3">
                 <a
-                  href={`mailto:${selectedVolunteer.email}?subject=${encodeURIComponent(
+                  href={`mailto:${selectedVolunteer.email || ""}?subject=${encodeURIComponent(
                     t("admin_volunteers_email_subject"),
                   )}`}
                   className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-teal-700 transition-all font-semibold"
@@ -270,9 +384,9 @@ const AdminVolunteers: React.FC = () => {
                   <Mail size={20} />
                   {t("admin_volunteers_send_email")}
                 </a>
-                {selectedVolunteer.phoneNumber && (
+                {selectedVolunteer.phone && (
                   <a
-                    href={`tel:${selectedVolunteer.phoneNumber}`}
+                    href={`tel:${selectedVolunteer.phone}`}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all font-semibold"
                   >
                     <Phone size={20} />
