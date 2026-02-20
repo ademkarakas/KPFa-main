@@ -6,9 +6,9 @@ import {
   Handshake,
   TrendingUp,
   Mail,
-  Clock,
   Send,
   CheckCircle,
+  LayoutDashboard,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -32,15 +32,6 @@ interface DashboardStats {
   totalAdmins: number;
   activeAdmins: number;
   lastUpdated: string;
-}
-
-interface RecentSubmission {
-  id: string;
-  fullName: string;
-  email: string;
-  phoneNumber: string | null;
-  message: string;
-  submittedAt: string;
 }
 
 interface AdminDashboardProps {
@@ -104,30 +95,30 @@ const NewsletterStatsWidget: React.FC<{
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-4 border-kpf-teal"></div>
+      <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="flex items-center justify-center h-40">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-kpf-teal"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-kpf-teal/10 p-3 rounded-lg">
-            <Mail size={24} className="text-kpf-teal" />
+    <div className="bg-white rounded-xl shadow-lg p-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-kpf-teal/10 p-4 rounded-xl">
+            <Mail size={28} className="text-kpf-teal" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Newsletter</h2>
-            <p className="text-slate-600 text-sm">
+            <h2 className="text-2xl font-bold text-slate-800">Newsletter</h2>
+            <p className="text-slate-600 text-base">
               {stats
                 ? t("newsletter.admin.menu.subscribers")
                 : "Newsletter Management"}
             </p>
             {authError && (
-              <p className="text-xs text-orange-600 mt-1">
+              <p className="text-sm text-orange-600 mt-1">
                 ⚠️ Authentication required - stats unavailable
               </p>
             )}
@@ -135,65 +126,65 @@ const NewsletterStatsWidget: React.FC<{
         </div>
         <button
           onClick={() => onNavigate("newsletter-subscribers")}
-          className="bg-kpf-teal hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+          className="bg-kpf-teal hover:bg-teal-700 text-white px-5 py-3 rounded-lg transition-colors text-base font-medium"
         >
           {t("common.edit")}
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-          <div className="flex items-center gap-2 mb-2">
-            <Users size={16} className="text-blue-600" />
-            <p className="text-slate-600 text-xs font-medium">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 hover:border-blue-300 transition-all">
+          <div className="flex items-center gap-2 mb-3">
+            <Users size={20} className="text-blue-600" />
+            <p className="text-slate-600 text-sm font-semibold">
               {stats
                 ? t("newsletter.admin.stats.totalSubscribers")
                 : "Total Subscribers"}
             </p>
           </div>
-          <p className="text-2xl font-bold text-slate-800">
+          <p className="text-3xl font-bold text-slate-800">
             {stats?.totalSubscribers ?? 0}
           </p>
         </div>
 
-        <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-          <div className="flex items-center gap-2 mb-2">
-            <CheckCircle size={16} className="text-green-600" />
-            <p className="text-slate-600 text-xs font-medium">
+        <div className="bg-green-50 rounded-xl p-5 border border-green-100 hover:border-green-300 transition-all">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle size={20} className="text-green-600" />
+            <p className="text-slate-600 text-sm font-semibold">
               {stats
                 ? t("newsletter.admin.stats.activeSubscribers")
                 : "Active Subscribers"}
             </p>
           </div>
-          <p className="text-2xl font-bold text-slate-800">
+          <p className="text-3xl font-bold text-slate-800">
             {stats?.activeSubscribers ?? 0}
           </p>
         </div>
 
-        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-          <div className="flex items-center gap-2 mb-2">
-            <Send size={16} className="text-purple-600" />
-            <p className="text-slate-600 text-xs font-medium">
+        <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 hover:border-purple-300 transition-all">
+          <div className="flex items-center gap-2 mb-3">
+            <Send size={20} className="text-purple-600" />
+            <p className="text-slate-600 text-sm font-semibold">
               {stats
                 ? t("newsletter.admin.stats.campaignsSent")
                 : "Campaigns Sent"}
             </p>
           </div>
-          <p className="text-2xl font-bold text-slate-800">
+          <p className="text-3xl font-bold text-slate-800">
             {stats?.totalCampaignsSent ?? 0}
           </p>
         </div>
 
-        <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
-          <div className="flex items-center gap-2 mb-2">
-            <Mail size={16} className="text-orange-600" />
-            <p className="text-slate-600 text-xs font-medium">
+        <div className="bg-orange-50 rounded-xl p-5 border border-orange-100 hover:border-orange-300 transition-all">
+          <div className="flex items-center gap-2 mb-3">
+            <Mail size={20} className="text-orange-600" />
+            <p className="text-slate-600 text-sm font-semibold">
               {stats
                 ? t("newsletter.admin.stats.totalEmailsSent")
                 : "Total Emails"}
             </p>
           </div>
-          <p className="text-2xl font-bold text-slate-800">
+          <p className="text-3xl font-bold text-slate-800">
             {stats?.totalEmailsSent ?? 0}
           </p>
         </div>
@@ -223,12 +214,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     activeAdmins: 0,
     lastUpdated: "",
   });
-  const [recentSubmissions, setRecentSubmissions] = useState<
-    RecentSubmission[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     void loadDashboardData();
@@ -265,7 +253,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 
       const data = (await response.json()) as {
         stats?: DashboardStats;
-        recentSubmissions?: RecentSubmission[];
       };
 
       if (!data?.stats) {
@@ -273,7 +260,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       }
 
       setStats(data.stats);
-      setRecentSubmissions(data.recentSubmissions || []);
     } catch (error) {
       console.error("Dashboard verisi yüklenirken hata:", error);
       setError(
@@ -302,15 +288,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       color: "bg-green-500",
       bgColor: "bg-green-50",
       textColor: "text-green-600",
-    },
-    {
-      title: t("admin_stats_team"),
-      value: stats.totalTeamMembers,
-      subText: `${stats.activeTeamMembers} ${t("admin_active")}`,
-      icon: Users,
-      color: "bg-purple-500",
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-600",
     },
     {
       title: t("admin_stats_partners"),
@@ -378,39 +355,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-1">
-          {t("admin_dashboard_title")}
-        </h1>
-        <p className="text-sm text-slate-600">
-          {t("admin_dashboard_subtitle")}
-        </p>
+    <div className="space-y-8">
+      {/* Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-slate-100 mb-8 transition-all hover:shadow-md animate-fade-in">
+        <div className="flex items-center gap-5">
+          <div className="p-5 bg-gradient-to-br from-kpf-teal/20 to-teal-500/10 rounded-2xl">
+            <LayoutDashboard className="text-kpf-teal" size={40} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              {t("admin_dashboard_title")}
+            </h1>
+            <p className="text-base text-slate-600">
+              {t("admin_dashboard_subtitle")}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.title}
-              className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow"
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <div
-                  className={`${stat.bgColor} ${stat.textColor} p-2 rounded-lg`}
+                  className={`${stat.bgColor} ${stat.textColor} p-3 rounded-xl`}
                 >
-                  <Icon size={20} />
+                  <Icon size={28} />
                 </div>
               </div>
-              <h3 className="text-slate-600 text-xs font-medium mb-1">
+              <h3 className="text-slate-600 text-sm font-semibold mb-2">
                 {stat.title}
               </h3>
-              <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
+              <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
               {stat.subText && (
-                <p className="text-xs text-slate-500 mt-1">{stat.subText}</p>
+                <p className="text-sm text-slate-500 mt-2">{stat.subText}</p>
               )}
             </div>
           );
@@ -420,111 +404,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       {/* Newsletter Stats Widget */}
       <NewsletterStatsWidget onNavigate={onNavigate} />
 
-      {/* Recent Submissions */}
-      <div>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-kpf-teal/10 p-2 rounded-lg">
-            <Mail className="text-kpf-teal" size={20} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              {t("admin_recent_submissions")}
-            </h2>
-            <p className="text-xs text-slate-600">
-              {recentSubmissions.length} {t("admin_application")}
-            </p>
-          </div>
-        </div>
-
-        {recentSubmissions.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <Mail className="mx-auto text-slate-300 mb-3" size={36} />
-            <p className="text-slate-500 text-sm">
-              {t("admin_no_submissions")}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentSubmissions.slice(0, 3).map((submission) => (
-              <div
-                key={submission.id}
-                className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 hover:shadow-lg hover:border-kpf-teal/30 transition-all group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="bg-kpf-teal/10 p-2 rounded-lg group-hover:bg-kpf-teal/20 transition-colors">
-                    <Mail className="text-kpf-teal" size={16} />
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <Clock size={10} />
-                    <span>
-                      {new Date(submission.submittedAt).toLocaleDateString(
-                        i18n.resolvedLanguage === "de" ? "de-DE" : "tr-TR",
-                        { day: "2-digit", month: "2-digit", year: "numeric" },
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                <h3 className="font-bold text-base text-slate-800 mb-2 group-hover:text-kpf-teal transition-colors">
-                  {submission.fullName}
-                </h3>
-
-                <div className="space-y-1 mb-3">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Mail size={12} className="text-slate-400" />
-                    <span className="truncate">{submission.email}</span>
-                  </div>
-                  {submission.phoneNumber && (
-                    <div className="text-xs text-slate-600">
-                      📞 {submission.phoneNumber}
-                    </div>
-                  )}
-                </div>
-
-                {submission.message && (
-                  <div className="border-t border-slate-100 pt-3">
-                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {submission.message}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <button
           onClick={() => onNavigate("activities")}
-          className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105 hover:-translate-y-1"
         >
-          <Calendar size={24} className="mb-2" />
-          <h3 className="font-semibold text-sm">{t("admin_new_activity")}</h3>
+          <Calendar size={32} className="mb-3" />
+          <h3 className="font-semibold text-base">{t("admin_new_activity")}</h3>
         </button>
         <button
           onClick={() => onNavigate("courses")}
-          className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105 hover:-translate-y-1"
         >
-          <GraduationCap size={24} className="mb-2" />
-          <h3 className="font-semibold text-sm">{t("admin_new_course")}</h3>
+          <GraduationCap size={32} className="mb-3" />
+          <h3 className="font-semibold text-base">{t("admin_new_course")}</h3>
         </button>
         <button
           onClick={() => onNavigate("team")}
-          className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105 hover:-translate-y-1"
         >
-          <Users size={24} className="mb-2" />
-          <h3 className="font-semibold text-sm">
+          <Users size={32} className="mb-3" />
+          <h3 className="font-semibold text-base">
             {t("admin_add_team_member")}
           </h3>
-        </button>
-        <button
-          onClick={() => onNavigate("partners")}
-          className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        >
-          <Handshake size={24} className="mb-2" />
-          <h3 className="font-semibold text-sm">{t("admin_add_partner")}</h3>
         </button>
       </div>
     </div>

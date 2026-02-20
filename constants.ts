@@ -1,6 +1,14 @@
 import { Translation, Partner } from "./types";
 
 export const TEXTS: Record<string, Translation> = {
+  common_site_title: {
+    tr: "Kültür Platformu Freiburg",
+    de: "KulturPlattform Freiburg",
+  },
+  common_site_description: {
+    tr: "Freiburg Kültür Platformu (KPF), Freiburg'da kültürel değişimi ve toplumsal katılımı teşvik eden bir inisiyatiftir.",
+    de: "Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert.",
+  },
   nav_home: { tr: "Ana Sayfa", de: "Startseite" },
   nav_about: { tr: "Hakkımızda", de: "Über Uns" },
   nav_activities: { tr: "Faaliyetler", de: "Aktivitäten" },
@@ -248,6 +256,38 @@ export const TEXTS: Record<string, Translation> = {
   admin_field_instagram_handle: {
     tr: "Instagram Hesabı",
     de: "Instagram-Konto",
+  },
+  admin_instagram_item_saved: {
+    tr: "Instagram görseli kaydedildi",
+    de: "Instagram-Bild gespeichert",
+  },
+  admin_instagram_item_deleted: {
+    tr: "Instagram görseli silindi",
+    de: "Instagram-Bild gelöscht",
+  },
+  admin_edit_instagram_item: {
+    tr: "Instagram Görseli Düzenle",
+    de: "Instagram-Bild bearbeiten",
+  },
+  admin_no_instagram_items: {
+    tr: "Henüz Instagram görseli eklenmedi",
+    de: "Noch keine Instagram-Bilder hinzugefügt",
+  },
+  admin_field_image_url: {
+    tr: "Görsel URL",
+    de: "Bild-URL",
+  },
+  admin_field_link: {
+    tr: "Bağlantı",
+    de: "Link",
+  },
+  admin_optional: {
+    tr: "opsiyonel",
+    de: "optional",
+  },
+  admin_no_image: {
+    tr: "Görsel yok",
+    de: "Kein Bild",
   },
   admin_section_cta: {
     tr: "Çağrı Bölümü (CTA)",
@@ -603,6 +643,8 @@ export const TEXTS: Record<string, Translation> = {
 
   // Admin Courses
   admin_courses_title: { tr: "Kurs Yönetimi", de: "Kursverwaltung" },
+  admin_courses_total: { tr: "Toplam", de: "Gesamt" },
+  admin_courses_unit: { tr: "kurs", de: "Kurse" },
   admin_courses_new: { tr: "Yeni Kurs", de: "Neuer Kurs" },
   admin_courses_loading: {
     tr: "Kurslar yükleniyor...",
@@ -736,6 +778,70 @@ export const TEXTS: Record<string, Translation> = {
   },
   admin_courses_start_date_label: { tr: "Başlangıç Tarihi", de: "Startdatum" },
   admin_courses_icon_label: { tr: "İkon", de: "Icon" },
+  admin_courses_icon_bookopen: {
+    tr: "📖 Kurs / Eğitim (BookOpen)",
+    de: "📖 Kurs / Bildung (BookOpen)",
+  },
+  admin_courses_icon_messagecircle: {
+    tr: "💬 Sohbet / Söyleşi (MessageCircle)",
+    de: "💬 Gesprächsrunde / Diskussion (MessageCircle)",
+  },
+  admin_courses_icon_languages: {
+    tr: "🌐 Dil Eğitimi (Languages)",
+    de: "🌐 Sprachkurs (Languages)",
+  },
+  admin_courses_icon_music: {
+    tr: "🎶 Müzik / Sanat (Music)",
+    de: "🎶 Musik / Kunst (Music)",
+  },
+  admin_courses_icon_heart: {
+    tr: "❤️ Gönüllülük / Yardım (Heart)",
+    de: "❤️ Ehrenamt / Hilfe (Heart)",
+  },
+  admin_courses_icon_palette: {
+    tr: "🎨 Resim / El Sanatları (Palette)",
+    de: "🎨 Malerei / Kunsthandwerk (Palette)",
+  },
+  admin_courses_icon_users: {
+    tr: "👥 Toplantı / Grup (Users)",
+    de: "👥 Treffen / Gruppe (Users)",
+  },
+  admin_courses_icon_coffee: {
+    tr: "☕ Çay / Kahve Sohbeti (Coffee)",
+    de: "☕ Tee- / Kaffee-Runde (Coffee)",
+  },
+  admin_courses_icon_globe: {
+    tr: "🌍 Kültürel Etkinlik (Globe)",
+    de: "🌍 Kulturveranstaltung (Globe)",
+  },
+  admin_courses_icon_mic: {
+    tr: "🎤 Seminer / Konferans (Mic)",
+    de: "🎤 Seminar / Konferenz (Mic)",
+  },
+  admin_courses_icon_camera: {
+    tr: "📷 Fotoğrafçılık (Camera)",
+    de: "📷 Fotografie (Camera)",
+  },
+  admin_courses_icon_utensils: {
+    tr: "🍲 Mutfak Kültürü (Utensils)",
+    de: "🍲 Kochkultur (Utensils)",
+  },
+  admin_courses_icon_smile: {
+    tr: "😊 Gençlik / Çocuk (Smile)",
+    de: "😊 Jugend / Kinder (Smile)",
+  },
+  admin_courses_icon_lightbulb: {
+    tr: "💡 Atölye / Fikir (Lightbulb)",
+    de: "💡 Workshop / Idee (Lightbulb)",
+  },
+  admin_courses_icon_pentool: {
+    tr: "🖋️ Yazarlık / Edebiyat (PenTool)",
+    de: "🖋️ Schreiben / Literatur (PenTool)",
+  },
+  admin_courses_icon_scroll: {
+    tr: "📜 Tarih / Gelenek (Scroll)",
+    de: "📜 Geschichte / Tradition (Scroll)",
+  },
 
   admin_courses_address_section_title: {
     tr: "📍 Adres Bilgileri",
@@ -942,6 +1048,8 @@ export const TEXTS: Record<string, Translation> = {
   activities_filter_education: { tr: "Eğitim", de: "Bildung" },
   activities_filter_social: { tr: "Sosyal", de: "Soziales" },
   activities_filter_sports: { tr: "Spor", de: "Sport" },
+  activities_filter_culture: { tr: "Kültür", de: "Kultur" },
+  activities_filter_workshop: { tr: "Atölye", de: "Workshop" },
 
   teegespraeche_title: { tr: "Çay Sohbetleri", de: "Teegespräche" },
 

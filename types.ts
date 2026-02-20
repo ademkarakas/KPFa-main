@@ -5,6 +5,19 @@ export interface Translation {
 }
 
 // ==========================================
+// Pagination Response - Backend ile uyumlu
+// ==========================================
+export interface PaginatedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
+
+// ==========================================
 // Backend API DTO Tanımları - %100 Uyumlu
 // ==========================================
 
@@ -46,7 +59,7 @@ export interface CreateActivityCommand {
   zipCode: string;
   category: string;
   imageUrl?: string;
-  galleryImages?: string[];
+  galleryImages?: GalleryImageDto[];
   videoUrl?: string;
   isActive: boolean;
 }
@@ -68,7 +81,7 @@ export interface ActivityDto {
   location: string;
   category: string;
   imageUrl?: string;
-  galleryImages: string[];
+  galleryImages: GalleryImageDto[];
   videoUrl?: string;
   isActive: boolean;
   createdAt: string;
@@ -343,4 +356,6 @@ export type PageView =
   | "satzung"
   | "guelen"
   | "volunteer"
-  | "volunteer-form";
+  | "volunteer-form"
+  | "newsletter-verify"
+  | "newsletter-unsubscribe";

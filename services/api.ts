@@ -1,10 +1,59 @@
 // API Configuration
+import {
+  ActivityDto,
+  CreateActivityCommand,
+  UpdateActivityCommand,
+  CourseDto,
+  CreateCourseCommand,
+  UpdateCourseCommand,
+  TeamMember,
+  ValueItem,
+  PartnerDto,
+  CreatePartnerCommand,
+  UpdatePartnerCommand,
+  PaginatedResponse,
+} from "../types";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://localhost:7189/api";
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {
   return localStorage.getItem("adminToken");
+};
+
+// Helper function to decode JWT token
+const decodeJWT = (
+  token: string,
+): { exp?: number; [key: string]: unknown } | null => {
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Failed to decode JWT:", error);
+    return null;
+  }
+};
+
+// Helper function to check if token is expired
+const isTokenExpired = (token: string): boolean => {
+  const decoded = decodeJWT(token);
+  if (!decoded || !decoded.exp) return true;
+
+  // exp is in seconds, Date.now() is in milliseconds
+  const expirationTime = decoded.exp * 1000;
+  const currentTime = Date.now();
+
+  // Add 60 second buffer - consider expired if within 1 minute of expiry
+  return currentTime >= expirationTime - 60000;
 };
 
 // Helper function to set auth token
@@ -15,18 +64,28 @@ export const setAuthToken = (token: string): void => {
 // Helper function to clear auth token
 export const clearAuthToken = (): void => {
   localStorage.removeItem("adminToken");
+  localStorage.removeItem("adminName");
+  localStorage.removeItem("adminEmail");
+  localStorage.removeItem("adminRole");
 };
 
 // Generic fetch wrapper with error handling
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},
+  signal?: AbortSignal,
 ): Promise<T> {
   const token = getAuthToken();
 
-  const headers: HeadersInit = {
+  // Check if token is expired before making request
+  if (token && isTokenExpired(token)) {
+    clearAuthToken();
+    throw new Error("Session expired. Please login again.");
+  }
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
@@ -36,6 +95,7 @@ export async function apiFetch<T>(
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    signal, // Pass abort signal to fetch
   });
 
   if (!response.ok) {
@@ -59,19 +119,32 @@ export async function apiFetch<T>(
   return JSON.parse(text) as T;
 }
 
+// Types
+export interface AdminDto {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface LoginResponse extends AdminDto {
+  token: string;
+}
+
 // Auth API
 export const authApi = {
   login: async (email: string, password: string) => {
-    const response = await apiFetch<{
-      [x: string]: string;
-      token: string;
-      email: string;
-      name?: string;
-    }>("/auth/login", {
+    const response = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    setAuthToken(response.token);
+    if (response.token) {
+      setAuthToken(response.token);
+    }
     return response;
   },
 
@@ -84,28 +157,50 @@ export const authApi = {
 
   logout: () => {
     clearAuthToken();
+    // Redirect to home page
+    if (typeof globalThis !== "undefined") {
+      globalThis.history.pushState(null, "", "/");
+      globalThis.dispatchEvent(new PopStateEvent("popstate"));
+    }
   },
 
   isAuthenticated: (): boolean => {
-    return !!getAuthToken();
+    const token = getAuthToken();
+    if (!token) return false;
+
+    // Check if token is expired
+    if (isTokenExpired(token)) {
+      clearAuthToken();
+      return false;
+    }
+
+    return true;
   },
 };
 
 // Activities API - Backend Guid tipi ile uyumlu
 export const activitiesApi = {
-  getAll: (includeInactive = false) =>
-    apiFetch<any[]>(`/activities?includeInactive=${includeInactive}`),
+  getAll: async (includeInactive = false, signal?: AbortSignal) => {
+    const response = await apiFetch<PaginatedResponse<ActivityDto>>(
+      `/activities?includeInactive=${includeInactive}`,
+      {},
+      signal,
+    );
+    // Backend pagination response'undan items array'ini döndür
+    return response.items || [];
+  },
 
-  getById: (id: string) => apiFetch<any>(`/activities/${id}`),
+  getById: (id: string, signal?: AbortSignal) =>
+    apiFetch<ActivityDto>(`/activities/${id}`, {}, signal),
 
-  create: (activity: any) =>
-    apiFetch<any>("/activities", {
+  create: (activity: CreateActivityCommand) =>
+    apiFetch<ActivityDto>("/activities", {
       method: "POST",
       body: JSON.stringify(activity),
     }),
 
-  update: (id: string, activity: any) =>
-    apiFetch<any>(`/activities/${id}`, {
+  update: (id: string, activity: UpdateActivityCommand) =>
+    apiFetch<ActivityDto>(`/activities/${id}`, {
       method: "PUT",
       body: JSON.stringify(activity),
     }),
@@ -118,19 +213,26 @@ export const activitiesApi = {
 
 // Courses API - Backend Guid tipi ile uyumlu - Backend Guid tipi ile uyumlu
 export const coursesApi = {
-  getAll: (includeInactive = false) =>
-    apiFetch<any[]>(`/courses?includeInactive=${includeInactive}`),
+  getAll: async (includeInactive = false, signal?: AbortSignal) => {
+    // Not: Courses endpoint direkt array dönüyor, pagination wrapper yok
+    const response = await apiFetch<CourseDto[]>(
+      `/courses?includeInactive=${includeInactive}`,
+      {},
+      signal,
+    );
+    return response || [];
+  },
 
-  getById: (id: string) => apiFetch<any>(`/courses/${id}`),
+  getById: (id: string) => apiFetch<CourseDto>(`/courses/${id}`),
 
-  create: (course: any) =>
-    apiFetch<any>("/courses", {
+  create: (course: CreateCourseCommand) =>
+    apiFetch<CourseDto>("/courses", {
       method: "POST",
       body: JSON.stringify(course),
     }),
 
-  update: (id: string, course: any) =>
-    apiFetch<any>(`/courses/${id}`, {
+  update: (id: string, course: UpdateCourseCommand) =>
+    apiFetch<CourseDto>(`/courses/${id}`, {
       method: "PUT",
       body: JSON.stringify(course),
     }),
@@ -144,18 +246,18 @@ export const coursesApi = {
 // Team Members API - Backend Guid tipi ile uyumlu
 export const teamMembersApi = {
   getAll: (includeInactive = false) =>
-    apiFetch<any[]>(`/teammembers?includeInactive=${includeInactive}`),
+    apiFetch<TeamMember[]>(`/teammembers?includeInactive=${includeInactive}`),
 
-  getById: (id: string) => apiFetch<any>(`/teammembers/${id}`),
+  getById: (id: string) => apiFetch<TeamMember>(`/teammembers/${id}`),
 
-  create: (teamMember: any) =>
-    apiFetch<any>("/teammembers", {
+  create: (teamMember: Partial<TeamMember>) =>
+    apiFetch<TeamMember>("/teammembers", {
       method: "POST",
       body: JSON.stringify(teamMember),
     }),
 
-  update: (id: string, teamMember: any) =>
-    apiFetch<any>(`/teammembers/${id}`, {
+  update: (id: string, teamMember: Partial<TeamMember>) =>
+    apiFetch<TeamMember>(`/teammembers/${id}`, {
       method: "PUT",
       body: JSON.stringify(teamMember),
     }),
@@ -169,18 +271,18 @@ export const teamMembersApi = {
 // Value Items API - Backend Guid tipi ile uyumlu
 export const valueItemsApi = {
   getAll: (includeInactive = false) =>
-    apiFetch<any[]>(`/valueitems?includeInactive=${includeInactive}`),
+    apiFetch<ValueItem[]>(`/valueitems?includeInactive=${includeInactive}`),
 
-  getById: (id: string) => apiFetch<any>(`/valueitems/${id}`),
+  getById: (id: string) => apiFetch<ValueItem>(`/valueitems/${id}`),
 
-  create: (valueItem: any) =>
-    apiFetch<any>("/valueitems", {
+  create: (valueItem: Partial<ValueItem>) =>
+    apiFetch<ValueItem>("/valueitems", {
       method: "POST",
       body: JSON.stringify(valueItem),
     }),
 
-  update: (id: string, valueItem: any) =>
-    apiFetch<any>(`/valueitems/${id}`, {
+  update: (id: string, valueItem: Partial<ValueItem>) =>
+    apiFetch<ValueItem>(`/valueitems/${id}`, {
       method: "PUT",
       body: JSON.stringify(valueItem),
     }),
@@ -194,18 +296,18 @@ export const valueItemsApi = {
 // Partners API - Backend Guid tipi ile uyumlu
 export const partnersApi = {
   getAll: (includeInactive = false) =>
-    apiFetch<any[]>(`/partners?includeInactive=${includeInactive}`),
+    apiFetch<PartnerDto[]>(`/partners?includeInactive=${includeInactive}`),
 
-  getById: (id: string) => apiFetch<any>(`/partners/${id}`),
+  getById: (id: string) => apiFetch<PartnerDto>(`/partners/${id}`),
 
-  create: (partner: any) =>
-    apiFetch<any>("/partners", {
+  create: (partner: CreatePartnerCommand) =>
+    apiFetch<PartnerDto>("/partners", {
       method: "POST",
       body: JSON.stringify(partner),
     }),
 
-  update: (id: string, partner: any) =>
-    apiFetch<any>(`/partners/${id}`, {
+  update: (id: string, partner: UpdatePartnerCommand) =>
+    apiFetch<PartnerDto>(`/partners/${id}`, {
       method: "PUT",
       body: JSON.stringify(partner),
     }),
@@ -217,22 +319,33 @@ export const partnersApi = {
 };
 
 // Page Contents API - Backend Guid tipi ile uyumlu
-export const pageContentsApi = {
-  getAll: () => apiFetch<any[]>("/pagecontents"),
+interface PageContentDto {
+  id: string;
+  pageName: string;
+  sectionKey: string;
+  contentTr: string;
+  contentDe: string;
+  displayOrder?: number;
+  isActive: boolean;
+}
 
-  getByPage: (pageName: string) => apiFetch<any[]>(`/pagecontents/${pageName}`),
+export const pageContentsApi = {
+  getAll: () => apiFetch<PageContentDto[]>("/pagecontents"),
+
+  getByPage: (pageName: string) =>
+    apiFetch<PageContentDto[]>(`/pagecontents/${pageName}`),
 
   getByPageAndSection: (pageName: string, sectionKey: string) =>
-    apiFetch<any>(`/pagecontents/${pageName}/${sectionKey}`),
+    apiFetch<PageContentDto>(`/pagecontents/${pageName}/${sectionKey}`),
 
-  create: (pageContent: any) =>
-    apiFetch<any>("/pagecontents", {
+  create: (pageContent: Partial<PageContentDto>) =>
+    apiFetch<PageContentDto>("/pagecontents", {
       method: "POST",
       body: JSON.stringify(pageContent),
     }),
 
-  update: (id: string, pageContent: any) =>
-    apiFetch<any>(`/pagecontents/${id}`, {
+  update: (id: string, pageContent: Partial<PageContentDto>) =>
+    apiFetch<PageContentDto>(`/pagecontents/${id}`, {
       method: "PUT",
       body: JSON.stringify(pageContent),
     }),
@@ -244,17 +357,37 @@ export const pageContentsApi = {
 };
 
 // Volunteers API - Backend Guid tipi ile uyumlu
+interface VolunteerSubmissionDto {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  submittedAt: string;
+  isProcessed: boolean;
+}
+
+interface CreateVolunteerSubmissionCommand {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}
+
 export const volunteersApi = {
-  submit: (submission: any) =>
-    apiFetch<any>("/volunteersubmissions", {
+  submit: (submission: CreateVolunteerSubmissionCommand) =>
+    apiFetch<VolunteerSubmissionDto>("/volunteersubmissions", {
       method: "POST",
       body: JSON.stringify(submission),
     }),
 
   getAll: (processedOnly = false) =>
-    apiFetch<any[]>(`/volunteersubmissions?processedOnly=${processedOnly}`),
+    apiFetch<VolunteerSubmissionDto[]>(
+      `/volunteersubmissions?processedOnly=${processedOnly}`,
+    ),
 
-  getById: (id: string) => apiFetch<any>(`/volunteersubmissions/${id}`),
+  getById: (id: string) =>
+    apiFetch<VolunteerSubmissionDto>(`/volunteersubmissions/${id}`),
 
   markAsProcessed: (id: string) =>
     apiFetch<{ message: string }>(`/volunteersubmissions/${id}/process`, {

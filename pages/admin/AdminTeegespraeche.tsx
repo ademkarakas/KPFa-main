@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // --- 1. React 19 Uyumlu Modern Editör Bileşeni ---
 const QuillEditor = ({
@@ -115,6 +116,18 @@ const AdminTeegespraeche: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
   const emptyEvent: TeaEvent = {
     id: "",
     titleTr: "",
@@ -190,17 +203,25 @@ const AdminTeegespraeche: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t("admin_teegespraeche_confirm_delete"))) return;
-    try {
-      const response = await fetch(
-        `https://localhost:7189/api/TeaEvent/${id}`,
-        { method: "DELETE" },
-      );
-      if (response.ok) setEvents(events.filter((e) => e.id !== id));
-    } catch (error) {
-      console.error("TeaEvent silme hatası:", error);
-      alert(t("admin_delete_failed"));
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: t("admin_teegespraeche_delete_title"),
+      message: t("admin_teegespraeche_confirm_delete"),
+      onConfirm: () => {
+        void (async () => {
+          try {
+            const response = await fetch(
+              `https://localhost:7189/api/TeaEvent/${id}`,
+              { method: "DELETE" },
+            );
+            if (response.ok) setEvents(events.filter((e) => e.id !== id));
+          } catch (error) {
+            console.error("TeaEvent silme hatası:", error);
+            alert(t("admin_delete_failed"));
+          }
+        })();
+      },
+    });
   };
 
   return (
@@ -691,6 +712,18 @@ const AdminTeegespraeche: React.FC = () => {
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }
       `}</style>
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={language === "tr" ? "Sil" : "Löschen"}
+          cancelText={language === "tr" ? "İptal" : "Abbrechen"}
+          type="danger"
+        />
       </div>
     </div>
   );

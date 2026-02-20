@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Heart, Globe } from "lucide-react";
 import { Language } from "../types";
+import { createSafeHtml } from "../utils/sanitize";
 
 interface GuelenMovementData {
   id: string;
@@ -144,9 +145,9 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
             style={{
               color: "#D1FAE5",
             }}
-            dangerouslySetInnerHTML={{
-              __html: isGerman ? data.introductionDe : data.introductionTr,
-            }}
+            dangerouslySetInnerHTML={createSafeHtml(
+              isGerman ? data.introductionDe : data.introductionTr,
+            )}
           />
           <div className="w-24 h-1.5 bg-white/30 rounded-full mt-4"></div>
         </div>
@@ -162,11 +163,9 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
             </h2>
             <div
               className="space-y-4 text-slate-700 leading-relaxed html-content"
-              dangerouslySetInnerHTML={{
-                __html: isGerman
-                  ? data.philosophyContentDe
-                  : data.philosophyContentTr,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                isGerman ? data.philosophyContentDe : data.philosophyContentTr,
+              )}
             />
           </section>
 
@@ -177,9 +176,9 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
             </h2>
             <div
               className="space-y-4 text-slate-700 leading-relaxed html-content"
-              dangerouslySetInnerHTML={{
-                __html: isGerman ? data.dialogContentDe : data.dialogContentTr,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                isGerman ? data.dialogContentDe : data.dialogContentTr,
+              )}
             />
           </section>
 
@@ -190,11 +189,9 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
             </h2>
             <div
               className="text-slate-700 leading-relaxed html-content"
-              dangerouslySetInnerHTML={{
-                __html: isGerman
-                  ? data.networkContentDe
-                  : data.networkContentTr,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                isGerman ? data.networkContentDe : data.networkContentTr,
+              )}
             />
           </section>
 
@@ -205,11 +202,9 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
             </h2>
             <div
               className="space-y-6 text-slate-700 leading-relaxed html-content"
-              dangerouslySetInnerHTML={{
-                __html: isGerman
-                  ? data.spiritualContentDe
-                  : data.spiritualContentTr,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                isGerman ? data.spiritualContentDe : data.spiritualContentTr,
+              )}
             />
           </section>
 
@@ -220,9 +215,9 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
             </h2>
             <div
               className="space-y-6 text-slate-700 leading-relaxed html-content"
-              dangerouslySetInnerHTML={{
-                __html: isGerman ? data.visionContentDe : data.visionContentTr,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                isGerman ? data.visionContentDe : data.visionContentTr,
+              )}
             />
           </section>
         </div>

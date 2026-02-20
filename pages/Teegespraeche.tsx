@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BookOpen, Coffee, Globe, Heart } from "lucide-react";
 import { Language } from "../types";
 import { TEXTS } from "../constants";
+import { createSafeHtml } from "../utils/sanitize";
 
 interface TeaEvent {
   id: string;
@@ -68,10 +69,9 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
           </div>
           <div
             className="text-teal-50 text-lg max-w-2xl leading-relaxed font-light italic opacity-90"
-            dangerouslySetInnerHTML={{
-              __html:
-                lang === "tr" ? currentEvent?.introTr : currentEvent?.introDe,
-            }}
+            dangerouslySetInnerHTML={createSafeHtml(
+              lang === "tr" ? currentEvent?.introTr : currentEvent?.introDe,
+            )}
           />
         </div>
       </div>
@@ -107,12 +107,11 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
             </h2>
             <div
               className="text-slate-600 leading-relaxed text-lg"
-              dangerouslySetInnerHTML={{
-                __html:
-                  lang === "tr"
-                    ? currentEvent?.heritageTextTr
-                    : currentEvent?.heritageTextDe,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                lang === "tr"
+                  ? currentEvent?.heritageTextTr
+                  : currentEvent?.heritageTextDe,
+              )}
             />
           </div>
         </div>

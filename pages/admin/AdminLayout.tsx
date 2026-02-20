@@ -34,13 +34,25 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   const { language, setLanguage } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
 
+  // Get current admin info from localStorage on every render for consistency
+  const adminName = localStorage.getItem("adminName") || "Admin User";
+  const adminEmail = localStorage.getItem("adminEmail") || "";
+  const adminRole = localStorage.getItem("adminRole") || "Administrator";
+
+  const getUserInitials = (name: string) => {
+    if (!name) return "AD";
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + (parts.at(-1)?.[0] || "")).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   const languageSwitchLabel =
     language === "tr" ? t("common_language_de") : t("common_language_tr");
 
   const toggleMenu = (id: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+    setExpandedMenus((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   const menuItems = [
@@ -93,7 +105,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       isDropdown: true,
       children: [
         { id: "team", label: t("admin_menu_team") },
-        { id: "partners", label: t("admin_menu_partners") },
         { id: "volunteers", label: t("admin_menu_volunteers") },
         {
           id: "volunteer-page",
@@ -125,30 +136,29 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       children: [
         { id: "contact", label: t("admin_contact_title") },
         { id: "imprint", label: t("admin_imprint_title") },
-        { id: "translations", label: t("admin_menu_translations") },
         { id: "donate", label: t("admin_donate_title") },
       ],
     },
   ];
 
   return (
-    <div className="flex h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-100 p-4 gap-4">
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-20"
-        } bg-slate-900 text-white transition-all duration-300 flex flex-col`}
+        } bg-white rounded-2xl shadow-sm text-slate-600 transition-all duration-300 flex flex-col`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           {sidebarOpen && (
-            <h1 className="text-xl font-bold text-kpf-light">
+            <h1 className="text-xl font-bold text-teal-600">
               {t("admin_title")}
             </h1>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-50 rounded-lg transition-colors"
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -172,7 +182,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                     className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all ${
                       isParentActive
                         ? "bg-kpf-teal text-white shadow-lg"
-                        : "hover:bg-slate-800 text-slate-300"
+                        : "hover:bg-teal-50 text-slate-600"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -203,7 +213,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                             className={`w-full text-left px-4 py-2 rounded-lg transition-all text-sm ${
                               isChildActive
                                 ? "bg-kpf-teal text-white"
-                                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                                : "text-slate-500 hover:bg-teal-50 hover:text-teal-600"
                             }`}
                           >
                             {child.label}
@@ -224,7 +234,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive
                     ? "bg-kpf-teal text-white shadow-lg"
-                    : "hover:bg-slate-800 text-slate-300"
+                    : "hover:bg-teal-50 text-slate-600"
                 } ${!sidebarOpen && "justify-center"}`}
                 title={sidebarOpen ? undefined : item.label}
               >
@@ -238,10 +248,43 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-700 space-y-2">
+        <div className="p-4 border-t border-slate-100 space-y-2">
+          {/* Admin User Info */}
+          <div
+            className={`flex items-center gap-3 px-3 py-3 mb-2 rounded-2xl transition-all duration-300 ${
+              sidebarOpen
+                ? "bg-white/70 backdrop-blur-md shadow-sm"
+                : "justify-center"
+            }`}
+          >
+            <div className="relative flex-shrink-0">
+              <div
+                className={`flex items-center justify-center bg-gradient-to-br from-teal-500 to-blue-600 text-white font-semibold transition-all duration-300 ${
+                  sidebarOpen
+                    ? "w-10 h-10 rounded-2xl text-sm"
+                    : "w-12 h-12 rounded-2xl text-lg hover:scale-105"
+                }`}
+              >
+                {getUserInitials(adminName)}
+              </div>
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></div>
+            </div>
+
+            {sidebarOpen && (
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-sm font-semibold text-slate-800 truncate">
+                  {adminName}
+                </span>
+                <span className="text-xs text-slate-500 truncate">
+                  {adminRole}
+                </span>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setLanguage(language === "tr" ? "de" : "tr")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-300 transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-600 transition-all ${
               !sidebarOpen && "justify-center"
             }`}
             title={sidebarOpen ? undefined : languageSwitchLabel}
@@ -253,7 +296,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
           </button>
           <button
             onClick={() => window.open("/", "_blank")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 text-slate-300 transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 text-slate-600 transition-all ${
               !sidebarOpen && "justify-center"
             }`}
             title={sidebarOpen ? undefined : t("admin_website")}
@@ -265,7 +308,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
           </button>
           <button
             onClick={onLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 text-slate-300 transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 hover:text-white text-slate-600 transition-all ${
               !sidebarOpen && "justify-center"
             }`}
             title={sidebarOpen ? undefined : t("admin_logout")}
@@ -279,7 +322,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-white rounded-2xl shadow-sm">
         <div className="p-8">{children}</div>
       </main>
     </div>

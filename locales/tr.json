@@ -1,5 +1,7 @@
 {
   "common": {
+    "siteTitle": "Kültür Platformu Freiburg",
+    "siteDescription": "Freiburg Kültür Platformu (KPF), Freiburg'da kültürel değişimi ve toplumsal katılımı teşvik eden bir inisiyatiftir.",
     "save": "Kaydet",
     "cancel": "İptal",
     "delete": "Sil",

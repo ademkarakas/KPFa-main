@@ -34,9 +34,17 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
   children,
 }) => {
   const getInitialLanguage = (): Language => {
+    // 1. Check URL query params (best for SEO crawlers)
+    const urlParams = new URLSearchParams(globalThis.location.search);
+    const langParam = urlParams.get("lang");
+    if (langParam === "de" || langParam === "tr") return langParam;
+
+    // 2. Check localStorage
     const stored = globalThis.localStorage?.getItem("i18nextLng");
     if (stored === "de" || stored === "tr") return stored;
-    return "tr";
+
+    // 3. Fallback to default
+    return "de";
   };
 
   const [language, setLanguage] = useState<Language>(getInitialLanguage());

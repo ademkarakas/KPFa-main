@@ -14,6 +14,9 @@ import {
 import { Language, PageView } from "../types";
 import { TEXTS } from "../constants";
 import NewsletterSubscribeForm from "./NewsletterSubscribeForm";
+import { useDebounceScroll } from "../hooks/useDebounceScroll";
+import { navigateTo } from "../utils/navigation";
+import { contactInfoApi } from "../services/api";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -36,6 +39,24 @@ const Layout: React.FC<LayoutProps> = ({
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [contactData, setContactData] = useState<{
+    email: string;
+    phone: string;
+    address: {
+      street?: string;
+      houseNo?: string;
+      zipCode?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
+    socialMedia: {
+      facebook?: string;
+      instagram?: string;
+      twitter?: string;
+      linkedin?: string;
+    };
+  } | null>(null);
 
   const t = (key: string) => TEXTS[key][lang];
 
@@ -43,22 +64,60 @@ const Layout: React.FC<LayoutProps> = ({
   const progress =
     circumference * (1 - Math.min(Math.max(scrollProgress, 0), 100) / 100);
 
-  // Sayfa kaydırma takibi
+  // Load contact data
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(globalThis.scrollY > 400);
-
-      // Scroll yüzdesini hesapla
-      const windowHeight =
-        document.documentElement.scrollHeight - globalThis.innerHeight;
-      const progress =
-        windowHeight > 0 ? (globalThis.scrollY / windowHeight) * 100 : 0;
-      setScrollProgress(progress);
+    const loadContactData = async () => {
+      try {
+        const data = await contactInfoApi.get();
+        setContactData({
+          email: data.email || "",
+          phone: data.phone || "",
+          address: data.address || {},
+          socialMedia: data.socialMedia || {},
+        });
+      } catch (err) {
+        console.error("Contact data loading error:", err);
+      }
     };
-    globalThis.addEventListener("scroll", handleScroll);
-    handleScroll(); // Başlangıçta çağır
-    return () => globalThis.removeEventListener("scroll", handleScroll);
+    loadContactData();
   }, []);
+
+  // Format address helper
+  const formatAddress = (address: {
+    street?: string;
+    houseNo?: string;
+    zipCode?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  }) => {
+    if (!address) return "";
+
+    const streetPart = [address.street, address.houseNo]
+      .filter(Boolean)
+      .join(" ");
+    const postalCityPart = [address.zipCode, address.city]
+      .filter(Boolean)
+      .join(" ");
+    const statePart = address.state || "";
+    const countryPart = address.country || "";
+
+    return [streetPart, postalCityPart, statePart, countryPart]
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  // Debounced scroll tracking for better performance
+  useDebounceScroll(() => {
+    setShowScrollTop(globalThis.scrollY > 400);
+
+    // Calculate scroll percentage
+    const windowHeight =
+      document.documentElement.scrollHeight - globalThis.innerHeight;
+    const progress =
+      windowHeight > 0 ? (globalThis.scrollY / windowHeight) * 100 : 0;
+    setScrollProgress(progress);
+  }, 100);
 
   const scrollToTop = () => {
     globalThis.scrollTo({ top: 0, behavior: "smooth" });
@@ -70,65 +129,12 @@ const Layout: React.FC<LayoutProps> = ({
     setIsAboutDropdownOpen(false);
     setIsActivityDropdownOpen(false);
 
-    if (page === "home") {
-      globalThis.location.hash = "";
-    } else {
-      globalThis.location.hash = page;
-    }
+    navigateTo(page === "home" ? "" : page);
 
     setTimeout(() => {
       globalThis.scrollTo({ top: 0, behavior: "smooth" });
     }, 50);
   };
-
-  const NavLink = ({
-    page,
-    label,
-    primary = false,
-  }: {
-    page: PageView;
-    label: string;
-    primary?: boolean;
-  }) => (
-    <button
-      onClick={() => {
-        setIsMenuOpen(false);
-
-        // Tüm dropdown'ları kapat
-        setIsAboutDropdownOpen(false);
-        setIsActivityDropdownOpen(false);
-
-        if (page === "home") {
-          globalThis.location.hash = "";
-        } else {
-          globalThis.location.hash = page;
-        }
-
-        // Küçük bir gecikmeyle scroll to top
-        setTimeout(() => {
-          globalThis.scrollTo({ top: 0, behavior: "smooth" });
-        }, 50);
-      }}
-      className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
-        primary
-          ? "bg-kpf-red text-white rounded-full hover:bg-red-700 shadow-lg transform hover:-translate-y-0.5 px-6 ml-2"
-          : currentPage === page
-            ? "text-kpf-teal"
-            : "text-slate-600 hover:text-kpf-teal"
-      }`}
-    >
-      {label}
-      {!primary && (
-        <span
-          className={`absolute bottom-0 left-0 w-full h-0.5 bg-kpf-teal transform transition-transform duration-300 origin-left ${
-            currentPage === page
-              ? "scale-x-100"
-              : "scale-x-0 group-hover:scale-x-100"
-          }`}
-        ></span>
-      )}
-    </button>
-  );
 
   return (
     <div className="min-h-screen flex flex-col font-sans relative">
@@ -140,9 +146,7 @@ const Layout: React.FC<LayoutProps> = ({
             <div
               className="flex items-center space-x-3 cursor-pointer group"
               onClick={() => {
-                globalThis.location.hash = "";
-                // Hash change event'ini manuel tetikle
-                globalThis.dispatchEvent(new HashChangeEvent("hashchange"));
+                navigateTo("");
               }}
             >
               <img
@@ -162,7 +166,30 @@ const Layout: React.FC<LayoutProps> = ({
 
             {/* Desktop Menu */}
             <div className="hidden lg:flex items-center space-x-1 ml-auto mr-8">
-              <NavLink page="home" label={t("nav_home")} />
+              <button
+                onClick={() => {
+                  navigateTo("");
+                  setIsAboutDropdownOpen(false);
+                  setIsActivityDropdownOpen(false);
+                  setTimeout(() => {
+                    globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                  }, 50);
+                }}
+                className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
+                  currentPage === "home"
+                    ? "text-kpf-teal"
+                    : "text-slate-600 hover:text-kpf-teal"
+                }`}
+              >
+                {t("nav_home")}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-kpf-teal transform transition-transform duration-300 origin-left ${
+                    currentPage === "home"
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                ></span>
+              </button>
 
               {/* About Dropdown */}
               <div
@@ -177,7 +204,7 @@ const Layout: React.FC<LayoutProps> = ({
                       : "text-slate-600 hover:text-kpf-teal"
                   }`}
                   onClick={() => {
-                    globalThis.location.hash = "about";
+                    navigateTo("about");
                     setIsAboutDropdownOpen(false);
                   }}
                 >
@@ -199,7 +226,7 @@ const Layout: React.FC<LayoutProps> = ({
                   <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
                     <button
                       onClick={() => {
-                        globalThis.location.hash = "about";
+                        navigateTo("about");
                         setIsAboutDropdownOpen(false);
                       }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors"
@@ -208,7 +235,7 @@ const Layout: React.FC<LayoutProps> = ({
                     </button>
                     <button
                       onClick={() => {
-                        globalThis.location.hash = "satzung";
+                        navigateTo("satzung");
                         setIsAboutDropdownOpen(false);
                       }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors border-t border-slate-50"
@@ -217,7 +244,7 @@ const Layout: React.FC<LayoutProps> = ({
                     </button>
                     <button
                       onClick={() => {
-                        globalThis.location.hash = "guelen";
+                        navigateTo("guelen");
                         setIsAboutDropdownOpen(false);
                       }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors border-t border-slate-50"
@@ -241,7 +268,7 @@ const Layout: React.FC<LayoutProps> = ({
                       : "text-slate-600 hover:text-kpf-teal"
                   }`}
                   onClick={() => {
-                    globalThis.location.hash = "activities";
+                    navigateTo("activities");
                     setIsActivityDropdownOpen(false);
                   }}
                 >
@@ -254,7 +281,7 @@ const Layout: React.FC<LayoutProps> = ({
                   />
                 </button>
                 <div
-                  className={`absolute left-0 w-56 pt-2 transition-all duration-300 origin-top ${
+                  className={`absolute left-0 w-56 pt-2 transition-all duration-300 origin-top z-50 ${
                     isActivityDropdownOpen
                       ? "opacity-100 scale-y-100"
                       : "opacity-0 scale-y-0 pointer-events-none"
@@ -263,7 +290,7 @@ const Layout: React.FC<LayoutProps> = ({
                   <div className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
                     <button
                       onClick={() => {
-                        globalThis.location.hash = "activities";
+                        navigateTo("activities");
                         setIsActivityDropdownOpen(false);
                       }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors"
@@ -272,7 +299,7 @@ const Layout: React.FC<LayoutProps> = ({
                     </button>
                     <button
                       onClick={() => {
-                        globalThis.location.hash = "teegespraeche";
+                        navigateTo("teegespraeche");
                         setIsActivityDropdownOpen(false);
                       }}
                       className="block w-full text-left px-6 py-3 hover:bg-slate-50 text-slate-700 hover:text-kpf-teal transition-colors border-t border-slate-50"
@@ -283,19 +310,87 @@ const Layout: React.FC<LayoutProps> = ({
                 </div>
               </div>
 
-              <NavLink page="courses" label={t("nav_courses")} />
-              <NavLink
-                page="volunteer"
-                label={lang === "tr" ? "Gönüllü Ol" : "Freiwilliger"}
-              />
-              <NavLink page="contact" label={t("nav_contact")} />
+              <button
+                onClick={() => {
+                  navigateTo("courses");
+                  setIsAboutDropdownOpen(false);
+                  setIsActivityDropdownOpen(false);
+                  setTimeout(() => {
+                    globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                  }, 50);
+                }}
+                className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
+                  currentPage === "courses"
+                    ? "text-kpf-teal"
+                    : "text-slate-600 hover:text-kpf-teal"
+                }`}
+              >
+                {t("nav_courses")}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-kpf-teal transform transition-transform duration-300 origin-left ${
+                    currentPage === "courses"
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                ></span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigateTo("volunteer");
+                  setIsAboutDropdownOpen(false);
+                  setIsActivityDropdownOpen(false);
+                  setTimeout(() => {
+                    globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                  }, 50);
+                }}
+                className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
+                  currentPage === "volunteer"
+                    ? "text-kpf-teal"
+                    : "text-slate-600 hover:text-kpf-teal"
+                }`}
+              >
+                {lang === "tr" ? "Gönüllü Ol" : "Freiwilliger"}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-kpf-teal transform transition-transform duration-300 origin-left ${
+                    currentPage === "volunteer"
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                ></span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigateTo("contact");
+                  setIsAboutDropdownOpen(false);
+                  setIsActivityDropdownOpen(false);
+                  setTimeout(() => {
+                    globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                  }, 50);
+                }}
+                className={`relative px-3 py-1.5 transition-all duration-300 font-bold text-xs lg:text-sm whitespace-nowrap group ${
+                  currentPage === "contact"
+                    ? "text-kpf-teal"
+                    : "text-slate-600 hover:text-kpf-teal"
+                }`}
+              >
+                {t("nav_contact")}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-0.5 bg-kpf-teal transform transition-transform duration-300 origin-left ${
+                    currentPage === "contact"
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                ></span>
+              </button>
 
               <div className="mx-2"></div>
               {/* Donate Button - Special styling */}
               <div className="ml-1">
                 <button
                   onClick={() => {
-                    globalThis.location.hash = "donate";
+                    navigateTo("donate");
                   }}
                   className="relative overflow-hidden bg-gradient-to-r from-kpf-teal to-kpf-teal text-white px-3 py-1.5 rounded-full font-semibold text-sm shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transform hover:-translate-y-0.5 transition-all group"
                 >
@@ -315,7 +410,6 @@ const Layout: React.FC<LayoutProps> = ({
             <div className="hidden lg:block relative">
               <button
                 onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-                onMouseEnter={() => setIsLangDropdownOpen(true)}
                 className="flex items-center gap-2 text-slate-600 hover:text-slate-800 transition-all py-2 px-3 rounded-lg hover:bg-slate-100"
                 aria-label="Select language"
                 aria-expanded={isLangDropdownOpen}
@@ -339,15 +433,13 @@ const Layout: React.FC<LayoutProps> = ({
               {isLangDropdownOpen && (
                 <>
                   {/* Backdrop to close dropdown when clicking outside */}
-                  <div
-                    className="fixed inset-0 z-10"
+                  <button
+                    className="fixed inset-0 z-10 cursor-default"
                     onClick={() => setIsLangDropdownOpen(false)}
+                    aria-label="Close language dropdown"
+                    tabIndex={-1}
                   />
-
-                  <div
-                    className="absolute right-0 mt-1 w-24 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-20"
-                    onMouseLeave={() => setIsLangDropdownOpen(false)}
-                  >
+                  <div className="absolute right-0 mt-1 w-24 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-20">
                     <button
                       onClick={() => {
                         setLang("tr");
@@ -657,23 +749,25 @@ const Layout: React.FC<LayoutProps> = ({
               </p>
               <div className="flex space-x-3">
                 <a
-                  href="https://facebook.com"
+                  href="https://facebook.com/kulturplattformfreiburg"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-800 p-2.5 rounded-full hover:bg-[#1877F2] hover:text-white transition-all duration-300 hover:-translate-y-1"
                 >
                   <Facebook size={20} />
                 </a>
+                {contactData?.socialMedia?.instagram && (
+                  <a
+                    href={contactData.socialMedia.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-slate-800 p-2.5 rounded-full hover:bg-gradient-to-r from-[#f09433] via-[#e6683c] to-[#dc2743] hover:text-white transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <Instagram size={20} />
+                  </a>
+                )}
                 <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-slate-800 p-2.5 rounded-full hover:bg-gradient-to-r from-[#f09433] via-[#e6683c] to-[#dc2743] hover:text-white transition-all duration-300 hover:-translate-y-1"
-                >
-                  <Instagram size={20} />
-                </a>
-                <a
-                  href="https://twitter.com"
+                  href="https://twitter.com/kulturplattformfreiburg"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-800 p-2.5 rounded-full hover:bg-[#1DA1F2] hover:text-white transition-all duration-300 hover:-translate-y-1"
@@ -697,19 +791,18 @@ const Layout: React.FC<LayoutProps> = ({
                   { page: "contact", label: t("nav_contact") },
                   { page: "donate", label: t("nav_donate") },
                 ].map((item) => (
-                  <li key={item.page} className="overflow-hidden">
+                  <li key={item.page}>
                     <button
                       onClick={() => {
                         setPage(item.page as PageView);
                         scrollToTop();
                       }}
-                      className="relative group w-fit text-left"
+                      className="relative group text-left"
                     >
-                      <span className="relative z-10 text-slate-400 group-hover:text-white group-hover:font-semibold group-hover:translate-x-2 transition-all duration-300 ease-out inline-block">
+                      <span className="text-slate-400 group-hover:text-white group-hover:font-semibold transition-all duration-300 ease-out">
                         {item.label}
                       </span>
-                      <div className="absolute left-0 bottom-0 w-0 h-0.5 bg-gradient-to-r from-kpf-red to-orange-500 transform group-hover:w-full transition-all duration-500 ease-out"></div>
-                      <div className="absolute left-0 bottom-0 w-2 h-0.5 bg-white transform opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-out delay-100"></div>
+                      <div className="absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-kpf-red to-orange-500 w-0 group-hover:w-full transition-all duration-500 ease-out"></div>
                     </button>
                   </li>
                 ))}
@@ -723,36 +816,39 @@ const Layout: React.FC<LayoutProps> = ({
                 <div className="absolute bottom-0 left-0 w-12 h-0.5 bg-gradient-to-r from-kpf-red to-orange-500 rounded-full"></div>
               </h4>
               <ul className="space-y-6">
-                <li className="flex items-start gap-4 group">
-                  <div className="p-2 bg-gradient-to-r from-kpf-red/10 to-orange-500/10 rounded-lg group-hover:scale-110 transition-transform">
-                    <Mail className="text-kpf-red" size={18} />
-                  </div>
-                  <div>
-                    <span className="text-sm text-slate-400 block mb-1">
-                      Email
-                    </span>
-                    <a
-                      href="mailto:info@kulturplattformfreiburg.org"
-                      className="text-white hover:text-kpf-red transition-colors"
-                    >
-                      info@kulturplattformfreiburg.org
-                    </a>
-                  </div>
-                </li>
-                <li className="flex items-start gap-4 group">
-                  <div className="p-2 bg-gradient-to-r from-kpf-red/10 to-orange-500/10 rounded-lg group-hover:scale-110 transition-transform">
-                    <MapPin className="text-kpf-red" size={18} />
-                  </div>
-                  <div>
-                    <span className="text-sm text-slate-400 block mb-1">
-                      Adresse
-                    </span>
-                    <span className="text-white">
-                      Böcklerstraße 3<br />
-                      79110 Freiburg im Breisgau
-                    </span>
-                  </div>
-                </li>
+                {contactData?.email && (
+                  <li className="flex items-start gap-4 group">
+                    <div className="p-2 bg-gradient-to-r from-kpf-red/10 to-orange-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                      <Mail className="text-kpf-red" size={18} />
+                    </div>
+                    <div>
+                      <span className="text-sm text-slate-500 block mb-1">
+                        Email
+                      </span>
+                      <a
+                        href={`mailto:${contactData.email}`}
+                        className="text-slate-400 hover:text-white transition-colors text-sm"
+                      >
+                        {contactData.email}
+                      </a>
+                    </div>
+                  </li>
+                )}
+                {contactData?.address && (
+                  <li className="flex items-start gap-4 group">
+                    <div className="p-2 bg-gradient-to-r from-kpf-red/10 to-orange-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                      <MapPin className="text-kpf-red" size={18} />
+                    </div>
+                    <div>
+                      <span className="text-sm text-slate-500 block mb-1">
+                        Adresse
+                      </span>
+                      <span className="text-slate-400 text-sm whitespace-pre-line">
+                        {formatAddress(contactData.address)}
+                      </span>
+                    </div>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -765,7 +861,7 @@ const Layout: React.FC<LayoutProps> = ({
           {/* Footer Bottom */}
           <div className="border-t border-slate-800 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
             <div>
-              &copy; {new Date().getFullYear()} KulturPlattform Freiburg e.V.{" "}
+              &copy; {new Date().getFullYear()} {t("common_site_title")} e.V.{" "}
               {t("footer_rights")}
             </div>
             <div className="flex gap-6">
@@ -795,4 +891,11 @@ const Layout: React.FC<LayoutProps> = ({
   );
 };
 
-export default Layout;
+// Memoize with custom comparison for better performance
+export default React.memo(Layout, (prevProps, nextProps) => {
+  return (
+    prevProps.lang === nextProps.lang &&
+    prevProps.currentPage === nextProps.currentPage &&
+    prevProps.children === nextProps.children
+  );
+});

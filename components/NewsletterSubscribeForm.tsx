@@ -111,4 +111,4 @@ const NewsletterSubscribeForm: React.FC = () => {
   );
 };
 
-export default NewsletterSubscribeForm;
+export default React.memo(NewsletterSubscribeForm);

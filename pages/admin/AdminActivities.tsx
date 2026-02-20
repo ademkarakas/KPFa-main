@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { isRequestCancelled } from "../../hooks/useCancelableRequest";
+import { GalleryImageDto } from "../../types";
 import {
   Plus,
   Edit,
@@ -18,6 +20,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // --- React 19 Uyumlu Modern Editör Bileşeni ---
 const QuillEditor = ({
@@ -137,6 +140,18 @@ const AdminActivities: React.FC = () => {
     type: NotificationType;
     message: string;
   }>({ show: false, type: "success", message: "" });
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const showNotification = (type: NotificationType, message: string) => {
     setNotification({ show: true, type, message });
@@ -264,31 +279,57 @@ const AdminActivities: React.FC = () => {
     // Extract address components - backend uses flat fields, not nested Address object
     const address = data.address || {};
 
+    // Always send required fields for backend validation
     return {
       ...(id && { id }),
       titleTr: data.titleTr,
       titleDe: data.titleDe,
       descriptionTr: data.descriptionTr,
       descriptionDe: data.descriptionDe,
-      detailedContentTr: data.detailedContentTr || null,
-      detailedContentDe: data.detailedContentDe || null,
-      // Backend expects separate date fields
+      detailedContentTr: data.detailedContentTr || undefined,
+      detailedContentDe: data.detailedContentDe || undefined,
+      // Backend expects both flat and objects (PascalCase for command validation)
       dateTr: dateTr,
       dateDe: dateDe,
       dateISO: dateISO.toISOString(),
-      // Backend expects flat address fields (not nested Address object)
+      date: dateISO.toISOString(),
+      Date: dateISO.toISOString(),
+
+      // Backend expects both flat and objects
       street: address.street || data.location || "",
       houseNo: address.houseNo || "",
       city: address.city || "",
       state: address.state || "",
       country: address.country || "Deutschland",
       zipCode: address.zipCode || "",
+      address: {
+        street: address.street || data.location || "",
+        houseNo: address.houseNo || "",
+        city: address.city || "",
+        state: address.state || "",
+        country: address.country || "Deutschland",
+        zipCode: address.zipCode || "",
+      },
+      Address: {
+        Street: address.street || data.location || "",
+        HouseNo: address.houseNo || "",
+        City: address.city || "",
+        State: address.state || "",
+        Country: address.country || "Deutschland",
+        ZipCode: address.zipCode || "",
+      },
       category: data.category,
-      imageUrl: data.imageBase64 ? null : data.imageUrl || null,
+      imageUrl: data.imageBase64 ? undefined : data.imageUrl || undefined,
+      imageBase64: data.imageBase64 || undefined,
+      imageFileName: data.imageFileName || undefined,
       galleryImages: data.galleryImages
         .filter((img) => img.url || img.base64Data)
-        .map((img) => img.url || img.base64Data || ""),
-      videoUrl: data.videoUrl || null,
+        .map((img) => ({
+          url: img.url || null,
+          base64Data: img.base64Data || null,
+          fileName: img.fileName || null,
+        })) as GalleryImageDto[],
+      videoUrl: data.videoUrl || undefined,
       isActive: data.isActive,
     };
   };
@@ -313,23 +354,30 @@ const AdminActivities: React.FC = () => {
     isActive: true,
   });
 
-  useEffect(() => {
-    loadActivities();
-  }, []);
-
-  const loadActivities = async () => {
+  const loadActivities = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const data = await activitiesApi.getAll(true);
+      const data = await activitiesApi.getAll(true, signal);
       const formatted = data.map(formatAdminActivity);
       setActivities(formatted);
     } catch (error) {
-      console.error("Etkinlikler yüklenirken hata:", error);
-      showNotification("error", t("admin_activities_load_failed"));
+      if (!isRequestCancelled(error)) {
+        console.error("Etkinlikler yüklenirken hata:", error);
+        showNotification("error", t("admin_activities_load_failed"));
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    loadActivities(abortController.signal);
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -348,7 +396,9 @@ const AdminActivities: React.FC = () => {
         imageUrl: null, // Clear URL when using Base64
       });
 
-      const sizeKB = (compressed.base64Data.length * 0.75) / 1024;
+      const sizeKB = compressed.base64Data
+        ? (compressed.base64Data.length * 0.75) / 1024
+        : 0;
       showNotification(
         "success",
         `${t("admin_activities_image_upload_success")} (${sizeKB.toFixed(0)}KB)`,
@@ -471,10 +521,7 @@ const AdminActivities: React.FC = () => {
         return;
       }
 
-      const filesToProcess = Array.from(files).slice(
-        0,
-        remainingSlots,
-      ) as File[];
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
       const { processedItems, errors } =
         await processGalleryFiles(filesToProcess);
 
@@ -507,7 +554,7 @@ const AdminActivities: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
@@ -526,10 +573,13 @@ const AdminActivities: React.FC = () => {
       }
 
       if (editingId) {
-        await activitiesApi.update(editingId, dto);
+        // Update requires id in the DTO
+        await activitiesApi.update(editingId, { ...dto, id: editingId });
         showNotification("success", t("admin_activities_update_success"));
       } else {
-        await activitiesApi.create(dto);
+        // Create doesn't need id
+        const { id, ...createDto } = dto;
+        await activitiesApi.create(createDto);
         showNotification("success", t("admin_activities_create_success"));
       }
 
@@ -572,29 +622,33 @@ const AdminActivities: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t("admin_activities_delete_confirm"))) return;
-
-    try {
-      await activitiesApi.delete(id);
-      await loadActivities();
-      showNotification("success", t("admin_activities_delete_success"));
-    } catch (error) {
-      console.error("Silme hatası:", error);
-      showNotification("error", t("admin_activities_delete_failed"));
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: t("admin_activities_delete_title"),
+      message: t("admin_activities_delete_confirm"),
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await activitiesApi.delete(id);
+            await loadActivities();
+            showNotification("success", t("admin_activities_delete_success"));
+          } catch (error) {
+            console.error("Silme hatası:", error);
+            showNotification("error", t("admin_activities_delete_failed"));
+          }
+        })();
+      },
+    });
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      console.log("Toggle Active çağrıldı:", { id, currentStatus });
       const activity = activities.find((a) => a.id === id);
       if (!activity) {
         console.error("Etkinlik bulunamadı:", id);
         showNotification("error", t("admin_activities_not_found"));
         return;
       }
-
-      console.log("Bulunan etkinlik:", activity);
 
       // Parse date and generate localized date strings
       const dateISO = activity.originalDate
@@ -622,27 +676,52 @@ const AdminActivities: React.FC = () => {
         descriptionDe: activity.descriptionDe,
         detailedContentTr: activity.detailedContentTr || null,
         detailedContentDe: activity.detailedContentDe || null,
-        // Backend expects separate date fields
+
+        // Required for backend validation (matching buildActivityDto)
         dateTr: dateTr,
         dateDe: dateDe,
         dateISO: dateISO.toISOString(),
-        // Backend expects flat address fields
+        date: dateISO.toISOString(),
+        Date: dateISO.toISOString(),
+
+        // Backend expects both flat and objects
         street: address.street || activity.location || "",
         houseNo: address.houseNo || "",
         city: address.city || "",
         state: address.state || "",
         country: address.country || "Deutschland",
         zipCode: address.zipCode || "",
+        address: {
+          street: address.street || activity.location || "",
+          houseNo: address.houseNo || "",
+          city: address.city || "",
+          state: address.state || "",
+          country: address.country || "Deutschland",
+          zipCode: address.zipCode || "",
+        },
+        Address: {
+          Street: address.street || activity.location || "",
+          HouseNo: address.houseNo || "",
+          City: address.city || "",
+          State: address.state || "",
+          Country: address.country || "Deutschland",
+          ZipCode: address.zipCode || "",
+        },
+
         category: activity.category,
-        imageUrl: activity.imageUrl,
+        imageUrl: activity.imageBase64 ? null : activity.imageUrl,
+        imageBase64: activity.imageBase64 || null,
+        imageFileName: activity.imageFileName || null,
         videoUrl: activity.videoUrl || null,
         galleryImages: (activity.galleryImages || [])
-          .filter((img: any) => img.url)
-          .map((img: any) => img.url || ""),
+          .filter((img: any) => img.url || img.base64Data)
+          .map((img: any) => ({
+            url: img.url || null,
+            base64Data: img.base64Data || null,
+            fileName: img.fileName || null,
+          })),
         isActive: !currentStatus,
       };
-
-      console.log("Backend'e gönderilecek DTO:", dto);
 
       await activitiesApi.update(id, dto);
       await loadActivities();
@@ -742,8 +821,8 @@ const AdminActivities: React.FC = () => {
 
       category: item.category || "music",
       imageUrl: item.imageSource || item.imageUrl || null,
-      imageBase64: null,
-      imageFileName: null,
+      imageBase64: item.imageBase64 || item.ImageBase64 || null,
+      imageFileName: item.imageFileName || item.ImageFileName || null,
       videoUrl: item.videoUrl || "",
       galleryImages: item.galleryImages || [],
       isActive: item.isActive ?? true,
@@ -1404,7 +1483,7 @@ const AdminActivities: React.FC = () => {
                             src={
                               formData.imageBase64
                                 ? `data:image/jpeg;base64,${formData.imageBase64}`
-                                : formData.imageUrl
+                                : formData.imageUrl || undefined
                             }
                             alt="Preview"
                             className="w-full h-48 object-cover rounded-lg shadow-md"
@@ -1650,6 +1729,18 @@ const AdminActivities: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={language === "tr" ? "Sil" : "Löschen"}
+          cancelText={language === "tr" ? "İptal" : "Abbrechen"}
+          type="danger"
+        />
 
         {/* Editor Özelleştirme CSS */}
         <style>{`

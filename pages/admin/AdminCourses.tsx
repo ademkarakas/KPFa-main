@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { isRequestCancelled } from "../../hooks/useCancelableRequest";
+import * as LucideIcons from "lucide-react";
 import {
   Plus,
   Edit,
@@ -14,12 +16,15 @@ import {
   MapPin,
   CheckCircle,
   Languages,
+  BookOpen,
+  Palette,
 } from "lucide-react";
 import { coursesApi, uploadApi } from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 type NotificationType = "success" | "error" | "info";
 
@@ -174,6 +179,7 @@ interface CourseFormData {
   instructor: string;
   date: string;
   time: string; // Backend requires Time field for UpdateCourseCommand
+  location?: string; // Computed from address fields
   address?: {
     street?: string;
     houseNo?: string;
@@ -201,6 +207,18 @@ const AdminCourses: React.FC = () => {
     type: NotificationType;
     message: string;
   }>({ show: false, type: "success", message: "" });
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const showNotification = (type: NotificationType, message: string) => {
     setNotification({ show: true, type, message });
@@ -232,23 +250,30 @@ const AdminCourses: React.FC = () => {
     isActive: true,
   });
 
-  useEffect(() => {
-    loadCourses();
-  }, []);
-
-  const loadCourses = async () => {
+  const loadCourses = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const data = await coursesApi.getAll(true);
+      const data = await coursesApi.getAll(true, signal);
       const formatted = data.map(formatAdminCourse);
       setCourses(formatted);
     } catch (error) {
-      console.error("Kurslar yüklenirken hata:", error);
-      showNotification("error", t("admin_courses_load_failed"));
+      if (!isRequestCancelled(error)) {
+        console.error("Kurslar yüklenirken hata:", error);
+        showNotification("error", t("admin_courses_load_failed"));
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    loadCourses(abortController.signal);
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -256,8 +281,8 @@ const AdminCourses: React.FC = () => {
 
     try {
       setUploadingImage(true);
-      const imageUrl = await uploadApi.uploadFile(file);
-      setFormData({ ...formData, imageUrl });
+      const response = await uploadApi.uploadFile(file);
+      setFormData({ ...formData, imageUrl: response.url });
     } catch (error) {
       console.error("Resim yüklenirken hata:", error);
       showNotification("error", t("admin_courses_image_upload_failed"));
@@ -272,13 +297,35 @@ const AdminCourses: React.FC = () => {
       if (typeof address === "string") return address;
 
       const parts = [];
-      if (address.street) parts.push(address.street);
-      if (address.houseNo) parts.push(address.houseNo);
-      if (address.zipCode) parts.push(address.zipCode);
-      if (address.city) parts.push(address.city);
-      if (address.state) parts.push(address.state);
-      if (address.country) parts.push(address.country);
+      const street = address.street || address.Street;
+      const houseNo = address.houseNo || address.HouseNo;
+      const zipCode = address.zipCode || address.ZipCode;
+      const city = address.city || address.City;
+
+      if (street) parts.push(street);
+      if (houseNo) parts.push(houseNo);
+      if (zipCode || city) {
+        parts.push(`${zipCode || ""} ${city || ""}`.trim());
+      }
       return parts.join(", ");
+    };
+
+    const normalizeAddress = (addr: any) => {
+      if (!addr || typeof addr !== "object") return null;
+      return {
+        street: addr.street || addr.Street || "",
+        houseNo: addr.houseNo || addr.HouseNo || "",
+        zipCode: addr.zipCode || addr.ZipCode || "",
+        city: addr.city || addr.City || "",
+        state: addr.state || addr.State || "",
+        country: addr.country || addr.Country || "",
+        Street: addr.street || addr.Street || "",
+        HouseNo: addr.houseNo || addr.HouseNo || "",
+        ZipCode: addr.zipCode || addr.ZipCode || "",
+        City: addr.city || addr.City || "",
+        State: addr.state || addr.State || "",
+        Country: addr.country || addr.Country || "",
+      };
     };
 
     return {
@@ -299,20 +346,27 @@ const AdminCourses: React.FC = () => {
       scheduleTr: item.scheduleTr || "",
       scheduleDe: item.scheduleDe || "",
 
+      // 🟢 Detaylar ve ikon
+      detailsTr: item.detailsTr || "",
+      detailsDe: item.detailsDe || "",
+      icon: item.icon || "BookOpen",
+
       // 🟢 Adres / Lokasyon - Backend returns address in courseLocation field
       location: formatAddress(item.address || item.courseLocation) || "",
-      address: item.address || item.courseLocation || null,
+      address: normalizeAddress(item.address || item.courseLocation),
+      courseLocation: normalizeAddress(item.courseLocation || item.address),
 
       duration: item.duration || "",
       capacity: item.capacity ?? 0,
       price: item.price || "",
       category: item.courseCategory || item.category || "",
+      courseCategory: item.courseCategory || item.category || "",
       imageUrl: item.imageUrl || "",
       isActive: item.isActive ?? true,
     };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
@@ -323,46 +377,52 @@ const AdminCourses: React.FC = () => {
         titleDe: formData.titleDe,
         descriptionTr: formData.descriptionTr,
         descriptionDe: formData.descriptionDe,
-        detailsTr: formData.detailsTr || null,
-        detailsDe: formData.detailsDe || null,
-        scheduleTr: formData.scheduleTr || null,
-        scheduleDe: formData.scheduleDe || null,
-        icon: formData.icon || null,
-        instructor: formData.instructor || null,
-        date: formData.date ? new Date(formData.date).toISOString() : null,
+        detailsTr: formData.detailsTr || undefined,
+        detailsDe: formData.detailsDe || undefined,
+        scheduleTr: formData.scheduleTr || undefined,
+        scheduleDe: formData.scheduleDe || undefined,
+        icon: formData.icon || undefined,
+        instructor: formData.instructor || undefined,
+        date: formData.date ? new Date(formData.date).toISOString() : undefined,
         // Backend UpdateCourseCommand requires Time field
         ...(editingId && {
           time: formData.time
             ? new Date(`1970-01-01T${formData.time}:00`).toISOString()
             : new Date().toISOString(),
         }),
-        // Backend uses 'CourseLocation' for update, 'Address' for create
+        // Backend uses 'courseLocation' (PascalCase fields) matching AddressDto
         courseLocation:
-          formData.address?.street &&
-          formData.address?.city &&
-          formData.address?.houseNo &&
-          formData.address?.country
+          formData.address?.street || formData.address?.city
             ? {
-                street: formData.address.street,
-                houseNo: formData.address.houseNo,
-                zipCode: formData.address.zipCode || "",
-                city: formData.address.city,
-                state: formData.address.state || "",
-                country: formData.address.country,
+                Street: formData.address.street || "",
+                HouseNo: formData.address.houseNo || "",
+                ZipCode: formData.address.zipCode || "",
+                City: formData.address.city || "",
+                State: formData.address.state || "",
+                Country: formData.address.country || "",
               }
-            : null,
+            : undefined,
         // Backend uses 'Category' not 'CourseCategory'
-        category: formData.category || null,
+        category: formData.category || undefined,
         isActive: formData.isActive,
       };
 
-      console.log("� FormData.address:", formData.address);
-      console.log("�📤 Gönderilen DTO:", JSON.stringify(dto, null, 2));
+      console.log("📋 FormData.address:", formData.address);
+      console.log("📤 Gönderilen DTO:", JSON.stringify(dto, null, 2));
 
       if (editingId) {
-        await coursesApi.update(editingId, dto);
+        // Update requires id and time in the DTO
+        await coursesApi.update(editingId, {
+          ...dto,
+          id: editingId,
+          time: formData.time
+            ? new Date(`1970-01-01T${formData.time}:00`).toISOString()
+            : new Date().toISOString(),
+        });
       } else {
-        await coursesApi.create(dto);
+        // Create doesn't need id or time
+        const { id, time, ...createDto } = dto;
+        await coursesApi.create(createDto);
       }
 
       await loadCourses();
@@ -446,16 +506,23 @@ const AdminCourses: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t("admin_courses_delete_confirm"))) return;
-
-    try {
-      await coursesApi.delete(id);
-      await loadCourses();
-      showNotification("success", t("admin_courses_delete_success"));
-    } catch (error) {
-      console.error("Silme hatası:", error);
-      showNotification("error", t("admin_courses_delete_failed"));
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: t("admin_courses_delete_title"),
+      message: t("admin_courses_delete_confirm"),
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await coursesApi.delete(id);
+            await loadCourses();
+            showNotification("success", t("admin_courses_delete_success"));
+          } catch (error) {
+            console.error("Silme hatası:", error);
+            showNotification("error", t("admin_courses_delete_failed"));
+          }
+        })();
+      },
+    });
   };
 
   const resetForm = () => {
@@ -519,9 +586,14 @@ const AdminCourses: React.FC = () => {
         icon: course.icon || null,
         instructor: course.instructor || null,
         date: course.date ? new Date(course.date).toISOString() : null,
-        time: new Date().toISOString(), // Required by UpdateCourseCommand
-        address: course.courseLocation || null, // Backend uses 'Address'
-        category: course.courseCategory || null, // Backend uses 'Category'
+        time:
+          course.date && course.time
+            ? new Date(
+                `${course.date.split("T")[0]}T${course.time}:00`,
+              ).toISOString()
+            : new Date().toISOString(),
+        courseLocation: course.courseLocation || course.address,
+        category: course.courseCategory || course.category || null,
         isActive: nextIsActive,
       };
 
@@ -578,8 +650,8 @@ const AdminCourses: React.FC = () => {
               </h1>
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <CheckCircle size={10} className="text-green-500" />
-                {language === "tr" ? "Toplam" : "Gesamt"} {courses.length}{" "}
-                {language === "tr" ? "kurs" : "Kurse"}
+                {t("admin_courses_total")} {courses.length}{" "}
+                {t("admin_courses_unit")}
               </p>
             </div>
           </div>
@@ -982,102 +1054,139 @@ const AdminCourses: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Eğitmen ve Tarih */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
-                      <Users size={14} className="text-kpf-teal" />
-                      {t("admin_courses_instructor_label")}
-                    </span>
-                    <input
-                      type="text"
-                      value={formData.instructor}
-                      onChange={(e) =>
-                        setFormData({ ...formData, instructor: e.target.value })
-                      }
-                      placeholder={t("admin_courses_instructor_placeholder")}
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
-                    />
-                  </div>
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
-                      <Calendar size={14} className="text-kpf-teal" />
-                      {t("admin_courses_start_date_label")}
-                    </span>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) =>
-                        setFormData({ ...formData, date: e.target.value })
-                      }
-                      className="w-full text-xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none pb-2 transition-all"
-                    />
-                  </div>
-                </div>
+                {/* Detay Bilgileri: İkon, Eğitmen, Tarih, Kategori */}
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {/* İkon Seçimi */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Palette size={14} className="text-kpf-teal" />
+                        {t("admin_courses_icon_label")} *
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-kpf-teal">
+                          {React.createElement(
+                            (LucideIcons as any)[formData.icon] || BookOpen,
+                            { size: 24 },
+                          )}
+                        </div>
+                        <select
+                          value={formData.icon}
+                          onChange={(e) =>
+                            setFormData({ ...formData, icon: e.target.value })
+                          }
+                          className="flex-1 bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none py-2 font-bold text-slate-700 transition-all cursor-pointer"
+                        >
+                          <option value="BookOpen">
+                            {t("admin_courses_icon_bookopen")}
+                          </option>
+                          <option value="MessageCircle">
+                            {t("admin_courses_icon_messagecircle")}
+                          </option>
+                          <option value="Languages">
+                            {t("admin_courses_icon_languages")}
+                          </option>
+                          <option value="Music">
+                            {t("admin_courses_icon_music")}
+                          </option>
+                          <option value="Heart">
+                            {t("admin_courses_icon_heart")}
+                          </option>
+                          <option value="Palette">
+                            {t("admin_courses_icon_palette")}
+                          </option>
+                          <option value="Users">
+                            {t("admin_courses_icon_users")}
+                          </option>
+                          <option value="Coffee">
+                            {t("admin_courses_icon_coffee")}
+                          </option>
+                          <option value="Globe">
+                            {t("admin_courses_icon_globe")}
+                          </option>
+                          <option value="Mic">
+                            {t("admin_courses_icon_mic")}
+                          </option>
+                          <option value="Camera">
+                            {t("admin_courses_icon_camera")}
+                          </option>
+                          <option value="Utensils">
+                            {t("admin_courses_icon_utensils")}
+                          </option>
+                          <option value="Smile">
+                            {t("admin_courses_icon_smile")}
+                          </option>
+                          <option value="Lightbulb">
+                            {t("admin_courses_icon_lightbulb")}
+                          </option>
+                          <option value="PenTool">
+                            {t("admin_courses_icon_pentool")}
+                          </option>
+                          <option value="Scroll">
+                            {t("admin_courses_icon_scroll")}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
 
-                {/* İkon, Eğitmen, Tarih */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label
-                      htmlFor="courseIcon"
-                      className="block text-sm font-semibold text-slate-700 mb-2"
-                    >
-                      {t("admin_courses_icon_label")} *
-                    </label>
-                    <select
-                      id="courseIcon"
-                      value={formData.icon}
-                      onChange={(e) =>
-                        setFormData({ ...formData, icon: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    >
-                      <option value="BookOpen">BookOpen</option>
-                      <option value="MessageCircle">MessageCircle</option>
-                      <option value="Languages">Languages</option>
-                      <option value="Music">Music</option>
-                      <option value="Heart">Heart</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="courseInstructor"
-                      className="block text-sm font-semibold text-slate-700 mb-2"
-                    >
-                      {t("admin_courses_instructor_label")}
-                    </label>
-                    <input
-                      id="courseInstructor"
-                      type="text"
-                      value={formData.instructor}
-                      onChange={(e) =>
-                        setFormData({ ...formData, instructor: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="courseDate"
-                      className="block text-sm font-semibold text-slate-700 mb-2"
-                    >
-                      {t("admin_courses_start_date_label")}
-                    </label>
-                    <input
-                      id="courseDate"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) =>
-                        setFormData({ ...formData, date: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                    />
+                    {/* Eğitmen */}
+                    <div className="space-y-3 lg:border-l lg:border-slate-50 lg:pl-8">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Users size={14} className="text-kpf-teal" />
+                        {t("admin_courses_instructor_label")}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.instructor}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            instructor: e.target.value,
+                          })
+                        }
+                        placeholder={t("admin_courses_instructor_placeholder")}
+                        className="w-full bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none py-2 font-bold text-slate-700 transition-all"
+                      />
+                    </div>
+
+                    {/* Tarih */}
+                    <div className="space-y-3 lg:border-l lg:border-slate-50 lg:pl-8">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Calendar size={14} className="text-kpf-teal" />
+                        {t("admin_courses_start_date_label")}
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) =>
+                          setFormData({ ...formData, date: e.target.value })
+                        }
+                        className="w-full bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none py-2 font-bold text-slate-700 transition-all"
+                      />
+                    </div>
+
+                    {/* Kategori */}
+                    <div className="space-y-3 lg:border-l lg:border-slate-50 lg:pl-8">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <CheckCircle size={14} className="text-kpf-teal" />
+                        {t("admin_courses_category_label")}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.category}
+                        onChange={(e) =>
+                          setFormData({ ...formData, category: e.target.value })
+                        }
+                        placeholder={t("admin_courses_category_placeholder")}
+                        className="w-full bg-transparent border-b-2 border-slate-100 focus:border-kpf-teal outline-none py-2 font-bold text-slate-700 transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Adres Bilgileri */}
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl border-2 border-blue-200">
-                  <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-gradient-to-br   p-6 rounded-xl border-2 border-dashed border-slate-300">
+                  <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 bg">
                     <MapPin size={20} className="text-kpf-teal" />
                     {t("admin_courses_address_section_title")}
                   </h3>
@@ -1277,29 +1386,6 @@ const AdminCourses: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Kategori */}
-                <div>
-                  <label
-                    htmlFor="courseCategory"
-                    className="block text-sm font-semibold text-slate-700 mb-2"
-                  >
-                    {t("admin_courses_category_label")}
-                  </label>
-                  <input
-                    id="courseCategory"
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        category: e.target.value,
-                      })
-                    }
-                    placeholder={t("admin_courses_category_placeholder")}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
-                  />
-                </div>
-
                 {/* Resim */}
                 <div className="bg-gradient-to-br from-kpf-teal/5 to-kpf-teal/5 p-6 rounded-xl border-2 border-dashed border-slate-300">
                   <label className="block text-sm font-semibold text-slate-700 mb-3">
@@ -1401,6 +1487,18 @@ const AdminCourses: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onConfirm={confirmDialog.onConfirm}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={language === "tr" ? "Sil" : "Löschen"}
+          cancelText={language === "tr" ? "İptal" : "Abbrechen"}
+          type="danger"
+        />
 
         {/* Editor Özelleştirme CSS */}
         <style>{`

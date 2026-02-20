@@ -13,6 +13,7 @@ import {
 import { useLanguage } from "../../contexts/LanguageContext";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // ============= API Interface'leri =============
 interface ApiQuote {
@@ -202,6 +203,18 @@ const AdminAbout: React.FC = () => {
     type: "success" | "error" | "";
   }>({ message: "", type: "" });
 
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
   // ============= States =============
   const [quote, setQuote] = useState<ApiQuote>({
     quoteTr: "",
@@ -337,40 +350,89 @@ const AdminAbout: React.FC = () => {
     try {
       setIsLoading(true);
 
-      const [aboutRes, humanRightsRes, partnersRes] = await Promise.all([
-        fetch("https://localhost:7189/api/AboutUs"),
+      // Fetch all lazy loading endpoints in parallel
+      const [
+        summaryRes,
+        valuesRes,
+        focusAreasRes,
+        activityAreasRes,
+        teamRes,
+        humanRightsRes,
+        partnersRes,
+      ] = await Promise.all([
+        fetch("https://localhost:7189/api/AboutUs/summary"),
+        fetch("https://localhost:7189/api/AboutUs/values"),
+        fetch("https://localhost:7189/api/AboutUs/focus-areas"),
+        fetch("https://localhost:7189/api/AboutUs/activity-areas"),
+        fetch("https://localhost:7189/api/AboutUs/team"),
         fetch("https://localhost:7189/api/AboutUs/human-rights"),
         fetch("https://localhost:7189/api/Partners"),
       ]);
 
-      if (aboutRes.status === 401) {
+      if (summaryRes.status === 401 || valuesRes.status === 401) {
         handleUnauthorized();
         return;
       }
 
-      const aboutData: ApiAboutUsResponse = aboutRes.ok
-        ? await aboutRes.json()
-        : {};
+      // Parse summary data (quote, whoWeAre, goals)
+      const summaryData: {
+        quote: ApiQuote;
+        whoWeAre: ApiWhoWeAre;
+        goals: ApiGoals;
+      } = summaryRes.ok
+        ? await summaryRes.json()
+        : {
+            quote: { quoteTr: "", quoteDe: "", quoteAuthor: "" },
+            whoWeAre: { whoWeAreTr: "", whoWeAreDe: "" },
+            goals: { goalsTr: "", goalsDe: "" },
+          };
 
+      // Parse values data (vision, mission, coreValues)
+      const valuesData: {
+        vision: ApiVision;
+        mission: ApiMission;
+        coreValues: ApiCoreValue[];
+      } = valuesRes.ok
+        ? await valuesRes.json()
+        : {
+            vision: { visionTr: "", visionDe: "" },
+            mission: { missionTr: "", missionDe: "" },
+            coreValues: [],
+          };
+
+      // Parse focus areas
+      const focusAreasData: ApiFocusArea[] = focusAreasRes.ok
+        ? await focusAreasRes.json()
+        : [];
+
+      // Parse activity areas
+      const activityAreasData: ApiActivityArea[] = activityAreasRes.ok
+        ? await activityAreasRes.json()
+        : [];
+
+      // Parse team members
+      const teamData: ApiTeamMember[] = teamRes.ok ? await teamRes.json() : [];
+
+      // Parse human rights
       const humanRightsData: ApiHumanRights | null = humanRightsRes.ok
         ? await humanRightsRes.json()
         : null;
 
+      // Parse partners
       const partnersData: ApiPartner[] = partnersRes.ok
         ? await partnersRes.json()
         : [];
 
-      setQuote(
-        aboutData.quote || { quoteTr: "", quoteDe: "", quoteAuthor: "" },
-      );
-      setWhoWeAre(aboutData.whoWeAre || { whoWeAreTr: "", whoWeAreDe: "" });
-      setGoals(aboutData.goals || { goalsTr: "", goalsDe: "" });
-      setVision(aboutData.vision || { visionTr: "", visionDe: "" });
-      setMission(aboutData.mission || { missionTr: "", missionDe: "" });
-      setCoreValues(aboutData.coreValues || []);
-      setFocusAreas(aboutData.focusAreas || []);
-      setActivityAreas(aboutData.activityAreas || []);
-      setTeamMembers(aboutData.teamMembers || []);
+      // Set all state
+      setQuote(summaryData.quote);
+      setWhoWeAre(summaryData.whoWeAre);
+      setGoals(summaryData.goals);
+      setVision(valuesData.vision);
+      setMission(valuesData.mission);
+      setCoreValues(valuesData.coreValues);
+      setFocusAreas(focusAreasData);
+      setActivityAreas(activityAreasData);
+      setTeamMembers(teamData);
       setHumanRights(
         humanRightsData || {
           titleTr: "",
@@ -438,29 +500,37 @@ const AdminAbout: React.FC = () => {
   };
 
   const handleDelete = async (endpoint: string, onSuccess?: () => void) => {
-    if (!globalThis.confirm(t.confirm)) return;
-    setIsSaving(true);
-    try {
-      const res = await fetch(endpoint, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
+    setConfirmDialog({
+      isOpen: true,
+      title: language === "tr" ? "Sil" : "Löschen",
+      message: t.confirm,
+      onConfirm: () => {
+        void (async () => {
+          setIsSaving(true);
+          try {
+            const res = await fetch(endpoint, {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+            });
 
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
+            if (res.status === 401) {
+              handleUnauthorized();
+              return;
+            }
 
-      if (!res.ok) throw new Error("Delete failed");
-      showNotification(t.success, "success");
-      onSuccess?.();
-      await fetchAboutData();
-    } catch (err) {
-      console.error("Error deleting:", err);
-      showNotification(t.error, "error");
-    } finally {
-      setIsSaving(false);
-    }
+            if (!res.ok) throw new Error("Delete failed");
+            showNotification(t.success, "success");
+            onSuccess?.();
+            await fetchAboutData();
+          } catch (err) {
+            console.error("Error deleting:", err);
+            showNotification(t.error, "error");
+          } finally {
+            setIsSaving(false);
+          }
+        })();
+      },
+    });
   };
 
   // ============= Save Functions =============
@@ -2149,6 +2219,18 @@ const AdminAbout: React.FC = () => {
           padding: 12px !important;
         }
       `}</style>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={language === "tr" ? "Sil" : "Löschen"}
+        cancelText={language === "tr" ? "İptal" : "Abbrechen"}
+        type="danger"
+      />
     </div>
   );
 };

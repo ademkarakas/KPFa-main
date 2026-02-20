@@ -11,35 +11,6 @@ import {
 import { volunteersApi } from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
-// VolunteerData tipi ve fetch fonksiyonu
-interface VolunteerSectionItem {
-  titleTr: string;
-  titleDe: string;
-  icon: string;
-}
-interface VolunteerSection {
-  headingTr: string;
-  headingDe: string;
-  bodyTr: string;
-  bodyDe: string;
-  items: VolunteerSectionItem[];
-}
-interface VolunteerData {
-  id: string;
-  titleTr: string;
-  titleDe: string;
-  subtitleTr: string;
-  subtitleDe: string;
-  introTr: string;
-  introDe: string;
-  sections: VolunteerSection[];
-  ctaButtonTr: string;
-  ctaButtonDe: string;
-  displayOrder: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface VolunteerSubmission {
   id: string;
@@ -56,35 +27,12 @@ const AdminVolunteers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVolunteer, setSelectedVolunteer] =
     useState<VolunteerSubmission | null>(null);
-  const [volunteerPage, setVolunteerPage] = useState<VolunteerData | null>(
-    null,
-  );
   const { language } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
 
   useEffect(() => {
     loadVolunteers();
-    fetchVolunteerPage();
   }, []);
-
-  // Volunteer sayfa başlığı ve açıklaması için fetch
-  const fetchVolunteerPage = async () => {
-    try {
-      const token = localStorage.getItem("adminToken");
-      const res = await fetch("https://localhost:7189/api/VolunteerPage", {
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      });
-      if (!res.ok) throw new Error("Failed to fetch");
-      const json: VolunteerData = await res.json();
-      setVolunteerPage(json);
-    } catch (err) {
-      console.error("Gönüllü sayfa verisi yüklenemedi:", err);
-      setVolunteerPage(null);
-    }
-  };
 
   const loadVolunteers = async () => {
     try {
@@ -133,15 +81,8 @@ const AdminVolunteers: React.FC = () => {
     );
   }
 
-  let pageTitle = t("admin_volunteers_title");
-  let pageSubtitle = `${t("admin_volunteers_total")}: ${volunteers.length}`;
-
-  if (volunteerPage) {
-    pageTitle =
-      language === "de" ? volunteerPage.titleDe : volunteerPage.titleTr;
-    pageSubtitle =
-      language === "de" ? volunteerPage.subtitleDe : volunteerPage.subtitleTr;
-  }
+  const pageTitle = t("admin_volunteers_title");
+  const pageSubtitle = `${t("admin_volunteers_total")}: ${volunteers.length}`;
 
   return (
     <div className="space-y-6">

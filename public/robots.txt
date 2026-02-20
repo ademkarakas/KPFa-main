@@ -1,0 +1,19 @@
+# robots.txt - Kultur Plattform Freiburg
+
+User-agent: *
+Allow: /
+
+# Disallow admin pages from search engines
+Disallow: /admin
+Disallow: /#admin
+
+# Allow important resources
+Allow: /assets/
+Allow: /*.css
+Allow: /*.js
+
+# Sitemap location
+Sitemap: https://kultur-plattform-freiburg.de/sitemap.xml
+
+# Crawl-delay for bots (optional, prevents aggressive crawling)
+Crawl-delay: 1

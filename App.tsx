@@ -1,72 +1,102 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
-import About from "./pages/About";
-import Activities from "./pages/Activities";
-import ActivityDetail from "./pages/ActivityDetail";
-import Courses from "./pages/Courses";
-import Donate from "./pages/Donate";
-import Contact from "./pages/Contact";
-import Teegespraeche from "./pages/Teegespraeche";
-import Privacy from "./pages/Privacy";
-import Imprint from "./pages/Imprint";
-import Satzung from "./pages/Satzung";
-import GuelenMovement from "./pages/GuelenMovement";
-import Volunteer from "./pages/Volunteer";
-import VolunteerForm from "./pages/VolunteerForm";
-import NewsletterVerify from "./pages/NewsletterVerify";
-import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
-import Admin from "./pages/admin/Admin";
 import { Language, PageView } from "./types";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { Toaster } from "react-hot-toast";
+import i18n from "./src/i18n/config";
+import { updatePageMeta } from "./utils/seo";
+
+// Lazy load pages for better performance (code splitting)
+const About = lazy(() => import("./pages/About"));
+const Activities = lazy(() => import("./pages/Activities"));
+const ActivityDetail = lazy(() => import("./pages/ActivityDetail"));
+const Courses = lazy(() => import("./pages/Courses"));
+const Donate = lazy(() => import("./pages/Donate"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Teegespraeche = lazy(() => import("./pages/Teegespraeche"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Imprint = lazy(() => import("./pages/Imprint"));
+const Satzung = lazy(() => import("./pages/Satzung"));
+const GuelenMovement = lazy(() => import("./pages/GuelenMovement"));
+const Volunteer = lazy(() => import("./pages/Volunteer"));
+const VolunteerForm = lazy(() => import("./pages/VolunteerForm"));
+const NewsletterVerify = lazy(() => import("./pages/NewsletterVerify"));
+const NewsletterUnsubscribe = lazy(
+  () => import("./pages/NewsletterUnsubscribe"),
+);
+// Admin panel - separate chunk
+const Admin = lazy(() => import("./pages/admin/Admin"));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="text-center">
+      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-kpf-teal"></div>
+      <p className="mt-4 text-slate-600">Wird geladen...</p>
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
-  const [lang, setLang] = useState<Language>("tr");
+  // Get initial language from localStorage or URL (for SEO)
+  const getInitialLanguage = (): Language => {
+    // 1. Check URL query params (best for SEO crawlers)
+    const urlParams = new URLSearchParams(globalThis.location.search);
+    const langParam = urlParams.get("lang");
+    if (langParam === "de" || langParam === "tr") return langParam;
+
+    // 2. Check localStorage
+    const stored = globalThis.localStorage?.getItem("i18nextLng");
+    if (stored === "de" || stored === "tr") return stored;
+
+    // 3. Fallback to default
+    return "de";
+  };
+
+  const [lang, setLang] = useState<Language>(getInitialLanguage());
   const [currentPage, setCurrentPage] = useState<PageView>("home");
   const [activityId, setActivityId] = useState<string | null>(null);
 
-  // Hash-based navigation için URL'i dinle
+  // Synchronize lang state with i18next
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = globalThis.location.hash.slice(1); // # işaretini kaldır
+    i18n.changeLanguage(lang);
+    globalThis.localStorage?.setItem("i18nextLng", lang);
+  }, [lang]);
 
-      if (hash.startsWith("activity/")) {
-        const id = hash.split("/")[1];
+  // Clean URL navigation - pathname-based routing
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const path = globalThis.location.pathname.slice(1); // Remove leading /
+
+      if (path.startsWith("activity/")) {
+        const id = path.split("/")[1];
         setActivityId(id);
         setCurrentPage("activities");
-        // Aktivite detail açıldığında scroll to top
         setTimeout(() => {
           globalThis.scrollTo({ top: 0, behavior: "smooth" });
         }, 50);
-      } else if (hash === "admin") {
-        // Admin sayfası için özel işlem yok, zaten aşağıda kontrol ediliyor
+      } else if (path === "admin") {
         setActivityId(null);
-      } else if (hash.startsWith("about/")) {
-        // About sayfası için section scroll desteği (örn: "about/core-values")
-        const sectionId = hash.split("/")[1];
+      } else if (path.startsWith("about/")) {
+        const sectionId = path.split("/")[1];
         setCurrentPage("about");
         setActivityId(null);
-
-        // Section'a scroll yap
         setTimeout(() => {
           const element = document.getElementById(sectionId);
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "start" });
           }
         }, 100);
-      } else if (hash.startsWith("newsletter/verify")) {
-        // Newsletter verification page
+      } else if (path.startsWith("newsletter/verify")) {
         setCurrentPage("newsletter-verify" as PageView);
         setActivityId(null);
-      } else if (hash.startsWith("newsletter/unsubscribe")) {
-        // Newsletter unsubscribe page
+      } else if (path.startsWith("newsletter/unsubscribe")) {
         setCurrentPage("newsletter-unsubscribe" as PageView);
         setActivityId(null);
-      } else if (hash) {
-        setCurrentPage(hash as PageView);
+      } else if (path) {
+        setCurrentPage(path as PageView);
         setActivityId(null);
-        // Diğer sayfalara navigasyon yapıldığında scroll to top
         setTimeout(() => {
           globalThis.scrollTo({ top: 0, behavior: "smooth" });
         }, 50);
@@ -76,21 +106,23 @@ const App: React.FC = () => {
       }
     };
 
-    // İlk yüklemede ve hash değiştiğinde çalıştır
-    handleHashChange();
-    globalThis.addEventListener("hashchange", handleHashChange);
-
-    return () => globalThis.removeEventListener("hashchange", handleHashChange);
+    handleRouteChange();
+    globalThis.addEventListener("popstate", handleRouteChange);
+    return () => globalThis.removeEventListener("popstate", handleRouteChange);
   }, []);
 
+  // Update SEO meta tags when page or language changes
+  useEffect(() => {
+    updatePageMeta(currentPage, lang);
+  }, [currentPage, lang]);
+
   // Admin paneli için özel kontrol
-  if (
-    globalThis.location.pathname === "/admin" ||
-    globalThis.location.hash === "#admin"
-  ) {
+  if (globalThis.location.pathname === "/admin") {
     return (
       <LanguageProvider>
-        <Admin />
+        <Suspense fallback={<PageLoader />}>
+          <Admin />
+        </Suspense>
       </LanguageProvider>
     );
   }
@@ -103,7 +135,8 @@ const App: React.FC = () => {
           activityId={activityId}
           lang={lang}
           onBack={() => {
-            globalThis.location.hash = "activities";
+            globalThis.history.pushState(null, "", "/activities");
+            globalThis.dispatchEvent(new PopStateEvent("popstate"));
           }}
         />
       );
@@ -159,7 +192,7 @@ const App: React.FC = () => {
         setPage={setCurrentPage}
         currentPage={currentPage}
       >
-        {renderPage()}
+        <Suspense fallback={<PageLoader />}>{renderPage()}</Suspense>
         {/* Global toast bildirimi */}
         <Toaster
           position="top-right"

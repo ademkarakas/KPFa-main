@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import newsletterApi from "../services/newsletterApi";
-import { Language } from "../types";
+import { Language, PageView } from "../types";
+import { navigateTo } from "../utils/navigation";
 
 interface NewsletterVerifyProps {
   lang: Language;
-  setPage: (page: string) => void;
+  setPage: (page: PageView) => void;
 }
 
 type VerifyStatus = "loading" | "success" | "error";
@@ -52,16 +53,19 @@ const NewsletterVerify: React.FC<NewsletterVerifyProps> = ({
   }, [t]);
 
   const handleBackToHome = () => {
-    globalThis.location.hash = "";
+    navigateTo("");
     setPage("home");
   };
 
   const handleSubscribeAgain = () => {
-    globalThis.location.hash = "";
+    navigateTo("");
     setPage("home");
     // Scroll to footer after a short delay
     setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      globalThis.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth",
+      });
     }, 100);
   };
 

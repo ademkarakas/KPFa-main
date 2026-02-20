@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Loader2, Mail, Heart } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import newsletterApi from "../services/newsletterApi";
-import { Language } from "../types";
+import { Language, PageView } from "../types";
+import { navigateTo } from "../utils/navigation";
 
 interface NewsletterUnsubscribeProps {
   lang: Language;
-  setPage: (page: string) => void;
+  setPage: (page: PageView) => void;
 }
 
 type UnsubscribeStatus = "loading" | "success" | "error";
@@ -54,12 +55,12 @@ const NewsletterUnsubscribe: React.FC<NewsletterUnsubscribeProps> = ({
   }, [t]);
 
   const handleBackToHome = () => {
-    globalThis.location.hash = "";
+    navigateTo("");
     setPage("home");
   };
 
   const handleResubscribe = () => {
-    globalThis.location.hash = "";
+    navigateTo("");
     setPage("home");
     // Scroll to footer after a short delay
     setTimeout(() => {

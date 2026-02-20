@@ -10,6 +10,9 @@ import {
 import { Language, PageView, Activity } from "../types";
 import { TEXTS } from "../constants";
 import { activitiesApi } from "../services/api";
+import { createSafeHtml } from "../utils/sanitize";
+import { isRequestCancelled } from "../hooks/useCancelableRequest";
+import { navigateTo } from "../utils/navigation";
 
 interface HomeHero {
   id: string;
@@ -37,6 +40,12 @@ interface HomeFeature {
   color: string;
 }
 
+interface InstagramItem {
+  id: string;
+  imageUrl: string;
+  link: string | null;
+}
+
 interface HomeCTA {
   id: string;
   titleTr: string;
@@ -56,7 +65,9 @@ interface HomeData {
   features: HomeFeature[];
   hero: HomeHero;
   cta: HomeCTA;
-  instagramFeed: any[];
+  instagramItems: InstagramItem[];
+  instagramProfileLink: string;
+  instagramHandle: string;
 }
 
 interface HomeProps {
@@ -97,7 +108,9 @@ const INITIAL_HOME_DATA: HomeData = {
     donateButtonTr: "",
     donateButtonDe: "",
   },
-  instagramFeed: [],
+  instagramItems: [],
+  instagramProfileLink: "https://instagram.com/kulturplattformfreiburg",
+  instagramHandle: "@kulturplattformfreiburg",
 };
 
 const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
@@ -106,17 +119,34 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
 
   // Backend'den Home verilerini yükle
   useEffect(() => {
+    const abortController = new AbortController();
+    const { signal } = abortController;
+
     const loadHomeData = async () => {
       try {
-        // Ana Home verilerini, Hero verisini ve Aktiviteleri paralel olarak çek
-        const [homeResponse, heroResponse, activitiesData] = await Promise.all([
-          fetch("https://localhost:7189/api/Home", { cache: "no-store" }),
-          fetch("https://localhost:7189/api/Home/hero", { cache: "no-store" }),
-          activitiesApi.getAll(false), // Sadece aktif aktiviteler
-        ]);
+        // Ana Home verilerini, Hero verisini, Aktiviteleri ve Instagram'ı paralel olarak çek
+        const [homeResponse, heroResponse, activitiesData, instagramResponse] =
+          await Promise.all([
+            fetch("https://localhost:7189/api/Home", {
+              cache: "no-store",
+              signal,
+            }),
+            fetch("https://localhost:7189/api/Home/hero", {
+              cache: "no-store",
+              signal,
+            }),
+            activitiesApi.getAll(false, signal), // Sadece aktif aktiviteler, AbortSignal ile
+            fetch("https://localhost:7189/api/Home/instagram", {
+              cache: "no-store",
+              signal,
+            }),
+          ]);
 
         const data = homeResponse.ok ? await homeResponse.json() : {};
         const heroApiData = heroResponse.ok ? await heroResponse.json() : null;
+        const instagramData = instagramResponse.ok
+          ? await instagramResponse.json()
+          : [];
 
         if (!data || Object.keys(data).length === 0) {
           console.warn("API'den boş veri döndü");
@@ -164,30 +194,30 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
         };
 
         // Backend'den gelen activities'i frontend formatına çevir
-        const formattedActivities: Activity[] = (activitiesData || []).map(
-          (item: any) => ({
-            id: item.id,
-            title: { tr: item.titleTr || "", de: item.titleDe || "" },
-            description: {
-              tr: item.descriptionTr || "",
-              de: item.descriptionDe || "",
-            },
-            detailedContent: {
-              tr: item.detailedContentTr || item.descriptionTr || "",
-              de: item.detailedContentDe || item.descriptionDe || "",
-            },
-            date: {
-              tr: formatDate(item.date, "tr"),
-              de: formatDate(item.date, "de"),
-            },
-            dateISO: item.date || "",
-            location: formatAddress(item.address),
-            imageUrl: item.imageSource || item.imageUrl || "",
-            category: item.category || "Etkinlik",
-            videoUrl: item.videoUrl || "",
-            galleryImages: item.galleryImages || [],
-          }),
-        );
+        const formattedActivities: Activity[] = Array.isArray(activitiesData)
+          ? activitiesData.map((item: any) => ({
+              id: item.id,
+              title: { tr: item.titleTr || "", de: item.titleDe || "" },
+              description: {
+                tr: item.descriptionTr || "",
+                de: item.descriptionDe || "",
+              },
+              detailedContent: {
+                tr: item.detailedContentTr || item.descriptionTr || "",
+                de: item.detailedContentDe || item.descriptionDe || "",
+              },
+              date: {
+                tr: formatDate(item.date, "tr"),
+                de: formatDate(item.date, "de"),
+              },
+              dateISO: item.date || "",
+              location: formatAddress(item.address),
+              imageUrl: item.imageSource || item.imageUrl || "",
+              category: item.category || "Etkinlik",
+              videoUrl: item.videoUrl || "",
+              galleryImages: item.galleryImages || [],
+            }))
+          : [];
 
         // Hero verisini parse et - önce /api/Home/hero endpoint'inden gelen veriyi kullan, yoksa data.hero kullan
         const heroSource = heroApiData || data.hero;
@@ -222,6 +252,40 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           }),
         );
 
+        // Instagram items'ları parse et
+        const instagramItems: InstagramItem[] = (instagramData || []).map(
+          (item: any) => ({
+            id: item.id || "",
+            imageUrl: item.imageUrl || "",
+            link: item.link || null,
+          }),
+        );
+
+        // Instagram profil linki ve handle'ı belirle
+        // İlk item'dan link varsa kullan, yoksa default
+        const firstItemWithLink = instagramItems.find((item) => item.link);
+        const instagramProfileLink =
+          firstItemWithLink?.link ||
+          "https://instagram.com/kulturplattformfreiburg";
+
+        // Handle'ı link'ten çıkar (örn: https://www.instagram.com/kulturplattformfreiburg1/ -> @kulturplattformfreiburg1)
+        const extractHandle = (link: string): string => {
+          try {
+            const url = new URL(link);
+            const pathParts = url.pathname.split("/").filter(Boolean);
+            if (pathParts.length > 0) {
+              return `@${pathParts[0]}`;
+            }
+          } catch {
+            // URL parse hatası
+          }
+          return "@kulturplattformfreiburg";
+        };
+
+        const instagramHandle = firstItemWithLink?.link
+          ? extractHandle(firstItemWithLink.link)
+          : "@kulturplattformfreiburg";
+
         // Backend'den gelen verileri kullan
         const homeDataWithFallback: HomeData = {
           ...data,
@@ -229,17 +293,25 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           hero: heroData,
           features: featuresData,
           cta: data.cta || null,
+          instagramItems,
+          instagramProfileLink,
+          instagramHandle,
         };
 
         setHomeData(homeDataWithFallback);
-        console.log("✅ Home verisi başarıyla yüklendi");
       } catch (error) {
-        console.error("❌ Home verisi yüklenemedi:", error);
+        if (!isRequestCancelled(error)) {
+          console.error("❌ Home verisi yüklenemedi:", error);
+        }
         // Hata durumunda boş veri bırak, mock data kullanma
       }
     };
 
     loadHomeData();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   return (
@@ -275,12 +347,11 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
             </h1>
             <p
               className="text-xl text-slate-300 mb-4 leading-relaxed max-w-xl animate-fade-in-up delay-100"
-              dangerouslySetInnerHTML={{
-                __html:
-                  lang === "tr"
-                    ? homeData.hero.subtitleTr
-                    : homeData.hero.subtitleDe,
-              }}
+              dangerouslySetInnerHTML={createSafeHtml(
+                lang === "tr"
+                  ? homeData.hero.subtitleTr
+                  : homeData.hero.subtitleDe,
+              )}
             />
             {/* Description - eğer varsa göster */}
             {(lang === "tr"
@@ -288,12 +359,11 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               : homeData.hero.descriptionDe) && (
               <p
                 className="text-lg text-slate-400 mb-3 md:mb-10 leading-relaxed max-w-xl animate-fade-in-up delay-150"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    lang === "tr"
-                      ? homeData.hero.descriptionTr
-                      : homeData.hero.descriptionDe,
-                }}
+                dangerouslySetInnerHTML={createSafeHtml(
+                  lang === "tr"
+                    ? homeData.hero.descriptionTr
+                    : homeData.hero.descriptionDe,
+                )}
               />
             )}
             <div className="flex flex-row gap-2 sm:gap-4 animate-fade-in-up delay-200">
@@ -432,123 +502,123 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                     new Date(a.dateISO).getTime(),
                 )
                 .slice(0, 3)
-                .map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="group bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer"
-                    onClick={() => {
-                      globalThis.scrollTo({ top: 0, behavior: "smooth" });
-                      globalThis.location.hash = `activity/${activity.id}`;
-                    }}
-                  >
-                    <div className="relative h-64 overflow-hidden">
-                      <img
-                        src={activity.imageUrl}
-                        alt={activity.title[lang]}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-lg">
-                          {activity.category}
-                        </span>
+                .map((activity) => {
+                  const handleActivityClick = () => {
+                    globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                    navigateTo(`activity/${activity.id}`);
+                  };
+
+                  return (
+                    <div
+                      key={activity.id}
+                      role="button"
+                      tabIndex={0}
+                      className="group bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer"
+                      onClick={handleActivityClick}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleActivityClick();
+                        }
+                      }}
+                      aria-label={`${lang === "tr" ? "Etkinlik detayı: " : "Aktivitätsdetails: "}${activity.title[lang]}`}
+                    >
+                      <div className="relative h-64 overflow-hidden">
+                        <img
+                          src={activity.imageUrl}
+                          alt={activity.title[lang]}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                        <div className="absolute top-4 left-4">
+                          <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-lg">
+                            {activity.category}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-8">
+                        <div className="flex items-center gap-2 text-kpf-teal text-sm font-bold mb-3">
+                          <Calendar size={16} />
+                          {activity.date[lang]}
+                        </div>
+                        <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-kpf-teal transition-colors line-clamp-2">
+                          {activity.title[lang]}
+                        </h3>
+                        <p className="text-slate-600 mb-6 line-clamp-3 leading-relaxed">
+                          {activity.description[lang]}
+                        </p>
+                        <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
+                            <MapPin size={14} />{" "}
+                            {activity.location.split(",")[0]}
+                          </span>
+                          <span className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-kpf-teal group-hover:text-white transition-all">
+                            <ArrowRight size={18} />
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-8">
-                      <div className="flex items-center gap-2 text-kpf-teal text-sm font-bold mb-3">
-                        <Calendar size={16} />
-                        {activity.date[lang]}
-                      </div>
-                      <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-kpf-teal transition-colors line-clamp-2">
-                        {activity.title[lang]}
-                      </h3>
-                      <p className="text-slate-600 mb-6 line-clamp-3 leading-relaxed">
-                        {activity.description[lang]}
-                      </p>
-                      <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
-                          <MapPin size={14} /> {activity.location.split(",")[0]}
-                        </span>
-                        <span className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-kpf-teal group-hover:text-white transition-all">
-                          <ArrowRight size={18} />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
             )}
           </div>
         </div>
       </section>
 
-      {/* Instagram Section (Compact) */}
-      <section className="py-16 bg-slate-50">
+      {/* --- Combined Instagram & Final CTA Section --- */}
+      <section className="py-20 bg-slate-50">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-10 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-3xl p-10 md:p-12">
-            <div className="flex items-center gap-5">
-              <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm">
-                <Instagram size={32} className="text-white" />
-              </div>
-              <div className="text-white">
-                <h3 className="text-2xl md:text-3xl font-bold">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Instagram Part */}
+            <div className="flex flex-col justify-between bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 rounded-[2rem] p-8 md:p-12 text-white shadow-xl overflow-hidden relative">
+              {/* Decorative background element */}
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+
+              <div className="relative z-10">
+                <div className="inline-flex p-4 rounded-2xl bg-white/20 backdrop-blur-sm mb-6">
+                  <Instagram size={32} className="text-white" />
+                </div>
+                <h3 className="text-3xl font-bold mb-4">
                   {t("home_follow_instagram")}
                 </h3>
-                <p className="text-white/80 text-base mt-1">
+                <p className="text-white/90 text-lg mb-8 max-w-md leading-relaxed">
                   {t("home_follow_desc")}
                 </p>
               </div>
-            </div>
 
-            <div className="flex items-center gap-4">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border-2 border-white/30 hover:border-white hover:scale-105 transition-all"
+              <div className="relative z-10">
+                <a
+                  href={homeData.instagramProfileLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 bg-white text-purple-600 px-6 py-3 rounded-xl font-bold text-lg hover:bg-slate-100 hover:scale-105 transition-all shadow-lg"
                 >
-                  <img
-                    src={`https://picsum.photos/100/100?random=${i + 50}`}
-                    alt="Instagram"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
+                  <Instagram size={22} />
+                  {homeData.instagramHandle}
+                </a>
+              </div>
             </div>
 
-            <a
-              href="https://instagram.com/kulturplattformfreiburg"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-white text-purple-600 px-5 py-2.5 rounded-full font-bold text-lg hover:bg-slate-100 hover:scale-105 transition-all shadow-lg"
-            >
-              <Instagram size={22} />
-              @kulturplattformfreiburg
-            </a>
-          </div>
-        </div>
-      </section>
+            {/* Final CTA Part */}
+            <div className="relative rounded-[2rem] p-8 md:p-12 flex flex-col justify-between overflow-hidden bg-gradient-to-br from-kpf-teal to-teal-700 text-white shadow-xl">
+              {/* Subtle background */}
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
 
-      {/* --- Final CTA Section (Compact) --- */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="relative rounded-3xl p-10 md:p-16 text-center overflow-hidden bg-gradient-to-br from-kpf-teal to-teal-600">
-            {/* Subtle background */}
-            <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+              <div className="relative z-10">
+                <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
+                  {lang === "tr" ? homeData.cta.titleTr : homeData.cta.titleDe}
+                </h2>
 
-            <div className="relative z-10 max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-white mb-4">
-                {lang === "tr" ? homeData.cta.titleTr : homeData.cta.titleDe}
-              </h2>
+                <p className="text-lg text-white/90 mb-10 leading-relaxed max-w-md">
+                  {lang === "tr"
+                    ? homeData.cta.descriptionTr
+                    : homeData.cta.descriptionDe}
+                </p>
+              </div>
 
-              <p className="text-lg text-white/80 mb-8 leading-relaxed">
-                {lang === "tr"
-                  ? homeData.cta.descriptionTr
-                  : homeData.cta.descriptionDe}
-              </p>
-
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <div className="relative z-10 flex flex-wrap gap-4">
                 <button
                   onClick={() => setPage("activities")}
-                  className="bg-white text-teal-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-md"
+                  className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-md"
                 >
                   <ArrowRight size={18} />
                   {lang === "tr"
@@ -557,7 +627,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                 </button>
                 <button
                   onClick={() => setPage("contact")}
-                  className="bg-white text-teal-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-teal-50 transition-all shadow-md"
+                  className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-all shadow-md"
                 >
                   {lang === "tr"
                     ? homeData.cta.secondaryButtonTr

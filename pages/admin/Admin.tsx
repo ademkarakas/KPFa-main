@@ -5,7 +5,6 @@ import AdminDashboard from "./AdminDashboard";
 import AdminActivities from "./AdminActivities";
 import AdminCourses from "./AdminCourses";
 import AdminTeam from "./AdminTeam";
-import AdminPartners from "./AdminPartners";
 import AdminVolunteers from "./AdminVolunteers";
 import AdminContactSettings from "./AdminContactSettings";
 import AdminVolunteerPage from "./AdminVolunteerPage";
@@ -13,7 +12,6 @@ import AdminSatzung from "./AdminSatzung";
 import AdminGuelen from "./AdminGuelen";
 import AdminTeegespraeche from "./AdminTeegespraeche";
 import AdminDonate from "./AdminDonate";
-import AdminTranslations from "./AdminTranslations";
 import AdminImprint from "./AdminImprint";
 import AdminAbout from "./AdminAbout";
 import AdminHome from "./AdminHome";
@@ -42,6 +40,9 @@ const Admin: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminName");
+    localStorage.removeItem("adminEmail");
+    localStorage.removeItem("adminRole");
     setIsAuthenticated(false);
     setCurrentPage("dashboard");
   };
@@ -62,8 +63,6 @@ const Admin: React.FC = () => {
         return <AdminCourses />;
       case "team":
         return <AdminTeam />;
-      case "partners":
-        return <AdminPartners />;
       case "satzung":
         return <AdminSatzung />;
       case "guelen":
@@ -76,8 +75,6 @@ const Admin: React.FC = () => {
         return <AdminVolunteerPage />;
       case "contact":
         return <AdminContactSettings />;
-      case "translations":
-        return <AdminTranslations />;
       case "imprint":
         return <AdminImprint />;
       case "newsletter-subscribers":

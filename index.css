@@ -1,6 +1,10 @@
 @import "./src/styles/design-tokens.css";
 @import "./src/styles/admin-theme.css";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Global button standardization: all buttons are medium by default */
 button,
 [role="button"],

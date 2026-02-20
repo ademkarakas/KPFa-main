@@ -1,5 +1,7 @@
 {
   "common": {
+    "siteTitle": "Kultur Plattform Freiburg",
+    "siteDescription": "Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert.",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen",

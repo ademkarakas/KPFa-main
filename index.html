@@ -1,43 +1,85 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!doctype html>
+<html lang="de">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kültür Platformu Freiburg</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Kultur Plattform Freiburg</title>
+    <meta
+      name="description"
+      content="Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://kultur-plattform-freiburg.de/" />
+
+    <!-- Open Graph / Meta -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kultur-plattform-freiburg.de/" />
+    <meta property="og:title" content="Kultur Plattform Freiburg" />
+    <meta
+      property="og:description"
+      content="Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert."
+    />
+    <meta property="og:image" content="/assets/og-image.jpg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Kultur Plattform Freiburg" />
+    <meta
+      name="twitter:description"
+      content="Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert."
+    />
+    <meta name="twitter:image" content="/assets/og-image.jpg" />
+
+    <!-- Multi-language SEO -->
+    <link
+      rel="alternate"
+      hreflang="de"
+      href="https://kultur-plattform-freiburg.de/"
+    />
+    <link
+      rel="alternate"
+      hreflang="tr"
+      href="https://kultur-plattform-freiburg.de/?lang=tr"
+    />
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="https://kultur-plattform-freiburg.de/"
+    />
+
+    <!-- Fonts -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap"
       rel="stylesheet"
     />
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "sans-serif"],
-              serif: ["Merriweather", "serif"],
-            },
-            colors: {
-              kpf: {
-                red: "#c8102e", // Turkish Red inspired
-                teal: "#006778", // Freiburg Green/Teal inspired
-                dark: "#1e293b",
-                light: "#f8fafc",
-              },
-            },
-            keyframes: {
-              "slide-in": {
-                "0%": { transform: "translateX(100%)", opacity: "0" },
-                "100%": { transform: "translateX(0)", opacity: "1" },
-              },
-            },
-            animation: {
-              "slide-in": "slide-in 0.3s ease-out",
-            },
-          },
+
+    <!-- Structured Data (JSON-LD) for SEO -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Kultur Plattform Freiburg",
+        "alternateName": "KPF",
+        "url": "https://kultur-plattform-freiburg.de",
+        "logo": "https://kultur-plattform-freiburg.de/assets/cropped-Logoweb.png",
+        "description": "Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Freiburg",
+          "addressCountry": "DE"
         },
-      };
+        "sameAs": [
+          "https://www.instagram.com/kpf_freiburg",
+          "https://www.facebook.com/KPFFreiburg"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "General Inquiries",
+          "email": "info@kultur-plattform-freiburg.de"
+        }
+      }
     </script>
+
     <script type="importmap">
       {
         "imports": {

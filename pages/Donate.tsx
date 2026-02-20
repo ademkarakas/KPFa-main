@@ -67,14 +67,18 @@ const Donate: React.FC<DonateProps> = ({ lang }) => {
     bicSwift: string,
     holder: string,
   ) => {
-    // SEPA QR Code Format: BCD\n002\n1\nSCT\nBIC\nName\nIBAN\nAmount\n\n\n
+    // IBAN'daki boşlukları temizle
+    const cleanIban = iban.replaceAll(" ", "");
+
+    // SEPA QR Code Format (EPC069-12 Standard)
+    // Bu QR kod banka uygulaması ile tarandığında otomatik havale formu doldurur
     const sepaData = `BCD
 002
 1
 SCT
 ${bicSwift}
 ${holder}
-${iban}
+${cleanIban}
 
 
 
@@ -98,7 +102,7 @@ ${iban}
     if (!qrDataUrl) return;
     const link = document.createElement("a");
     link.href = qrDataUrl;
-    link.download = `KPF-Donation-QR-${new Date().getTime()}.png`;
+    link.download = `KPF-Donation-QR-${Date.now()}.png`;
     link.click();
   };
 
@@ -186,9 +190,9 @@ ${iban}
       <section className="py-12 -mt-4 relative z-20">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((item, index) => (
+            {features.map((item) => (
               <div
-                key={index}
+                key={item.title}
                 className="group relative bg-white p-10 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:border-teal-200 hover:-translate-y-2 transition-all duration-500 overflow-hidden"
               >
                 {/* Hover Kalp Efekti */}
@@ -278,7 +282,7 @@ ${iban}
             <div className="inline-flex bg-teal-50/50 p-1.5 rounded-2xl border border-teal-100">
               <button
                 onClick={() => setActiveTab("bank")}
-                className={`px-8 py-3 rounded-xl text-sm font-semibold transition-all ${
+                className={`px-8 py-3 rounded-xl text-lg font-bold transition-all ${
                   activeTab === "bank"
                     ? "bg-white text-teal-700 shadow-lg shadow-teal-100/50"
                     : "text-slate-600 hover:text-teal-700"
@@ -288,7 +292,7 @@ ${iban}
               </button>
               <button
                 onClick={() => setActiveTab("paypal")}
-                className={`px-8 py-3 rounded-xl text-sm font-semibold transition-all ${
+                className={`px-8 py-3 rounded-xl text-lg font-bold transition-all ${
                   activeTab === "paypal"
                     ? "bg-white text-teal-700 shadow-lg shadow-teal-100/50"
                     : "text-slate-600 hover:text-teal-700"
@@ -495,11 +499,17 @@ ${iban}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white rounded-lg font-medium transition-colors"
                       >
                         <Download size={18} />
-                        {lang === "tr" ? "İndir" : "Herunterladen"}
+                        {lang === "tr"
+                          ? "QR Kodu İndir"
+                          : "QR-Code Herunterladen"}
                       </button>
                       <div className="w-full flex items-center justify-center gap-1 text-xs text-teal-700 bg-teal-50 rounded-lg py-2 px-3">
                         <ShieldCheck size={14} />
-                        <span>SEPA Standart</span>
+                        <span className="font-medium">
+                          {lang === "tr"
+                            ? "SEPA Güvenli Standart"
+                            : "SEPA Sicherer Standard"}
+                        </span>
                       </div>
                     </div>
                   </div>

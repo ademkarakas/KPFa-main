@@ -12,10 +12,22 @@ import {
   User,
   Calendar,
   ChevronRight,
+  Palette,
+  Users,
+  Coffee,
+  Globe,
+  Mic,
+  Camera,
+  Utensils,
+  Smile,
+  Lightbulb,
+  PenTool,
+  Scroll,
 } from "lucide-react";
 import { Language, PageView, Course } from "../types";
 import { TEXTS } from "../constants";
 import { coursesApi } from "../services/api";
+import { isRequestCancelled } from "../hooks/useCancelableRequest";
 
 interface CoursesProps {
   lang: Language;
@@ -31,7 +43,12 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
   const t = (key: string) => TEXTS[key][lang];
 
   useEffect(() => {
-    loadCourses();
+    const abortController = new AbortController();
+    loadCourses(abortController.signal);
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   // Sayfadan çıkıldığında detay modalını kapat
@@ -41,10 +58,10 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
     }
   }, [currentPage]);
 
-  const loadCourses = async () => {
+  const loadCourses = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const data = await coursesApi.getAll(false);
+      const data = await coursesApi.getAll(false, signal);
 
       const formatDate = (dateISO: string) => {
         try {
@@ -64,12 +81,18 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
         if (typeof courseLocation === "string") return courseLocation;
 
         const parts = [];
-        if (courseLocation.street) parts.push(courseLocation.street);
-        if (courseLocation.houseNo) parts.push(courseLocation.houseNo);
-        if (courseLocation.zipCode) parts.push(courseLocation.zipCode);
-        if (courseLocation.city) parts.push(courseLocation.city);
-        if (courseLocation.state) parts.push(courseLocation.state);
-        if (courseLocation.country) parts.push(courseLocation.country);
+        // Support both camelCase and PascalCase
+        const street = courseLocation.street || courseLocation.Street;
+        const houseNo = courseLocation.houseNo || courseLocation.HouseNo;
+        const zipCode = courseLocation.zipCode || courseLocation.ZipCode;
+        const city = courseLocation.city || courseLocation.City;
+
+        if (street) parts.push(street);
+        if (houseNo) parts.push(houseNo);
+        if (zipCode || city) {
+          parts.push(`${zipCode || ""} ${city || ""}`.trim());
+        }
+
         return parts.join(", ");
       };
 
@@ -91,7 +114,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
           instructor: item.instructor || "",
           date: item.date ? formatDate(item.date) : "",
           dateISO: item.date || "",
-          address: formatAddress(item.courseLocation),
+          address: formatAddress(item.courseLocation || item.address),
           duration: item.duration || "",
           capacity: item.capacity || 0,
           price: item.price || 0,
@@ -100,7 +123,9 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
 
       setCourses(formattedCourses);
     } catch (error) {
-      console.error("❌ Veri hatası:", error);
+      if (!isRequestCancelled(error)) {
+        console.error("❌ Veri hatası:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -119,6 +144,28 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
         return <BookOpen {...props} />;
       case "Heart":
         return <Heart {...props} />;
+      case "Palette":
+        return <Palette {...props} />;
+      case "Users":
+        return <Users {...props} />;
+      case "Coffee":
+        return <Coffee {...props} />;
+      case "Globe":
+        return <Globe {...props} />;
+      case "Mic":
+        return <Mic {...props} />;
+      case "Camera":
+        return <Camera {...props} />;
+      case "Utensils":
+        return <Utensils {...props} />;
+      case "Smile":
+        return <Smile {...props} />;
+      case "Lightbulb":
+        return <Lightbulb {...props} />;
+      case "PenTool":
+        return <PenTool {...props} />;
+      case "Scroll":
+        return <Scroll {...props} />;
       default:
         return <BookOpen {...props} />;
     }
@@ -307,7 +354,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
                     show: !!selectedCourse.address,
                     clickable: true,
                     onClick: () => {
-                      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedCourse.address)}`;
+                      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedCourse.address || "")}`;
                       window.open(mapsUrl, "_blank");
                     },
                   },
@@ -356,9 +403,9 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
                 {selectedCourse.dateISO && (
                   <button
                     onClick={() => {
-                      const dateOnly = selectedCourse.dateISO
+                      const dateOnly = (selectedCourse.dateISO || "")
                         .split("T")[0]
-                        .replaceAll(/-/g, "");
+                        .replaceAll("-", "");
                       const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
                         selectedCourse.title[lang],
                       )}&dates=${dateOnly}T100000Z/${dateOnly}T120000Z&details=${encodeURIComponent(

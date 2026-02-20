@@ -11,6 +11,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Language } from "../types";
+import { isRequestCancelled } from "../hooks/useCancelableRequest";
 
 // API Response Types (yeni backend yapısı)
 interface ApiQuote {
@@ -123,6 +124,16 @@ interface AboutProps {
   lang: Language;
 }
 
+// HTML etiketlerini temizleyen yardımcı fonksiyon
+const stripHtml = (html: string): string => {
+  if (!html) return "";
+  return html
+    .replaceAll("</p>", "\n") // Paragraf sonlarını alt satıra çevir
+    .replaceAll(/<br\s*\/?>/g, "\n") // br etiketlerini alt satıra çevir
+    .replaceAll(/<[^>]*>/g, "") // Diğer tüm etiketleri temizle
+    .trim();
+};
+
 const About: React.FC<AboutProps> = ({ lang }) => {
   const [selectedMember, setSelectedMember] = useState<ApiTeamMember | null>(
     null,
@@ -133,19 +144,84 @@ const About: React.FC<AboutProps> = ({ lang }) => {
   const [partners, setPartners] = useState<ApiPartner[]>([]);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    const { signal } = abortController;
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch all data in parallel
-        const [aboutRes, humanRightsRes, partnersRes] = await Promise.all([
-          fetch("https://localhost:7189/api/AboutUs"),
-          fetch("https://localhost:7189/api/AboutUs/human-rights"),
-          fetch("https://localhost:7189/api/Partners"),
+        // Phase 1: Load critical data first (summary endpoint)
+        const summaryRes = await fetch(
+          "https://localhost:7189/api/AboutUs/summary",
+          { signal },
+        );
+        if (summaryRes.ok) {
+          const summaryData: {
+            quote: ApiQuote;
+            whoWeAre: ApiWhoWeAre;
+            goals: ApiGoals;
+          } = await summaryRes.json();
+          setAboutData((prev) => ({
+            ...prev!,
+            quote: summaryData.quote,
+            whoWeAre: summaryData.whoWeAre,
+            goals: summaryData.goals,
+          }));
+        }
+
+        // Phase 2: Load secondary data (values endpoint)
+        const valuesRes = await fetch(
+          "https://localhost:7189/api/AboutUs/values",
+          { signal },
+        );
+        if (valuesRes.ok) {
+          const valuesData: {
+            vision: ApiVision;
+            mission: ApiMission;
+            coreValues: ApiCoreValue[];
+          } = await valuesRes.json();
+          setAboutData((prev) => ({
+            ...prev!,
+            vision: valuesData.vision,
+            mission: valuesData.mission,
+            coreValues: valuesData.coreValues,
+          }));
+        }
+
+        // Phase 3: Load remaining data in parallel
+        const [
+          focusAreasRes,
+          activityAreasRes,
+          teamRes,
+          humanRightsRes,
+          partnersRes,
+        ] = await Promise.all([
+          fetch("https://localhost:7189/api/AboutUs/focus-areas", { signal }),
+          fetch("https://localhost:7189/api/AboutUs/activity-areas", {
+            signal,
+          }),
+          fetch("https://localhost:7189/api/AboutUs/team", { signal }),
+          fetch("https://localhost:7189/api/AboutUs/human-rights", { signal }),
+          fetch("https://localhost:7189/api/Partners", { signal }),
         ]);
 
-        if (aboutRes.ok) {
-          const aboutJson: ApiAboutUsResponse = await aboutRes.json();
-          setAboutData(aboutJson);
+        if (focusAreasRes.ok) {
+          const focusAreasData: ApiFocusArea[] = await focusAreasRes.json();
+          setAboutData((prev) => ({ ...prev!, focusAreas: focusAreasData }));
+        }
+
+        if (activityAreasRes.ok) {
+          const activityAreasData: ApiActivityArea[] =
+            await activityAreasRes.json();
+          setAboutData((prev) => ({
+            ...prev!,
+            activityAreas: activityAreasData,
+          }));
+        }
+
+        if (teamRes.ok) {
+          const teamData: ApiTeamMember[] = await teamRes.json();
+          setAboutData((prev) => ({ ...prev!, teamMembers: teamData }));
         }
 
         if (humanRightsRes.ok) {
@@ -158,12 +234,19 @@ const About: React.FC<AboutProps> = ({ lang }) => {
           setPartners(partnersJson.filter((p) => p.isActive));
         }
       } catch (err) {
-        console.error("Veri yüklenemedi:", err);
+        if (!isRequestCancelled(err)) {
+          console.error("Veri yüklenemedi:", err);
+        }
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   // SessionStorage'dan ilgili bölüme scroll et (loading bittikten sonra)
@@ -172,25 +255,57 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       const sectionId = sessionStorage.getItem("scrollToSection");
       if (sectionId) {
         sessionStorage.removeItem("scrollToSection"); // Bir kez kullan
-        setTimeout(() => {
+
+        // Retry mekanizması: Element DOM'a eklenene kadar birkaç kez dene
+        let attempts = 0;
+        const maxAttempts = 15; // 15 deneme = 3 saniye
+
+        const tryScroll = () => {
+          attempts++;
           const element = document.getElementById(sectionId);
+
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "start" });
+          } else if (attempts < maxAttempts) {
+            setTimeout(tryScroll, 200);
+          } else {
+            console.warn(
+              `⚠️ Element with id="${sectionId}" not found after ${maxAttempts} attempts`,
+            );
           }
-        }, 100);
+        };
+
+        // İlk denemeyi 100ms sonra başlat
+        setTimeout(tryScroll, 100);
       }
     }
   }, [loading]);
 
-  // Loading state
+  // Loading state - Modern skeleton loader
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-kpf-teal mx-auto mb-4"></div>
-          <p className="text-slate-600">
-            {lang === "tr" ? "Yükleniyor..." : "Lädt..."}
-          </p>
+      <div className="min-h-screen bg-white animate-pulse">
+        {/* Header Skeleton */}
+        <div className="bg-slate-200 h-64"></div>
+
+        {/* Content Skeleton */}
+        <div className="container mx-auto px-4 py-20 space-y-16">
+          {/* Quote Skeleton */}
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="h-6 bg-slate-200 rounded w-3/4 mx-auto"></div>
+            <div className="h-6 bg-slate-200 rounded w-1/2 mx-auto"></div>
+          </div>
+
+          {/* Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-slate-100 rounded-2xl p-6 space-y-3">
+                <div className="h-8 bg-slate-200 rounded w-3/4"></div>
+                <div className="h-4 bg-slate-200 rounded"></div>
+                <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -263,9 +378,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                     </h2>
                   </div>
                   <p className="text-slate-600 text-lg leading-relaxed whitespace-pre-line text-justify">
-                    {lang === "tr"
-                      ? aboutData.whoWeAre.whoWeAreTr
-                      : aboutData.whoWeAre.whoWeAreDe}
+                    {stripHtml(
+                      lang === "tr"
+                        ? aboutData.whoWeAre.whoWeAreTr
+                        : aboutData.whoWeAre.whoWeAreDe,
+                    )}
                   </p>
                 </div>
               </div>
@@ -289,9 +406,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                 </h2>
               </div>
               <p className="text-teal-50 text-lg leading-relaxed text-justify">
-                {lang === "tr"
-                  ? aboutData.goals.goalsTr
-                  : aboutData.goals.goalsDe}
+                {stripHtml(
+                  lang === "tr"
+                    ? aboutData.goals.goalsTr
+                    : aboutData.goals.goalsDe,
+                )}
               </p>
             </div>
           </div>
@@ -318,9 +437,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                     </h2>
                   </div>
                   <p className="text-slate-200 leading-loose text-lg text-justify">
-                    {lang === "tr"
-                      ? aboutData.vision.visionTr
-                      : aboutData.vision.visionDe}
+                    {stripHtml(
+                      lang === "tr"
+                        ? aboutData.vision.visionTr
+                        : aboutData.vision.visionDe,
+                    )}
                   </p>
                 </div>
               )}
@@ -334,9 +455,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                     </h2>
                   </div>
                   <p className="text-slate-200 leading-loose text-lg text-justify">
-                    {lang === "tr"
-                      ? aboutData.mission.missionTr
-                      : aboutData.mission.missionDe}
+                    {stripHtml(
+                      lang === "tr"
+                        ? aboutData.mission.missionTr
+                        : aboutData.mission.missionDe,
+                    )}
                   </p>
                 </div>
               )}
@@ -372,9 +495,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                       {lang === "tr" ? value.titleTr : value.titleDe}
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed relative z-10">
-                      {lang === "tr"
-                        ? value.descriptionTr
-                        : value.descriptionDe}
+                      {stripHtml(
+                        lang === "tr"
+                          ? value.descriptionTr
+                          : value.descriptionDe,
+                      )}
                     </p>
                   </div>
                 ))}
@@ -414,9 +539,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                         </h3>
                       </div>
                       <p className="text-slate-600 leading-relaxed text-lg text-justify">
-                        {lang === "tr"
-                          ? area.descriptionTr
-                          : area.descriptionDe}
+                        {stripHtml(
+                          lang === "tr"
+                            ? area.descriptionTr
+                            : area.descriptionDe,
+                        )}
                       </p>
                     </div>
                     <div className="flex-1 bg-slate-50 h-96 w-full rounded-2xl flex items-center justify-center text-slate-300 overflow-hidden relative group">
@@ -453,9 +580,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                   {lang === "tr" ? humanRights.titleTr : humanRights.titleDe}
                 </h2>
                 <p className="text-slate-300 leading-relaxed text-lg text-justify">
-                  {lang === "tr"
-                    ? humanRights.descriptionTr
-                    : humanRights.descriptionDe}
+                  {stripHtml(
+                    lang === "tr"
+                      ? humanRights.descriptionTr
+                      : humanRights.descriptionDe,
+                  )}
                 </p>
               </div>
               <div className="w-full md:w-1/3 flex flex-col gap-6 justify-center">
@@ -536,9 +665,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                         {lang === "tr" ? area.titleTr : area.titleDe}
                       </h3>
                       <p className="text-slate-600 text-sm leading-relaxed">
-                        {lang === "tr"
-                          ? area.descriptionTr
-                          : area.descriptionDe}
+                        {stripHtml(
+                          lang === "tr"
+                            ? area.descriptionTr
+                            : area.descriptionDe,
+                        )}
                       </p>
                     </div>
                   </div>
@@ -705,8 +836,16 @@ const About: React.FC<AboutProps> = ({ lang }) => {
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               {/* Arka Plan Karartma */}
               <div
+                role="button"
+                tabIndex={0}
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
                 onClick={() => setSelectedMember(null)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" || e.key === "Enter") {
+                    setSelectedMember(null);
+                  }
+                }}
+                aria-label={lang === "tr" ? "Modalı kapat" : "Modal schließen"}
               ></div>
 
               {/* Modal İçeriği */}
@@ -749,9 +888,11 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                     <div className="relative">
                       <div className="absolute -left-6 top-0 bottom-0 w-1 bg-slate-100 rounded-full"></div>
                       <p className="text-slate-600 leading-relaxed pl-2 text-lg italic">
-                        {lang === "tr"
-                          ? selectedMember.descriptionTr?.value || ""
-                          : selectedMember.descriptionDe?.value || ""}
+                        {stripHtml(
+                          lang === "tr"
+                            ? selectedMember.descriptionTr?.value || ""
+                            : selectedMember.descriptionDe?.value || "",
+                        )}
                       </p>
                     </div>
 

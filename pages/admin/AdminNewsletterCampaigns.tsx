@@ -17,6 +17,7 @@ import {
 } from "../../services/newsletterApi";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // Quill Editor Component with unique instance ID
 const QuillEditor = ({
@@ -84,6 +85,18 @@ const AdminNewsletterCampaigns: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState<string | null>(null); // Track which campaign is being sent
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   // Form state
   const [formData, setFormData] = useState<CreateCampaignRequest>({
@@ -163,44 +176,50 @@ const AdminNewsletterCampaigns: React.FC = () => {
   };
 
   const handleSendCampaign = async (campaignId: string) => {
-    if (!confirm(t("newsletter.admin.campaigns.sendConfirm"))) {
-      return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: t("newsletter.admin.campaigns.sendTitle"),
+      message: t("newsletter.admin.campaigns.sendConfirm"),
+      onConfirm: () => {
+        void (async () => {
+          setSending(campaignId);
+          const loadingToast = toast.loading("Kampanya gönderiliyor...");
 
-    setSending(campaignId);
-    const loadingToast = toast.loading("Kampanya gönderiliyor...");
+          try {
+            const result = await newsletterAdminApi.sendCampaign(campaignId);
 
-    try {
-      const result = await newsletterAdminApi.sendCampaign(campaignId);
+            toast.dismiss(loadingToast);
 
-      toast.dismiss(loadingToast);
+            if (result.successful > 0) {
+              toast.success(
+                `✅ Kampanya başarıyla gönderildi!\n` +
+                  `Başarılı: ${result.successful}\n` +
+                  `Başarısız: ${result.failed}\n` +
+                  `Toplam: ${result.total}`,
+                { duration: 5000 },
+              );
+            } else {
+              toast.error(
+                `⚠️ Kampanya gönderilemedi!\n` +
+                  `Başarısız: ${result.failed}/${result.total}`,
+                { duration: 5000 },
+              );
+            }
 
-      if (result.successful > 0) {
-        toast.success(
-          `✅ Kampanya başarıyla gönderildi!\n` +
-            `Başarılı: ${result.successful}\n` +
-            `Başarısız: ${result.failed}\n` +
-            `Toplam: ${result.total}`,
-          { duration: 5000 },
-        );
-      } else {
-        toast.error(
-          `⚠️ Kampanya gönderilemedi!\n` +
-            `Başarısız: ${result.failed}/${result.total}`,
-          { duration: 5000 },
-        );
-      }
-
-      // Refresh campaign list to show updated status
-      await fetchCampaigns();
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      console.error("Campaign send error:", error);
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`❌ Gönderme hatası: ${errorMsg}`, { duration: 5000 });
-    } finally {
-      setSending(null);
-    }
+            // Refresh campaign list to show updated status
+            await fetchCampaigns();
+          } catch (error) {
+            toast.dismiss(loadingToast);
+            console.error("Campaign send error:", error);
+            const errorMsg =
+              error instanceof Error ? error.message : String(error);
+            toast.error(`❌ Gönderme hatası: ${errorMsg}`, { duration: 5000 });
+          } finally {
+            setSending(null);
+          }
+        })();
+      },
+    });
   };
 
   const handleSendTest = async (campaignId: string) => {
@@ -500,6 +519,18 @@ const AdminNewsletterCampaigns: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={t("common.send") || "Gönder"}
+        cancelText={t("common.cancel") || "İptal"}
+        type="warning"
+      />
     </div>
   );
 };

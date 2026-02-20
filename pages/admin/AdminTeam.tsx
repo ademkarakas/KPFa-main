@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 // Admin user interface
 interface AdminUser {
@@ -51,6 +52,17 @@ const AdminTeam: React.FC = () => {
     message: string;
     type: "success" | "error" | "";
   }>({ message: "", type: "" });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
   const { language } = useLanguage();
 
   const [formData, setFormData] = useState<AdminFormData>({
@@ -253,7 +265,7 @@ const AdminTeam: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
@@ -286,29 +298,36 @@ const AdminTeam: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!globalThis.confirm(t.confirmDelete)) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: language === "tr" ? "Kullanıcı Sil" : "Benutzer löschen",
+      message: t.confirmDelete,
+      onConfirm: () => {
+        void (async () => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/Admins/${id}`, {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+            });
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/Admins/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
+            if (res.status === 401) {
+              handleUnauthorized();
+              return;
+            }
 
-      if (res.status === 401) {
-        handleUnauthorized();
-        return;
-      }
+            if (!res.ok) {
+              throw new Error("Delete failed");
+            }
 
-      if (!res.ok) {
-        throw new Error("Delete failed");
-      }
-
-      await loadAdmins();
-      showNotification(t.deleteSuccess, "success");
-    } catch (error) {
-      console.error("Silme hatası:", error);
-      showNotification(t.deleteError, "error");
-    }
+            await loadAdmins();
+            showNotification(t.deleteSuccess, "success");
+          } catch (error) {
+            console.error("Silme hatası:", error);
+            showNotification(t.deleteError, "error");
+          }
+        })();
+      },
+    });
   };
 
   const resetForm = () => {
@@ -384,50 +403,54 @@ const AdminTeam: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Toast Notification */}
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      {/* Message Notification */}
       {notification.message && (
         <div
-          className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl border transition-all duration-300 animate-slide-in-right ${
+          className={`p-6 rounded-xl flex items-center gap-4 mb-6 shadow-lg ${
             notification.type === "success"
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
+              ? "bg-green-50 text-green-700 border-2 border-green-200"
+              : "bg-red-50 text-red-700 border-2 border-red-200"
           }`}
         >
           {notification.type === "success" ? (
-            <CheckCircle size={24} className="text-green-500" />
+            <CheckCircle size={32} className="text-green-500 flex-shrink-0" />
           ) : (
-            <AlertCircle size={24} className="text-red-500" />
+            <AlertCircle size={32} className="text-red-500 flex-shrink-0" />
           )}
-          <div>
-            <p className="font-semibold">{notification.message}</p>
+          <div className="flex-1">
+            <p className="font-bold text-lg">{notification.message}</p>
           </div>
           <button
             onClick={() => setNotification({ message: "", type: "" })}
-            className="ml-4 p-1 hover:bg-white/50 rounded-full transition-colors"
+            className="p-2 hover:bg-white/50 rounded-full transition-colors flex-shrink-0"
           >
-            <X size={16} />
+            <X size={20} />
           </button>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2 flex items-center gap-3">
-            <Users className="text-kpf-teal" />
-            {t.pageTitle}
-          </h1>
-          <p className="text-slate-600">
-            {t.totalUsers} {admins.length} {t.users}
-          </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-slate-100 transition-all hover:shadow-md">
+        <div className="flex items-center gap-5">
+          <div className="p-5 bg-kpf-teal/10 rounded-2xl">
+            <Users className="text-kpf-teal" size={40} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800 mb-2">
+              {t.pageTitle}
+            </h1>
+            <p className="text-base text-slate-600">
+              {t.totalUsers} {admins.length} {t.users}
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all shadow-lg"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-xl hover:bg-kpf-teal/90 transition-all shadow-lg font-bold"
         >
           <Plus size={20} />
-          <span className="font-semibold">{t.newUser}</span>
+          <span>{t.newUser}</span>
         </button>
       </div>
 
@@ -435,38 +458,38 @@ const AdminTeam: React.FC = () => {
       <div className="relative">
         <Search
           className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
-          size={20}
+          size={24}
         />
         <input
           type="text"
           placeholder={t.searchPlaceholder}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+          className="w-full pl-14 pr-4 py-4 text-base border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal shadow-sm"
         />
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-slate-50 border-b-2 border-slate-200">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
                 {t.name}
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
                 {t.email}
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
                 {t.role}
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
                 {t.status}
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-slate-600">
+              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
                 {t.lastLogin}
               </th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-slate-600"></th>
+              <th className="px-8 py-5 text-right text-base font-bold text-slate-700"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -475,27 +498,27 @@ const AdminTeam: React.FC = () => {
                 key={admin.id}
                 className="hover:bg-slate-50 transition-colors"
               >
-                <td className="px-6 py-4">
+                <td className="px-8 py-5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-kpf-teal/10 flex items-center justify-center">
-                      <span className="text-kpf-teal font-bold text-lg">
+                    <div className="w-12 h-12 rounded-full bg-kpf-teal/10 flex items-center justify-center">
+                      <span className="text-kpf-teal font-bold text-xl">
                         {admin.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="font-medium text-slate-800">
+                    <span className="font-semibold text-slate-800 text-base">
                       {admin.name}
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-8 py-5">
                   <div className="flex items-center gap-2 text-slate-600">
-                    <Mail size={14} />
-                    <span>{admin.email}</span>
+                    <Mail size={16} />
+                    <span className="text-base">{admin.email}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-8 py-5">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${getRoleBadgeColor(
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border ${getRoleBadgeColor(
                       admin.role,
                     )}`}
                   >
@@ -503,40 +526,40 @@ const AdminTeam: React.FC = () => {
                     {getRoleLabel(admin.role)}
                   </span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-8 py-5">
                   {admin.isActive ? (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                      <Eye size={12} />
+                    <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-bold">
+                      <Eye size={14} />
                       {t.active}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
-                      <EyeOff size={12} />
+                    <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-sm font-bold">
+                      <EyeOff size={14} />
                       {t.inactive}
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-8 py-5">
                   <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Clock size={14} />
+                    <Clock size={16} />
                     <span>{formatDate(admin.lastLoginAt)}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-8 py-5">
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => handleEdit(admin)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                       title={t.edit}
                     >
-                      <Edit size={18} />
+                      <Edit size={20} />
                     </button>
                     <button
                       onClick={() => handleDelete(admin.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                       title={t.delete}
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </td>
@@ -546,9 +569,9 @@ const AdminTeam: React.FC = () => {
         </table>
 
         {filteredAdmins.length === 0 && (
-          <div className="text-center py-12 text-slate-500">
-            <Users size={48} className="mx-auto mb-4 opacity-30" />
-            <p>{t.noUsersFound}</p>
+          <div className="text-center py-16 text-slate-500">
+            <Users size={56} className="mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-semibold">{t.noUsersFound}</p>
           </div>
         )}
       </div>
@@ -556,23 +579,23 @@ const AdminTeam: React.FC = () => {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="border-b border-slate-200 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-slate-800">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl">
+            <div className="border-b-2 border-slate-200 p-8 flex items-center justify-between">
+              <h2 className="text-3xl font-bold text-slate-800">
                 {editingId ? t.editUser : t.createUser}
               </h2>
               <button
                 onClick={resetForm}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-3 hover:bg-slate-100 rounded-xl transition-colors"
               >
-                <X size={24} />
+                <X size={28} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
               {/* Name */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-base font-bold text-slate-700 mb-3">
                   {t.name} *
                 </label>
                 <input
@@ -582,13 +605,13 @@ const AdminTeam: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                  className="w-full px-5 py-4 text-base border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
                 />
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-base font-bold text-slate-700 mb-3">
                   {t.email} *
                 </label>
                 <input
@@ -598,14 +621,14 @@ const AdminTeam: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                  className="w-full px-5 py-4 text-base border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
                 />
               </div>
 
               {/* Password - only for create */}
               {!editingId && (
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label className="block text-base font-bold text-slate-700 mb-3">
                     {t.password} *
                   </label>
                   <input
@@ -615,14 +638,14 @@ const AdminTeam: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal"
+                    className="w-full px-5 py-4 text-base border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
                   />
                 </div>
               )}
 
               {/* Role - for both create and edit */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label className="block text-base font-bold text-slate-700 mb-3">
                   {t.role} *
                 </label>
                 <select
@@ -630,7 +653,7 @@ const AdminTeam: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, role: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white"
+                  className="w-full px-5 py-4 text-base border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal bg-white"
                 >
                   <option value="User">{t.roleUser}</option>
                   <option value="UserAdmin">{t.roleUserAdmin}</option>
@@ -639,18 +662,18 @@ const AdminTeam: React.FC = () => {
               </div>
 
               {/* Buttons */}
-              <div className="flex gap-4 pt-4 border-t">
+              <div className="flex gap-4 pt-6 border-t-2 border-slate-200">
                 <button
                   type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-kpf-teal text-white rounded-lg hover:bg-kpf-teal/90 transition-all font-semibold"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-kpf-teal text-white rounded-xl hover:bg-kpf-teal/90 transition-all font-bold text-base shadow-lg"
                 >
-                  <Save size={20} />
+                  <Save size={22} />
                   {editingId ? t.update : t.create}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all font-semibold"
+                  className="flex-1 px-6 py-4 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-bold text-base"
                 >
                   {t.cancel}
                 </button>
@@ -660,22 +683,17 @@ const AdminTeam: React.FC = () => {
         </div>
       )}
 
-      {/* Animation Styles */}
-      <style>{`
-        @keyframes slide-in-right {
-          from {
-            opacity: 0;
-            transform: translateX(100px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out forwards;
-        }
-      `}</style>
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={language === "tr" ? "Sil" : "Löschen"}
+        cancelText={language === "tr" ? "İptal" : "Abbrechen"}
+        type="danger"
+      />
     </div>
   );
 };

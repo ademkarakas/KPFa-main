@@ -151,6 +151,10 @@ const AdminSatzung: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [purposeUiKeys, setPurposeUiKeys] = useState<string[]>([]);
   const [membershipUiKeys, setMembershipUiKeys] = useState<string[]>([]);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const tabs = useMemo(
     () => [
@@ -336,7 +340,7 @@ const AdminSatzung: React.FC = () => {
     setMembershipUiKeys((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
@@ -348,13 +352,50 @@ const AdminSatzung: React.FC = () => {
         return;
       }
 
-      const res = await fetch(API_URL, {
-        method: "PUT",
+      // Determine if creating or updating based on whether ID exists
+      const isUpdate = !!content.id;
+      const url = isUpdate ? `${API_URL}/${content.id}` : API_URL;
+      const method = isUpdate ? "PUT" : "POST";
+
+      // Transform frontend DTO to backend command format
+      // GET returns flat strings, but PUT expects wrapped value objects
+      const commandPayload = {
+        id: content.id || "",
+        titleTurkish: {
+          value: content.titleTurkish || "",
+        },
+        titleGerman: {
+          value: content.titleGerman || "",
+        },
+        nameAndSeatTurkish: content.nameAndSeatTurkish,
+        nameAndSeatGerman: content.nameAndSeatGerman,
+        nameDescTurkish: content.nameDescTurkish,
+        nameDescGerman: content.nameDescGerman,
+        seatTurkish: content.seatTurkish,
+        seatGerman: content.seatGerman,
+        seatDescTurkish: content.seatDescTurkish,
+        seatDescGerman: content.seatDescGerman,
+        fiscalYearTurkish: content.fiscalYearTurkish,
+        fiscalYearGerman: content.fiscalYearGerman,
+        fiscalYearDescTurkish: content.fiscalYearDescTurkish,
+        fiscalYearDescGerman: content.fiscalYearDescGerman,
+        purposeOfAssociationTurkish: content.purposeOfAssociationTurkish,
+        purposeOfAssociationGerman: content.purposeOfAssociationGerman,
+        purposes: content.purposes,
+        gemeinnuetzigkeitTurkish: content.gemeinnuetzigkeitTurkish,
+        gemeinnuetzigkeitGerman: content.gemeinnuetzigkeitGerman,
+        politicalNeutralityTurkish: content.politicalNeutralityTurkish,
+        politicalNeutralityGerman: content.politicalNeutralityGerman,
+        memberships: content.memberships,
+      };
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(content),
+        body: JSON.stringify(commandPayload),
       });
 
       if (!res.ok) {
@@ -362,13 +403,25 @@ const AdminSatzung: React.FC = () => {
         throw new Error(`HTTP ${res.status}: ${errorText}`);
       }
 
-      alert(t("satzung.saveSuccess"));
+      // If it was a POST (create), update content with the returned data
+      if (!isUpdate) {
+        const savedData = await res.json();
+        setContent((prev) => ({ ...prev, id: savedData.id }));
+      }
+
+      setMessage({
+        type: "success",
+        text: "✓ Satzung başarıyla kaydedildi!",
+      });
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      console.error("Satzung save error:", err);
-      alert(
-        `${t("satzung.saveError")}: ` +
-          (err instanceof Error ? err.message : t("common.unknownError")),
-      );
+      setMessage({
+        type: "error",
+        text: `${t("satzung.saveError")}: ${
+          err instanceof Error ? err.message : t("common.unknownError")
+        }`,
+      });
+      setTimeout(() => setMessage(null), 5000);
     } finally {
       setSaving(false);
     }
@@ -389,6 +442,19 @@ const AdminSatzung: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto pb-20 px-4">
+      {/* Success/Error Message Banner */}
+      {message && (
+        <div
+          className={`p-4 rounded-lg flex items-center gap-3 mb-4 ${
+            message.type === "success"
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "bg-red-50 text-red-700 border border-red-200"
+          }`}
+        >
+          {message.type === "success" ? "✓" : "✕"} {message.text}
+        </div>
+      )}
+
       <form onSubmit={handleSave} className="space-y-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
           <div className="flex items-center gap-4">
@@ -799,27 +865,71 @@ const AdminSatzung: React.FC = () => {
         {activeTab === "gemeinnuetzigkeit" && (
           <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
             <SectionInput
-              labelKey="satzung.sections.gemeinnuetzigkeitTr"
-              field="gemeinnuetzigkeitTurkish"
+              label={t("satzung.sections.gemeinnuetzigkeitTr")}
               section={content.gemeinnuetzigkeitTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("gemeinnuetzigkeitTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("gemeinnuetzigkeitTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("gemeinnuetzigkeitTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              labelKey="satzung.sections.gemeinnuetzigkeitDe"
-              field="gemeinnuetzigkeitGerman"
+              label={t("satzung.sections.gemeinnuetzigkeitDe")}
               section={content.gemeinnuetzigkeitGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("gemeinnuetzigkeitGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("gemeinnuetzigkeitGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("gemeinnuetzigkeitGerman", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              labelKey="satzung.sections.politicalNeutralityTr"
-              field="politicalNeutralityTurkish"
+              label={t("satzung.sections.politicalNeutralityTr")}
               section={content.politicalNeutralityTurkish}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("politicalNeutralityTurkish", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("politicalNeutralityTurkish", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("politicalNeutralityTurkish", "bodyGerman", v)
+              }
             />
             <div className="border-t border-slate-200 pt-6"></div>
             <SectionInput
-              labelKey="satzung.sections.politicalNeutralityDe"
-              field="politicalNeutralityGerman"
+              label={t("satzung.sections.politicalNeutralityDe")}
               section={content.politicalNeutralityGerman}
+              headingPlaceholder={headingPlaceholder}
+              bodyTrPlaceholder={bodyTrPlaceholder}
+              bodyDePlaceholder={bodyDePlaceholder}
+              onHeadingChange={(v) =>
+                updateSection("politicalNeutralityGerman", "heading", v)
+              }
+              onBodyTrChange={(v) =>
+                updateSection("politicalNeutralityGerman", "bodyTurkish", v)
+              }
+              onBodyDeChange={(v) =>
+                updateSection("politicalNeutralityGerman", "bodyGerman", v)
+              }
             />
           </div>
         )}

@@ -7,9 +7,79 @@ import {
   User,
   Shield,
   CheckCircle,
+  X,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+
+type NotificationType = "success" | "error" | "info";
+
+const notificationThemeByType: Record<NotificationType, string> = {
+  success:
+    "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300 text-green-800",
+  error: "bg-gradient-to-r from-red-50 to-pink-50 border-red-300 text-red-800",
+  info: "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 text-blue-800",
+};
+
+const NotificationIcon = ({ type }: { type: NotificationType }) => {
+  if (type === "success") {
+    return (
+      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+        <svg
+          className="w-5 h-5 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  if (type === "error") {
+    return (
+      <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+        <svg
+          className="w-5 h-5 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+      <svg
+        className="w-5 h-5 text-white"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </div>
+  );
+};
 
 interface ImprintContent {
   id?: string;
@@ -102,6 +172,19 @@ const AdminImprint: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { language } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
+
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: NotificationType;
+    message: string;
+  }>({ show: false, type: "success", message: "" });
+
+  const showNotification = (type: NotificationType, message: string) => {
+    setNotification({ show: true, type, message });
+    setTimeout(() => {
+      setNotification({ show: false, type, message: "" });
+    }, 3000);
+  };
 
   useEffect(() => {
     loadImprint();
@@ -234,17 +317,18 @@ const AdminImprint: React.FC = () => {
       // POST ise dönen ID'yi kaydet ve veriyi yeniden yükle
       if (isNewRecord) {
         await res.json();
-        alert(t("admin_imprint_created"));
+        showNotification("success", t("admin_imprint_created"));
         // Backend'den tam veriyi yükle
         await loadImprint();
       } else {
-        alert(t("admin_imprint_updated"));
+        showNotification("success", t("admin_imprint_updated"));
         // Güncel veriyi yükle
         await loadImprint();
       }
     } catch (err) {
       console.error("Imprint işlem hatası:", err);
-      alert(
+      showNotification(
+        "error",
         t("admin_imprint_failed") +
           ": " +
           (err instanceof Error ? err.message : t("admin_unknown_error")),
@@ -256,6 +340,34 @@ const AdminImprint: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto pb-20 px-4">
+      {/* Notification */}
+      {notification.show && (
+        <div className="fixed top-4 right-4 z-[9999] animate-slide-in">
+          <div
+            className={`min-w-[300px] max-w-md rounded-xl shadow-2xl p-4 flex items-start gap-3 border-2 ${
+              notificationThemeByType[notification.type]
+            }`}
+          >
+            <div className="flex-shrink-0 mt-0.5">
+              <NotificationIcon type={notification.type} />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm leading-tight">
+                {notification.message}
+              </p>
+            </div>
+            <button
+              onClick={() =>
+                setNotification({ show: false, type: "success", message: "" })
+              }
+              className="flex-shrink-0 text-current opacity-50 hover:opacity-100 transition-opacity"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-10">
         {/* Sticky Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">

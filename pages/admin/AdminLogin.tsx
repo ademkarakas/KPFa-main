@@ -27,6 +27,15 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
 
       if (response.token) {
         localStorage.setItem("adminToken", response.token);
+        if (response.name) {
+          localStorage.setItem("adminName", response.name);
+        }
+        if (response.email) {
+          localStorage.setItem("adminEmail", response.email);
+        }
+        if (response.role) {
+          localStorage.setItem("adminRole", response.role);
+        }
         onLoginSuccess();
       } else {
         setError(t("admin_login_error"));
@@ -41,21 +50,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-kpf-dark flex items-center justify-center p-4">
       <div className="max-w-md w-full">
-        {/* Language Toggle */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => setLanguage(language === "tr" ? "de" : "tr")}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
-          >
-            <Languages size={18} />
-            <span>
-              {language === "tr"
-                ? t("common_language_de")
-                : t("common_language_tr")}
-            </span>
-          </button>
-        </div>
-
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-kpf-teal rounded-2xl mb-4 shadow-2xl">

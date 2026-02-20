@@ -2,10 +2,13 @@ import { ArrowRight, Calendar, MapPin, Search } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { TEXTS } from "../constants";
 import { activitiesApi } from "../services/api";
-import { Activity, Language, ParticipantForm } from "../types";
+import { Activity, Language, ParticipantForm, PageView } from "../types";
+import { isRequestCancelled } from "../hooks/useCancelableRequest";
+import { navigateTo } from "../utils/navigation";
 
 interface ActivitiesProps {
   lang: Language;
+  currentPage?: PageView;
 }
 
 const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
@@ -14,15 +17,16 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null,
   );
-  const [setShowParticipationForm] = useState<boolean>(false);
+  const [showParticipationForm, setShowParticipationForm] =
+    useState<boolean>(false);
   const [formData, setFormData] = useState<ParticipantForm>({
     name: "",
     email: "",
     phone: "",
     message: "",
   });
-  const [setFormSubmitting] = useState<boolean>(false);
-  const [setFormSuccess] = useState<boolean>(false);
+  const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
+  const [formSuccess, setFormSuccess] = useState<boolean>(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,111 +34,135 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
 
   // Backend'den etkinlikleri yükle
   useEffect(() => {
-    loadActivities();
-  }, []);
+    const abortController = new AbortController();
+    const { signal } = abortController;
 
-  // Sayfadan çıkıldığında detay modalını kapat
-  useEffect(() => {
-    if (currentPage !== "activities") {
-      setSelectedActivity(null);
-    }
-  }, [currentPage]);
+    const loadActivities = async () => {
+      try {
+        setLoading(true);
+        const data = await activitiesApi.getAll(false, signal); // Sadece aktif olanlar
 
-  const loadActivities = async () => {
-    try {
-      setLoading(true);
-      const data = await activitiesApi.getAll(false); // Sadece aktif olanlar
+        // Backend'den array dönmüyorsa hata ver
+        if (!Array.isArray(data)) {
+          console.error("❌ Backend'den array dönmedi:", data);
+          setActivities([]);
+          return;
+        }
 
-      // Backend'den gelen verileri frontend formatına çevir
-      const formattedActivities: Activity[] = data
-        .filter((item: any) => item.isActive !== false) // ✅ Pasif olanları filtrele
-        .map((item: any) => {
-          // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
-          const formatDate = (dateISO: string, lang: "tr" | "de") => {
-            try {
-              const date = new Date(dateISO);
-              if (lang === "tr") {
-                return date.toLocaleDateString("tr-TR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                });
-              } else {
-                return date.toLocaleDateString("de-DE", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                });
+        // Backend'den gelen verileri frontend formatına çevir
+        const formattedActivities: Activity[] = data
+          .filter((item: any) => item.isActive !== false)
+          .map((item: any) => {
+            // Tarih formatı (ISO formatını Türkçe ve Almanca'ya çevir)
+            const formatDate = (dateISO: string, lang: "tr" | "de") => {
+              try {
+                const date = new Date(dateISO);
+                if (lang === "tr") {
+                  return date.toLocaleDateString("tr-TR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  });
+                } else {
+                  return date.toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  });
+                }
+              } catch {
+                return dateISO;
               }
-            } catch {
-              return dateISO;
-            }
-          };
+            };
 
-          // Adres formatı (address object'ini string'e çevir)
-          const formatAddress = (address: any) => {
-            if (!address) return "";
-            const parts = [];
-            if (address.street) parts.push(address.street);
-            if (address.houseNo) parts.push(address.houseNo);
-            if (address.zipCode) parts.push(address.zipCode);
-            if (address.city) parts.push(address.city);
-            return parts.join(", ");
-          };
+            // Adres formatı (address object'ini string'e çevir)
+            const formatAddress = (address: any) => {
+              if (!address) return "";
+              const parts = [];
+              if (address.street) parts.push(address.street);
+              if (address.houseNo) parts.push(address.houseNo);
+              if (address.zipCode) parts.push(address.zipCode);
+              if (address.city) parts.push(address.city);
+              return parts.join(", ");
+            };
 
-          return {
-            id: item.id,
-            title: { tr: item.titleTr || "", de: item.titleDe || "" },
-            description: {
-              tr: item.descriptionTr || "",
-              de: item.descriptionDe || "",
-            },
-            detailedContent: {
-              tr: item.detailedContentTr || item.descriptionTr || "",
-              de: item.detailedContentDe || item.descriptionDe || "",
-            },
-            date: {
-              tr: formatDate(item.date, "tr"),
-              de: formatDate(item.date, "de"),
-            },
-            dateISO: item.date || "",
-            location: formatAddress(item.address),
-            imageUrl: item.imageUrl || item.imageSource || "",
-            category: item.category || "Etkinlik",
-            videoUrl: item.videoUrl || "",
-            galleryImages:
-              item.galleryImages && item.galleryImages.length > 0
-                ? item.galleryImages.map((img: any) => ({
-                    url: img.url || "",
-                    base64Data: img.base64Data || "",
-                    fileName: img.fileName || "",
-                  }))
-                : [],
-          };
+            // Backend'e göndermek için address objesini oluştur
+            const addressObj = item.address
+              ? {
+                  street: item.address.street || "",
+                  houseNo: item.address.houseNo || "",
+                  zipCode: item.address.zipCode || "",
+                  city: item.address.city || "",
+                  state: item.address.state || "",
+                  country: item.address.country || "",
+                }
+              : {
+                  street: item.street || "",
+                  houseNo: item.houseNo || "",
+                  zipCode: item.zipCode || "",
+                  city: item.city || "",
+                  state: item.state || "",
+                  country: item.country || "",
+                };
+
+            return {
+              id: item.id,
+              title: { tr: item.titleTr || "", de: item.titleDe || "" },
+              description: {
+                tr: item.descriptionTr || "",
+                de: item.descriptionDe || "",
+              },
+              detailedContent: {
+                tr: item.detailedContentTr || item.descriptionTr || "",
+                de: item.detailedContentDe || item.descriptionDe || "",
+              },
+              date: {
+                tr: formatDate(item.date, "tr"),
+                de: formatDate(item.date, "de"),
+              },
+              dateISO: item.date || item.dateISO || "",
+              location: formatAddress(addressObj),
+              address: addressObj, // <-- Backend'e göndermek için address objesi
+              imageUrl: item.imageUrl || item.imageSource || "",
+              category: item.category || "Etkinlik",
+              videoUrl: item.videoUrl || "",
+              galleryImages:
+                item.galleryImages && item.galleryImages.length > 0
+                  ? item.galleryImages.map((img: any) => ({
+                      url: img.url || "",
+                      base64Data: img.base64Data || "",
+                      fileName: img.fileName || "",
+                    }))
+                  : [],
+            };
+          });
+
+        // En yeni tarihten en eski tarihe doğru sırala (2026, 2025'ten önce gelecek şekilde)
+        const sortedActivities = [...formattedActivities].sort((a, b) => {
+          const dateA = new Date(a.dateISO || 0).getTime();
+          const dateB = new Date(b.dateISO || 0).getTime();
+          return dateB - dateA;
         });
 
-      setActivities(formattedActivities);
-      console.log(
-        `✅ ${formattedActivities.length} aktif etkinlik yüklendi (${
-          data.length - formattedActivities.length
-        } pasif etkinlik filtrelendi)`,
-      );
-      // Debug: Galeri resimlerini kontrol et
-      const debugActivities = formattedActivities.filter(
-        (a) => a.galleryImages && a.galleryImages.length > 0,
-      );
-      if (debugActivities.length > 0) {
-        console.log("📸 Galeri resimleri:", debugActivities[0].galleryImages);
+        setActivities(sortedActivities);
+      } catch (error) {
+        if (!isRequestCancelled(error)) {
+          console.error(
+            "❌ Etkinlikler yüklenemedi, mock data kullanılıyor:",
+            error,
+          );
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(
-        "❌ Etkinlikler yüklenemedi, mock data kullanılıyor:",
-        error,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadActivities();
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   // Check if activity date has passed
   const isActivityPassed = (dateISO: string): boolean => {
@@ -174,6 +202,8 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
     { id: "education", label: t("activities_filter_education") },
     { id: "social", label: t("activities_filter_social") },
     { id: "sports", label: t("activities_filter_sports") },
+    { id: "culture", label: t("activities_filter_culture") },
+    { id: "workshop", label: t("activities_filter_workshop") },
   ];
 
   // Open Google Calendar with event details
@@ -225,8 +255,6 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
         message: formData.message,
       };
 
-      console.log("Email Data:", emailData);
-
       // Uncomment when backend is ready:
       // const response = await fetch('/api/send-participation-email', {
       //   method: 'POST',
@@ -249,6 +277,17 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
     }
   };
 
+  // Backend'e etkinlik kaydederken/put/post ederken date ve address alanlarını eklemeniz gerekir.
+  // Örnek: (PUT veya POST için)
+  // const payload = {
+  //   ...activity,
+  //   date: activity.dateISO, // ISO formatında string
+  //   address: activity.address, // address objesi
+  // };
+  // await activitiesApi.update(activity.id, payload);
+  //
+  // NOT: Sadece dateISO, address gibi alanları değil, backend'in beklediği tüm zorunlu alanları gönderin.
+  //
   // Main render - detail page routing App.tsx'de yapılıyor
 
   if (loading) {
@@ -277,15 +316,15 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
         {/* Search Bar and Filters Container */}
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-12">
           {/* Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 flex-1 min-w-0 pr-4">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setFilter(cat.id)}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                className={`px-4 py-1.5 rounded-full text-[13px] font-bold transition-all whitespace-nowrap ${
                   filter === cat.id
                     ? "bg-kpf-teal text-white shadow-md"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-100"
                 }`}
               >
                 {cat.label}
@@ -332,11 +371,21 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
                 className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col h-full group"
               >
                 <div
+                  role="button"
+                  tabIndex={0}
                   className="relative h-64 overflow-hidden cursor-pointer"
                   onClick={() => {
                     globalThis.scrollTo({ top: 0, behavior: "smooth" });
-                    globalThis.location.hash = `activity/${activity.id}`;
+                    navigateTo(`activity/${activity.id}`);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      globalThis.scrollTo({ top: 0, behavior: "smooth" });
+                      navigateTo(`activity/${activity.id}`);
+                    }
+                  }}
+                  aria-label={`${lang === "tr" ? "Etkinlik detayı: " : "Aktivitätsdetails: "}${activity.title[lang]}`}
                 >
                   <img
                     src={activity.imageUrl}
@@ -369,7 +418,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang, currentPage }) => {
                     <button
                       onClick={() => {
                         globalThis.scrollTo({ top: 0, behavior: "smooth" });
-                        globalThis.location.hash = `activity/${activity.id}`;
+                        navigateTo(`activity/${activity.id}`);
                       }}
                       className="text-kpf-teal font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all"
                     >

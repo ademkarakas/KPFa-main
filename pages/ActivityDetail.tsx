@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TEXTS } from "../constants";
 import { Activity, Language } from "../types";
 import { activitiesApi } from "../services/api";
+import { isRequestCancelled } from "../hooks/useCancelableRequest";
 
 interface ActivityDetailProps {
   activityId?: string;
@@ -41,95 +42,106 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
 
   // ID ile activity yükle
   useEffect(() => {
-    if (activityId && !providedActivity) {
-      loadActivity(activityId);
+    if (!activityId || providedActivity) {
+      return;
     }
-  }, [activityId, providedActivity]);
 
-  const loadActivity = async (id: string) => {
-    try {
-      setLoading(true);
-      const data = await activitiesApi.getAll(false);
+    const abortController = new AbortController();
+    const { signal } = abortController;
 
-      // ID'ye göre activity'i bul
-      const foundActivity = data.find((item: any) => item.id === id);
+    const loadActivity = async (id: string) => {
+      try {
+        setLoading(true);
+        const data = await activitiesApi.getAll(false, signal);
 
-      if (foundActivity) {
-        // Backend formatını frontend formatına çevir
-        const formatDate = (dateISO: string, lang: "tr" | "de") => {
-          try {
-            const date = new Date(dateISO);
-            if (lang === "tr") {
-              return date.toLocaleDateString("tr-TR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              });
-            } else {
-              return date.toLocaleDateString("de-DE", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              });
+        // ID'ye göre activity'i bul
+        const foundActivity = data.find((item: any) => item.id === id);
+
+        if (foundActivity) {
+          // Backend formatını frontend formatına çevir
+          const formatDate = (dateISO: string, lang: "tr" | "de") => {
+            try {
+              const date = new Date(dateISO);
+              if (lang === "tr") {
+                return date.toLocaleDateString("tr-TR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
+              } else {
+                return date.toLocaleDateString("de-DE", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
+              }
+            } catch {
+              return dateISO;
             }
-          } catch {
-            return dateISO;
-          }
-        };
+          };
 
-        const formatAddress = (address: any) => {
-          if (!address) return "";
-          const parts = [];
-          if (address.street) parts.push(address.street);
-          if (address.houseNo) parts.push(address.houseNo);
-          if (address.zipCode) parts.push(address.zipCode);
-          if (address.city) parts.push(address.city);
-          return parts.join(", ");
-        };
+          const formatAddress = (address: any) => {
+            if (!address) return "";
+            const parts = [];
+            if (address.street) parts.push(address.street);
+            if (address.houseNo) parts.push(address.houseNo);
+            if (address.zipCode) parts.push(address.zipCode);
+            if (address.city) parts.push(address.city);
+            return parts.join(", ");
+          };
 
-        const formattedActivity: Activity = {
-          id: foundActivity.id,
-          title: {
-            tr: foundActivity.titleTr || "",
-            de: foundActivity.titleDe || "",
-          },
-          description: {
-            tr: foundActivity.descriptionTr || "",
-            de: foundActivity.descriptionDe || "",
-          },
-          detailedContent: {
-            tr:
-              foundActivity.detailedContentTr ||
-              foundActivity.descriptionTr ||
-              "",
-            de:
-              foundActivity.detailedContentDe ||
-              foundActivity.descriptionDe ||
-              "",
-          },
-          date: {
-            tr: formatDate(foundActivity.date, "tr"),
-            de: formatDate(foundActivity.date, "de"),
-          },
-          location: formatAddress(foundActivity.address) || "TBD",
-          imageUrl:
-            foundActivity.imageSource ||
-            foundActivity.imageUrl ||
-            "/api/placeholder/800/600",
-          galleryImages: foundActivity.galleryImages || [],
-          videoUrl: foundActivity.videoUrl || "",
-          dateISO: foundActivity.date,
-          category: foundActivity.category || "social",
-        };
+          const formattedActivity: Activity = {
+            id: foundActivity.id,
+            title: {
+              tr: foundActivity.titleTr || "",
+              de: foundActivity.titleDe || "",
+            },
+            description: {
+              tr: foundActivity.descriptionTr || "",
+              de: foundActivity.descriptionDe || "",
+            },
+            detailedContent: {
+              tr:
+                foundActivity.detailedContentTr ||
+                foundActivity.descriptionTr ||
+                "",
+              de:
+                foundActivity.detailedContentDe ||
+                foundActivity.descriptionDe ||
+                "",
+            },
+            date: {
+              tr: formatDate(foundActivity.date, "tr"),
+              de: formatDate(foundActivity.date, "de"),
+            },
+            location: formatAddress(foundActivity.address) || "TBD",
+            imageUrl:
+              foundActivity.imageSource ||
+              foundActivity.imageUrl ||
+              "/api/placeholder/800/600",
+            galleryImages: foundActivity.galleryImages || [],
+            videoUrl: foundActivity.videoUrl || "",
+            dateISO: foundActivity.date,
+            category: foundActivity.category || "social",
+          };
 
-        setActivity(formattedActivity);
+          setActivity(formattedActivity);
+        }
+      } catch (error) {
+        if (!isRequestCancelled(error)) {
+          console.error("Activity yükleme hatası:", error);
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Activity yükleme hatası:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadActivity(activityId);
+
+    return () => {
+      abortController.abort();
+    };
+  }, [activityId, providedActivity]);
 
   // Keyboard event listener (her zaman çalışmalı)
   useEffect(() => {
@@ -400,7 +412,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                       try {
                         await navigator.share(shareData);
                       } catch (err) {
-                        console.log("Share cancelled");
+                        // Share cancelled or failed
                       }
                     } else {
                       // Fallback: URL'yi clipboard'a kopyala
@@ -468,11 +480,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           alt="Gallery item"
                         />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="bg-white/20 backdrop-blur-md p-4 rounded-full border border-white/30">
-                            <Play size={24} className="text-white fill-white" />
-                          </div>
-                        </div>
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"></div>
                       </>
                     )}
                   </motion.div>
@@ -493,7 +501,14 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             className="fixed inset-0 bg-slate-950/95 z-[100] flex items-center justify-center p-6 backdrop-blur-sm"
             onClick={() => setSelectedImageIndex(null)}
           >
-            <button className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors">
+            <button
+              className="absolute top-4 right-4 md:top-8 md:right-8 p-2 text-white/50 hover:text-white transition-colors z-10 touch-manipulation"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedImageIndex(null);
+              }}
+              aria-label="Close gallery"
+            >
               <X size={40} />
             </button>
 
