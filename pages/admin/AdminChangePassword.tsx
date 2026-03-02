@@ -24,7 +24,7 @@ const AdminChangePassword: React.FC = () => {
     return password.length >= 6;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
 

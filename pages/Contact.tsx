@@ -8,7 +8,6 @@ import {
   User,
   MessageSquare,
   AtSign,
-  Clock,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -56,10 +55,11 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [status, setStatus] = useState<
-    { type: ""; message: "" } | { type: "success" | "error"; message: string }
-  >({
-    type: "",
+  const [status, setStatus] = useState<{
+    type: "idle" | "success" | "error";
+    message: string;
+  }>({
+    type: "idle",
     message: "",
   });
   const [formData, setFormData] = useState({
@@ -100,11 +100,10 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
     }
   };
 
-  // @ts-expect-error -- React 19 FormEvent type deprecation
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setStatus({ type: "", message: "" });
+    setStatus({ type: "idle", message: "" });
 
     // Validation
     if (!formData.anrede || formData.anrede.trim() === "") {
@@ -199,7 +198,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
           subject: "",
           message: "",
         });
-        setTimeout(() => setStatus({ type: "", message: "" }), 5000);
+        setTimeout(() => setStatus({ type: "idle", message: "" }), 5000);
       } else {
         setStatus({
           type: "error",
@@ -225,7 +224,9 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) => {
     const { id, value } = e.target;
     setFormData((prev) => ({
@@ -298,7 +299,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                       {status.message}
                     </p>
                     <button
-                      onClick={() => setStatus({ type: "", message: "" })}
+                      onClick={() => setStatus({ type: "idle", message: "" })}
                       className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 px-10 rounded-2xl transition-all shadow-lg active:scale-95"
                     >
                       {lang === "tr" ? "Yeni Mesaj" : "Neue Nachricht"}
@@ -309,15 +310,15 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                     className="space-y-6 flex flex-col flex-grow"
                     onSubmit={handleSubmit}
                   >
-                    {status.message && (
+                    {status.type !== "idle" && status.message && (
                       <div
                         className={`p-4 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 duration-300 ${
-                          status.type === "success"
+                          (status.type as "success" | "error") === "success"
                             ? "bg-teal-50 text-teal-800 border border-teal-100"
                             : "bg-red-50 text-red-800 border border-red-100"
                         }`}
                       >
-                        {status.type === "success" ? (
+                        {(status.type as "success" | "error") === "success" ? (
                           <CheckCircle size={20} />
                         ) : (
                           <AlertCircle size={20} />
@@ -417,7 +418,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                         <label
                           className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "phone" || formData.phone ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
                         >
-                          {lang === "tr" ? "Telefon" : "Telefon"}
+                          {t("contact_form_phone")}
                         </label>
                         <Phone
                           className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"
@@ -511,11 +512,13 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                 {lang === "tr" ? "İletişim Bilgileri" : "Kontaktdaten"}
               </h3>
 
-              {loading ? (
+              {loading && (
                 <div className="flex justify-center items-center py-20">
                   <Loader2 className="animate-spin text-white" size={48} />
                 </div>
-              ) : error ? (
+              )}
+
+              {!loading && error && (
                 <div className="text-white/80 text-center py-10">
                   <p>
                     {lang === "tr"
@@ -523,7 +526,9 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                       : "Daten konnten nicht geladen werden"}
                   </p>
                 </div>
-              ) : contactData ? (
+              )}
+
+              {!loading && !error && contactData && (
                 <div className="space-y-8 relative z-10">
                   <div className="flex items-start gap-4 group/item">
                     <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm group-hover/item:bg-white/30 transition-colors">
@@ -545,7 +550,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                     </div>
                     <div>
                       <h4 className="font-bold text-lg mb-1 opacity-80">
-                        {lang === "tr" ? "Telefon" : "Telefon"}
+                        {t("contact_form_phone")}
                       </h4>
                       <p className="text-white/90 font-medium">
                         {contactData.phone}
@@ -566,36 +571,17 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                       </p>
                     </div>
                   </div>
-
-                  {/* {contactData.officeHours && (
-                    <div className="flex items-start gap-4 group/item">
-                      <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm group-hover/item:bg-white/30 transition-colors">
-                        <Clock className="text-white" size={24} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-lg mb-1 opacity-80">
-                          {lang === "tr"
-                            ? "Çalışma Saatleri"
-                            : "Öffnungszeiten"}
-                        </h4>
-                        <p className="text-white/90 font-medium whitespace-pre-line">
-                          {lang === "tr"
-                            ? contactData.officeHours.turkish
-                            : contactData.officeHours.german}
-                        </p>
-                      </div>
-                    </div>
-                  )} */}
                 </div>
-              ) : null}
+              )}
             </div>
 
             {/* Google Maps Embed */}
             <div className="bg-gradient-to-br from-kpf-teal to-teal-800 rounded-3xl overflow-hidden h-[300px] relative border-4 border-white shadow-lg group">
               <iframe
+                title={lang === "tr" ? "Konum Haritası" : "Standortkarte"}
                 width="100%"
                 height="100%"
-                frameBorder="0"
+                style={{ border: 0 }}
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2679.1265865217307!2d7.8450!3d48.0150!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4791b420b420b421%3A0x0!2sB%C3%B6cklerstra%C3%9Fe%203%2C%2079110%20Freiburg%20im%20Breisgau!5e0!3m2!1sde!2sde!4v1234567890"
                 allowFullScreen
                 loading="lazy"

@@ -229,7 +229,7 @@ const AdminGuelen: React.FC = () => {
   };
 
   // @ts-expect-error -- React 19 FormEvent type deprecation
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!data) return;
     setSaving(true);

@@ -15,7 +15,7 @@ const NewsletterSubscribeForm: React.FC = () => {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
 
     // Validation

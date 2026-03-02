@@ -104,7 +104,9 @@ interface TeaEvent {
   date: string;
   time: string;
   location: string;
-  imageUrl?: string; // Backend uses 'imageUrl' not 'imageUrl'
+  imageUrl?: string;
+  imageBase64?: string;
+  imageFileName?: string;
   contactEmail: string;
   isActive: boolean;
 }
@@ -173,8 +175,7 @@ const AdminTeegespraeche: React.FC = () => {
     }
   };
 
-  // @ts-expect-error -- React 19 FormEvent type deprecation
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!editingEvent) return;
     setLoading(true);
