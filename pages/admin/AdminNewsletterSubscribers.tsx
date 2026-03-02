@@ -218,86 +218,143 @@ const AdminNewsletterSubscribers: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    {t("newsletter.admin.subscribers.email")}
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    {t("newsletter.admin.subscribers.name")}
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    {t("newsletter.admin.subscribers.status")}
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    {t("newsletter.admin.subscribers.subscribedAt")}
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                    {t("newsletter.admin.subscribers.source")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {filteredSubscribers.map((subscriber) => (
-                  <tr
-                    key={subscriber.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
+          <>
+            {/* Desktop View - Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      {t("newsletter.admin.subscribers.email")}
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      {t("newsletter.admin.subscribers.name")}
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      {t("newsletter.admin.subscribers.status")}
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      {t("newsletter.admin.subscribers.subscribedAt")}
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                      {t("newsletter.admin.subscribers.source")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredSubscribers.map((subscriber) => (
+                    <tr
+                      key={subscriber.id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Mail className="text-slate-400" size={16} />
+                          <span className="text-sm text-slate-800">
+                            {subscriber.email}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-slate-600">
+                          {subscriber.fullName || "-"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {subscriber.isActive ? (
+                            <>
+                              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                                {t("newsletter.admin.subscribers.active")}
+                              </span>
+                              {subscriber.isVerified && (
+                                <CheckCircle
+                                  className="text-green-600"
+                                  size={16}
+                                />
+                              )}
+                            </>
+                          ) : (
+                            <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
+                              {t("newsletter.admin.subscribers.inactive")}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Calendar size={14} />
+                          {formatDate(subscriber.subscribedAt)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs text-slate-500 uppercase">
+                          {subscriber.source}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View - Cards */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredSubscribers.map((subscriber) => (
+                <div
+                  key={subscriber.id}
+                  className="p-4 hover:bg-slate-50 transition-all"
+                >
+                  {/* Email Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Mail className="text-kpf-teal flex-shrink-0" size={16} />
+                      <span className="text-sm font-semibold text-slate-800 truncate">
+                        {subscriber.email}
+                      </span>
+                    </div>
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-1.5">
+                      {subscriber.isActive ? (
+                        <span className="px-2.5 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                          {t("newsletter.admin.subscribers.active")}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
+                          {t("newsletter.admin.subscribers.inactive")}
+                        </span>
+                      )}
+                      {subscriber.isVerified && (
+                        <CheckCircle className="text-green-600" size={16} />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-2 text-sm text-slate-600">
+                    {subscriber.fullName && (
                       <div className="flex items-center gap-2">
-                        <Mail className="text-slate-400" size={16} />
-                        <span className="text-sm text-slate-800">
-                          {subscriber.email}
+                        <span className="font-medium">
+                          {subscriber.fullName}
                         </span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-600">
-                        {subscriber.fullName || "-"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        {subscriber.isActive ? (
-                          <>
-                            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
-                              {t("newsletter.admin.subscribers.active")}
-                            </span>
-                            {subscriber.isVerified && (
-                              <CheckCircle
-                                className="text-green-600"
-                                size={16}
-                                title={t(
-                                  "newsletter.admin.subscribers.verified",
-                                )}
-                              />
-                            )}
-                          </>
-                        ) : (
-                          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
-                            {t("newsletter.admin.subscribers.inactive")}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Calendar size={14} />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Calendar size={14} className="text-slate-400" />
+                      <span className="text-xs">
                         {formatDate(subscriber.subscribedAt)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-500 uppercase">
                         {subscriber.source}
                       </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

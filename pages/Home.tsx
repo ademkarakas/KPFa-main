@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Language, PageView, Activity } from "../types";
 import { TEXTS } from "../constants";
-import { activitiesApi } from "../services/api";
+import { activitiesApi, API_BASE_URL } from "../services/api";
 import { createSafeHtml } from "../utils/sanitize";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
 import { navigateTo } from "../utils/navigation";
@@ -142,16 +142,16 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
         // Ana Home verilerini, Hero verisini, Aktiviteleri ve Instagram'ı paralel olarak çek
         const [homeResponse, heroResponse, activitiesData, instagramResponse] =
           await Promise.all([
-            fetch("https://localhost:7189/api/Home", {
+            fetch(`${API_BASE_URL}/Home`, {
               cache: "no-store",
               signal,
             }),
-            fetch("https://localhost:7189/api/Home/hero", {
+            fetch(`${API_BASE_URL}/Home/hero`, {
               cache: "no-store",
               signal,
             }),
             activitiesApi.getAll(false, signal), // Sadece aktif aktiviteler, AbortSignal ile
-            fetch("https://localhost:7189/api/Home/instagram", {
+            fetch(`${API_BASE_URL}/Home/instagram`, {
               cache: "no-store",
               signal,
             }),
@@ -164,7 +164,6 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
           : [];
 
         if (!data || Object.keys(data).length === 0) {
-          console.warn("API'den boş veri döndü");
           setHomeData(INITIAL_HOME_DATA);
           return;
         }
@@ -316,7 +315,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
         setHomeData(homeDataWithFallback);
       } catch (error) {
         if (!isRequestCancelled(error)) {
-          console.error("❌ Home verisi yüklenemedi:", error);
+          console.error("Home verisi yüklenemedi:", error);
         }
         // Hata durumunda boş veri bırak, mock data kullanma
       }
@@ -436,14 +435,23 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               const sectionIds = ["core-values", "who-we-are", "focus-areas"];
               const sectionId = sectionIds[index];
 
+              const handleFeatureClick = () => {
+                sessionStorage.setItem("scrollToSection", sectionId);
+                setPage("about");
+              };
+
               return (
                 <div
                   key={feature.id}
-                  onClick={() => {
-                    // Section ID'yi sessionStorage'a kaydet, About sayfası bunu okuyup scroll edecek
-                    sessionStorage.setItem("scrollToSection", sectionId);
-                    setPage("about");
+                  tabIndex={0}
+                  onClick={handleFeatureClick}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleFeatureClick();
+                    }
                   }}
+                  aria-label={`${lang === "tr" ? feature.titleTr : feature.titleDe} bölümüne git`}
                   className="group bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer border border-slate-100"
                 >
                   <div
@@ -526,7 +534,6 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                   return (
                     <div
                       key={activity.id}
-                      role="button"
                       tabIndex={0}
                       className="group bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 cursor-pointer"
                       onClick={handleActivityClick}

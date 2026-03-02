@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { API_BASE_URL } from "../../services/api";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import ConfirmDialog from "../../components/ConfirmDialog";
@@ -360,13 +361,13 @@ const AdminAbout: React.FC = () => {
         humanRightsRes,
         partnersRes,
       ] = await Promise.all([
-        fetch("https://localhost:7189/api/AboutUs/summary"),
-        fetch("https://localhost:7189/api/AboutUs/values"),
-        fetch("https://localhost:7189/api/AboutUs/focus-areas"),
-        fetch("https://localhost:7189/api/AboutUs/activity-areas"),
-        fetch("https://localhost:7189/api/AboutUs/team"),
-        fetch("https://localhost:7189/api/AboutUs/human-rights"),
-        fetch("https://localhost:7189/api/Partners"),
+        fetch(`${API_BASE_URL}/AboutUs/summary`),
+        fetch(`${API_BASE_URL}/AboutUs/values`),
+        fetch(`${API_BASE_URL}/AboutUs/focus-areas`),
+        fetch(`${API_BASE_URL}/AboutUs/activity-areas`),
+        fetch(`${API_BASE_URL}/AboutUs/team`),
+        fetch(`${API_BASE_URL}/AboutUs/human-rights`),
+        fetch(`${API_BASE_URL}/Partners`),
       ]);
 
       if (summaryRes.status === 401 || valuesRes.status === 401) {
@@ -536,48 +537,48 @@ const AdminAbout: React.FC = () => {
   // ============= Save Functions =============
   const saveQuote = () => {
     const endpoint = quote.id
-      ? `https://localhost:7189/api/AboutUs/quote/${quote.id}`
-      : "https://localhost:7189/api/AboutUs/quote";
+      ? `${API_BASE_URL}/AboutUs/quote/${quote.id}`
+      : `${API_BASE_URL}/AboutUs/quote`;
     const method = quote.id ? "PUT" : "POST";
     void handleSave(quote, endpoint, method);
   };
 
   const saveWhoWeAre = () => {
     const endpoint = whoWeAre.id
-      ? `https://localhost:7189/api/AboutUs/who-we-are/${whoWeAre.id}`
-      : "https://localhost:7189/api/AboutUs/who-we-are";
+      ? `${API_BASE_URL}/AboutUs/who-we-are/${whoWeAre.id}`
+      : `${API_BASE_URL}/AboutUs/who-we-are`;
     const method = whoWeAre.id ? "PUT" : "POST";
     void handleSave(whoWeAre, endpoint, method);
   };
 
   const saveGoals = () => {
     const endpoint = goals.id
-      ? `https://localhost:7189/api/AboutUs/goals/${goals.id}`
-      : "https://localhost:7189/api/AboutUs/goals";
+      ? `${API_BASE_URL}/AboutUs/goals/${goals.id}`
+      : `${API_BASE_URL}/AboutUs/goals`;
     const method = goals.id ? "PUT" : "POST";
     void handleSave(goals, endpoint, method);
   };
 
   const saveVision = () => {
     const endpoint = vision.id
-      ? `https://localhost:7189/api/AboutUs/vision/${vision.id}`
-      : "https://localhost:7189/api/AboutUs/vision";
+      ? `${API_BASE_URL}/AboutUs/vision/${vision.id}`
+      : `${API_BASE_URL}/AboutUs/vision`;
     const method = vision.id ? "PUT" : "POST";
     void handleSave(vision, endpoint, method);
   };
 
   const saveMission = () => {
     const endpoint = mission.id
-      ? `https://localhost:7189/api/AboutUs/mission/${mission.id}`
-      : "https://localhost:7189/api/AboutUs/mission";
+      ? `${API_BASE_URL}/AboutUs/mission/${mission.id}`
+      : `${API_BASE_URL}/AboutUs/mission`;
     const method = mission.id ? "PUT" : "POST";
     void handleSave(mission, endpoint, method);
   };
 
   const saveHumanRights = () => {
     const endpoint = humanRights.id
-      ? `https://localhost:7189/api/AboutUs/human-rights/${humanRights.id}`
-      : "https://localhost:7189/api/AboutUs/human-rights";
+      ? `${API_BASE_URL}/AboutUs/human-rights/${humanRights.id}`
+      : `${API_BASE_URL}/AboutUs/human-rights`;
     const method = humanRights.id ? "PUT" : "POST";
     void handleSave(humanRights, endpoint, method);
   };
@@ -585,8 +586,8 @@ const AdminAbout: React.FC = () => {
   // ============= CRUD Operations =============
   const saveCoreValue = (item: ApiCoreValue) => {
     const endpoint = item.id
-      ? `https://localhost:7189/api/AboutUs/core-values/${item.id}`
-      : "https://localhost:7189/api/AboutUs/core-values";
+      ? `${API_BASE_URL}/AboutUs/core-values/${item.id}`
+      : `${API_BASE_URL}/AboutUs/core-values`;
     const method = item.id ? "PUT" : "POST";
     void handleSave(item, endpoint, method, () => setEditingCoreValue(null));
   };
@@ -667,7 +668,7 @@ const AdminAbout: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
+      <div className="sticky top-0 z-10 bg-white shadow-lg border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-kpf-teal/10 rounded-lg">
@@ -829,6 +830,7 @@ const AdminAbout: React.FC = () => {
                   id="about_who_we_are_banner_file"
                   type="file"
                   accept="image/*"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal file:mr-4 file:py-3 file:px-5 md:file:py-2 md:file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   onChange={(e) => {
                     setLastModifiedSection("whoWeAre");
                     const file = e.target.files?.[0];
@@ -844,7 +846,6 @@ const AdminAbout: React.FC = () => {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-kpf-teal focus:border-kpf-teal"
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   Veya URL ile açıkla:
@@ -1489,8 +1490,8 @@ const AdminAbout: React.FC = () => {
 
       {/* Modal: Core Value */}
       {editingCoreValue && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
             <h3 className="text-xl font-bold mb-6">
               {editingCoreValue.id ? t.edit : t.add} - {t.coreValues}
             </h3>
@@ -1604,8 +1605,8 @@ const AdminAbout: React.FC = () => {
 
       {/* Modal: Focus Area */}
       {editingFocusArea && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
             <h3 className="text-xl font-bold mb-6">
               {editingFocusArea.id ? t.edit : t.add} - {t.focusAreas}
             </h3>
@@ -1706,6 +1707,7 @@ const AdminAbout: React.FC = () => {
                   id="about_modal_focus_area_icon_file"
                   type="file"
                   accept="image/*"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 file:mr-4 file:py-3 file:px-5 md:file:py-2 md:file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -1720,7 +1722,6 @@ const AdminAbout: React.FC = () => {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                 />
                 <p className="text-xs text-gray-500 mt-2">
                   Veya URL ile açıkla:
@@ -1781,8 +1782,8 @@ const AdminAbout: React.FC = () => {
 
       {/* Modal: Activity Area */}
       {editingActivityArea && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
             <h3 className="text-xl font-bold mb-6">
               {editingActivityArea.id ? t.edit : t.add} - {t.activityAreas}
             </h3>
@@ -1896,8 +1897,8 @@ const AdminAbout: React.FC = () => {
 
       {/* Modal: Team Member */}
       {editingTeamMember && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
             <h3 className="text-xl font-bold mb-6">
               {editingTeamMember.id ? t.edit : t.add} - {t.teamMembers}
             </h3>
@@ -2024,8 +2025,8 @@ const AdminAbout: React.FC = () => {
 
       {/* Modal: Partner */}
       {editingPartner && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
             <h3 className="text-xl font-bold mb-6">
               {editingPartner.id ? t.edit : t.add} - {t.partners}
             </h3>

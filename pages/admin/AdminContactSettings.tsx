@@ -162,6 +162,7 @@ const AdminContactSettings: React.FC = () => {
     }
   };
 
+  // @ts-expect-error -- React 19 FormEvent type deprecation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -205,7 +206,7 @@ const AdminContactSettings: React.FC = () => {
     <div className="max-w-7xl mx-auto pb-20 px-4">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Sticky Top Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-4 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-kpf-teal/10 rounded-lg">
               <Mail className="text-kpf-teal" size={20} />

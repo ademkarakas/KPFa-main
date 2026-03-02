@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+import { API_BASE_URL } from "../../services/api";
 
 type NotificationType = "success" | "error" | "info";
 
@@ -192,7 +193,7 @@ const AdminImprint: React.FC = () => {
 
   const loadImprint = async () => {
     try {
-      const res = await fetch("https://localhost:7189/api/Imprint");
+      const res = await fetch(`${API_BASE_URL}/Imprint`);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -230,15 +231,15 @@ const AdminImprint: React.FC = () => {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) {
-        alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
+        showNotification("error", t("admin_session_expired"));
         return;
       }
 
       // Eğer ID yoksa POST, varsa PUT yap
       const isNewRecord = !content.id;
       const url = isNewRecord
-        ? "https://localhost:7189/api/Imprint"
-        : `https://localhost:7189/api/Imprint/${content.id}`;
+        ? `${API_BASE_URL}/Imprint`
+        : `${API_BASE_URL}/Imprint/${content.id}`;
 
       const method = isNewRecord ? "POST" : "PUT";
 
@@ -297,8 +298,6 @@ const AdminImprint: React.FC = () => {
             copyrightTurkish: content.copyrightTurkish,
             copyrightGerman: content.copyrightGerman,
           };
-
-      console.log("📤 Gönderilen payload:", JSON.stringify(payload, null, 2));
 
       const res = await fetch(url, {
         method,
@@ -370,7 +369,7 @@ const AdminImprint: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-10">
         {/* Sticky Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-kpf-teal/10 rounded-2xl">
               <Shield className="text-kpf-teal" size={28} />

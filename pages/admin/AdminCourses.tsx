@@ -407,9 +407,6 @@ const AdminCourses: React.FC = () => {
         isActive: formData.isActive,
       };
 
-      console.log("📋 FormData.address:", formData.address);
-      console.log("📤 Gönderilen DTO:", JSON.stringify(dto, null, 2));
-
       if (editingId) {
         // Update requires id and time in the DTO
         await coursesApi.update(editingId, {
@@ -442,14 +439,6 @@ const AdminCourses: React.FC = () => {
   const normalizeAddressFormValue = (course: any) => {
     // Backend returns courseLocation, we map to address
     const location = course.courseLocation || course.address;
-
-    console.log("🏠 normalizeAddressFormValue çağrıldı:", {
-      courseId: course.id,
-      courseLocation: course.courseLocation,
-      address: course.address,
-      selectedLocation: location,
-    });
-
     if (location && typeof location === "object") {
       return {
         street: location.street || "",
@@ -639,7 +628,7 @@ const AdminCourses: React.FC = () => {
     <div className="max-w-7xl mx-auto pb-20 px-4">
       <div className="space-y-6">
         {/* Üst Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-kpf-teal/10 rounded-2xl">
               <GraduationCap className="text-kpf-teal" size={28} />
@@ -731,8 +720,8 @@ const AdminCourses: React.FC = () => {
 
         {/* Courses List */}
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold text-white bg-gradient-to-r from-kpf-teal to-kpf-teal uppercase tracking-wide">
+          {/* Desktop View - Header */}
+          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold text-white bg-gradient-to-r from-kpf-teal to-kpf-teal uppercase tracking-wide">
             <div className="col-span-4">{t("admin_courses_header_course")}</div>
             <div className="col-span-2">
               {t("admin_courses_header_instructor")}
@@ -751,12 +740,12 @@ const AdminCourses: React.FC = () => {
             </div>
           </div>
 
-          {/* Rows */}
-          <div className="divide-y divide-slate-100">
+          {/* Desktop View - Rows */}
+          <div className="hidden md:block divide-y divide-slate-100">
             {filteredCourses.map((course) => (
               <div
                 key={course.id}
-                className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-teal/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
+                className="grid grid-cols-12 gap-4 px-4 md:px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-teal/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
               >
                 {/* Title + Image */}
                 <div className="col-span-4 flex items-center gap-4">
@@ -855,14 +844,116 @@ const AdminCourses: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Mobile View - Cards */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filteredCourses.map((course) => (
+              <div
+                key={course.id}
+                className="p-4 hover:bg-slate-50 transition-all"
+              >
+                {/* Image */}
+                {course.imageUrl && (
+                  <div className="relative mb-3">
+                    <img
+                      src={course.imageUrl}
+                      alt={course.titleTr}
+                      className="w-full h-40 object-cover rounded-lg shadow-md"
+                    />
+                    {!course.isActive && (
+                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        <EyeOff size={24} className="text-white" />
+                      </div>
+                    )}
+                    {/* Status Badge */}
+                    <div className="absolute top-2 right-2">
+                      <button
+                        onClick={() => toggleActive(course.id, course.isActive)}
+                        className="shadow-lg"
+                      >
+                        {course.isActive ? (
+                          <span className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5">
+                            <Eye size={14} />
+                            {t("admin_active")}
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1.5 bg-slate-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5">
+                            <EyeOff size={14} />
+                            {t("admin_inactive")}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="space-y-2.5">
+                  <h3 className="font-bold text-lg text-slate-800 line-clamp-2">
+                    {byLanguage(language, course.titleTr, course.titleDe)}
+                  </h3>
+                  <p className="text-sm text-slate-600 line-clamp-2">
+                    {byLanguage(
+                      language,
+                      course.descriptionTr,
+                      course.descriptionDe,
+                    )}
+                  </p>
+
+                  {/* Meta Info */}
+                  <div className="space-y-1.5 text-xs text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <GraduationCap size={14} className="text-kpf-teal" />
+                      <span>{course.instructor || "-"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar size={14} className="text-kpf-teal" />
+                      <span>
+                        {byLanguage(
+                          language,
+                          course.scheduleTr,
+                          course.scheduleDe,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users size={14} className="text-kpf-teal" />
+                      <span>
+                        {course.capacity || "-"}{" "}
+                        {t("admin_courses_capacity_unit")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => handleEdit(course)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all font-semibold text-sm"
+                  >
+                    <Edit size={18} />
+                    {t("admin_edit")}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(course.id)}
+                    className="py-3 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all"
+                    title={t("admin_delete")}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-6xl max-h-[90vh] overflow-y-auto my-8 shadow-2xl border border-slate-100">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl md:rounded-[2.5rem] w-full max-w-[98vw] md:max-w-4xl lg:max-w-6xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto my-4 md:my-8 shadow-2xl border border-slate-100">
               {/* Üst Bar - AdminVolunteerPage tarzı */}
-              <div className="sticky top-0 bg-white/90 backdrop-blur-md p-6 rounded-t-[2.5rem] border-b border-slate-100 flex items-center justify-between z-10">
+              <div className="sticky top-0 bg-white/90 backdrop-blur-md p-4 md:p-6 rounded-t-2xl md:rounded-t-[2.5rem] border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 z-10">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-kpf-teal/10 rounded-2xl">
                     <GraduationCap className="text-kpf-teal" size={28} />
@@ -880,13 +971,16 @@ const AdminCourses: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors"
+                  className="p-3 hover:bg-slate-100 rounded-2xl transition-colors min-h-[44px] min-w-[44px]"
                 >
                   <X size={24} className="text-slate-500" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 lg:p-12 space-y-10">
+              <form
+                onSubmit={handleSubmit}
+                className="p-4 sm:p-6 md:p-8 lg:p-12 space-y-6 md:space-y-8 lg:space-y-10"
+              >
                 {/* Başlık ve Açıklama Bölümü */}
                 <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                   <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -1191,7 +1285,7 @@ const AdminCourses: React.FC = () => {
                     {t("admin_courses_address_section_title")}
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Sokak */}
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -1396,14 +1490,14 @@ const AdminCourses: React.FC = () => {
                     accept="image/*"
                     onChange={handleImageUpload}
                     disabled={uploadingImage}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-kpf-teal/80 file:cursor-pointer"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white text-base file:mr-3 file:py-3 file:px-5 md:file:py-2 md:file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-kpf-teal/80 file:cursor-pointer"
                   />
                   {formData.imageUrl && (
                     <div className="mt-4 relative">
                       <img
                         src={formData.imageUrl}
                         alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg shadow-md"
+                        className="w-full h-40 md:h-48 object-cover rounded-lg shadow-md"
                       />
                       <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
                         ✓ {t("admin_uploaded")}

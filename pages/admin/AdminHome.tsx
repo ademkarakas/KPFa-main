@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+import { API_BASE_URL } from "../../services/api";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -172,9 +173,9 @@ const AdminHome: React.FC = () => {
       // Ana Home verilerini ve Hero verisini paralel olarak çek
       const [homeResponse, heroResponse, instagramResponse] = await Promise.all(
         [
-          fetch("https://localhost:7189/api/Home"),
-          fetch("https://localhost:7189/api/Home/hero"),
-          fetch("https://localhost:7189/api/Home/instagram"),
+          fetch(`${API_BASE_URL}/Home`),
+          fetch(`${API_BASE_URL}/Home/hero`),
+          fetch(`${API_BASE_URL}/Home/instagram`),
         ],
       );
 
@@ -242,8 +243,8 @@ const AdminHome: React.FC = () => {
       const token = localStorage.getItem("adminToken");
       // Hero ID varsa PUT ile güncelle, yoksa POST ile oluştur
       const url = heroContent.id
-        ? `https://localhost:7189/api/Home/hero/${heroContent.id}`
-        : "https://localhost:7189/api/Home/hero";
+        ? `${API_BASE_URL}/Home/hero/${heroContent.id}`
+        : `${API_BASE_URL}/Home/hero`;
       const method = heroContent.id ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -281,7 +282,6 @@ const AdminHome: React.FC = () => {
 
       // Response'tan güncellenmiş verileri al
       const updatedHero = await response.json();
-      console.log("✅ Backend'den gelen hero:", updatedHero);
 
       setHeroContent({
         id: updatedHero.id,
@@ -350,7 +350,7 @@ const AdminHome: React.FC = () => {
           (editingFeature as any).color || existingFeature?.color || "#FF6B35",
       };
 
-      const response = await fetch("https://localhost:7189/api/Home/features", {
+      const response = await fetch(`${API_BASE_URL}/Home/features`, {
         method: isNew ? "POST" : "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -370,7 +370,7 @@ const AdminHome: React.FC = () => {
       }
 
       // Verileri backend'den yeniden yükle
-      const reloadResponse = await fetch("https://localhost:7189/api/Home", {
+      const reloadResponse = await fetch(`${API_BASE_URL}/Home`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (reloadResponse.ok) {
@@ -412,15 +412,12 @@ const AdminHome: React.FC = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(
-        `https://localhost:7189/api/Home/features/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(`${API_BASE_URL}/Home/features/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       if (response.status === 401) {
         localStorage.removeItem("adminToken");
@@ -470,8 +467,8 @@ const AdminHome: React.FC = () => {
       );
 
       const url = isNew
-        ? "https://localhost:7189/api/Home/instagram"
-        : `https://localhost:7189/api/Home/instagram/${editingInstagram.id}`;
+        ? `${API_BASE_URL}/Home/instagram`
+        : `${API_BASE_URL}/Home/instagram/${editingInstagram.id}`;
       const method = isNew ? "POST" : "PUT";
 
       const response = await fetch(url, {
@@ -498,12 +495,9 @@ const AdminHome: React.FC = () => {
       }
 
       // Reload Instagram items
-      const reloadResponse = await fetch(
-        "https://localhost:7189/api/Home/instagram",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const reloadResponse = await fetch(`${API_BASE_URL}/Home/instagram`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (reloadResponse.ok) {
         const data = await reloadResponse.json();
         setInstagramItems(
@@ -537,15 +531,12 @@ const AdminHome: React.FC = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch(
-        `https://localhost:7189/api/Home/instagram/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await fetch(`${API_BASE_URL}/Home/instagram/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       if (response.status === 401) {
         localStorage.removeItem("adminToken");
@@ -579,7 +570,7 @@ const AdminHome: React.FC = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("https://localhost:7189/api/Home/cta", {
+      const response = await fetch(`${API_BASE_URL}/Home/cta`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -630,7 +621,7 @@ const AdminHome: React.FC = () => {
       )}
 
       {/* Sticky Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10 mb-8">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-kpf-teal/10 rounded-2xl">
             <Sparkles className="text-kpf-teal" size={28} />
@@ -798,7 +789,7 @@ const AdminHome: React.FC = () => {
                 <img
                   src={heroContent.backgroundImageBase64}
                   alt="Preview"
-                  className="w-full h-48 object-cover"
+                  className="w-full h-40 md:h-48 object-cover"
                 />
               </div>
             )}
@@ -808,7 +799,7 @@ const AdminHome: React.FC = () => {
                   <img
                     src={heroContent.backgroundImageUrl}
                     alt="Current"
-                    className="w-full h-48 object-cover"
+                    className="w-full h-40 md:h-48 object-cover"
                   />
                 </div>
               )}
@@ -945,8 +936,8 @@ const AdminHome: React.FC = () => {
 
         {/* Edit/Add Feature Modal */}
         {editingFeature && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+            <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-slate-800">
                   {t("admin_home_edit_feature")}
@@ -983,7 +974,7 @@ const AdminHome: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
                       {t("admin_field_title_tr")}
@@ -1019,7 +1010,7 @@ const AdminHome: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
                       {t("admin_field_description_tr")}
@@ -1054,17 +1045,17 @@ const AdminHome: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={saveFeature}
-                  className="flex-1 bg-kpf-teal text-white px-4 py-2 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-kpf-teal text-white px-4 py-3 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   <Save size={20} />
                   {t("admin_save")}
                 </button>
                 <button
                   onClick={() => setEditingFeature(null)}
-                  className="flex-1 bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold hover:bg-slate-400 transition-colors"
+                  className="flex-1 bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-400 transition-colors min-h-[44px]"
                 >
                   {t("admin_cancel")}
                 </button>
@@ -1142,8 +1133,8 @@ const AdminHome: React.FC = () => {
 
         {/* Edit/Add Instagram Item Modal */}
         {editingInstagram && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+            <div className="bg-white rounded-xl max-w-[98vw] md:max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto p-4 sm:p-6 md:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-slate-800">
                   {t("admin_edit_instagram_item")}
@@ -1178,7 +1169,7 @@ const AdminHome: React.FC = () => {
                       <img
                         src={editingInstagram.imageUrl}
                         alt="Preview"
-                        className="w-full h-48 object-cover"
+                        className="w-full h-40 md:h-48 object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = "none";
                         }}
@@ -1206,17 +1197,17 @@ const AdminHome: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={saveInstagramItem}
-                  className="flex-1 bg-kpf-teal text-white px-4 py-2 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-kpf-teal text-white px-4 py-3 rounded-lg font-bold hover:bg-kpf-teal/90 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   <Save size={20} />
                   {t("admin_save")}
                 </button>
                 <button
                   onClick={() => setEditingInstagram(null)}
-                  className="flex-1 bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold hover:bg-slate-400 transition-colors"
+                  className="flex-1 bg-slate-300 text-slate-700 px-4 py-3 rounded-lg font-bold hover:bg-slate-400 transition-colors min-h-[44px]"
                 >
                   {t("admin_cancel")}
                 </button>

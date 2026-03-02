@@ -28,6 +28,7 @@ import { Language, PageView, Course } from "../types";
 import { TEXTS } from "../constants";
 import { coursesApi } from "../services/api";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
+import { createSafeHtml } from "../utils/sanitize";
 
 interface CoursesProps {
   lang: Language;
@@ -124,7 +125,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
       setCourses(formattedCourses);
     } catch (error) {
       if (!isRequestCancelled(error)) {
-        console.error("❌ Veri hatası:", error);
+        console.error("Veri hatası:", error);
       }
     } finally {
       setLoading(false);
@@ -211,7 +212,15 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
           {courses.map((course, index) => (
             <div
               key={course.id}
+              tabIndex={0}
               onClick={() => setSelectedCourse(course)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedCourse(course);
+                }
+              }}
+              aria-label={`${course.title[lang]} kurs detaylarını görüntüle`}
               className="group bg-white rounded-[2.5rem] p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(20,184,166,0.15)] transition-all duration-500 hover:-translate-y-2 border border-slate-100 cursor-pointer relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-1.5 bg-slate-50 group-hover:bg-kpf-teal transition-colors duration-500"></div>
@@ -235,9 +244,12 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
                 {course.title[lang]}
               </h3>
 
-              <p className="text-slate-500 mb-8 line-clamp-3 leading-relaxed text-[15px]">
-                {course.description[lang]}
-              </p>
+              <div
+                className="text-slate-500 mb-8 line-clamp-3 leading-relaxed text-[15px]"
+                dangerouslySetInnerHTML={createSafeHtml(
+                  course.description[lang],
+                )}
+              />
 
               <div className="flex items-center justify-between pt-6 border-t border-slate-50">
                 {course.schedule && (
@@ -269,7 +281,7 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
               {t("course_cta_desc")}
             </p>
             <button
-              onClick={() => setPage && setPage("contact")}
+              onClick={() => setPage?.("contact")}
               className="group inline-flex items-center gap-3 bg-kpf-teal text-white px-10 py-4 rounded-2xl font-bold hover:bg-slate-900 transition-all duration-300 shadow-xl shadow-teal-100"
             >
               {lang === "tr" ? "İletişime Geç" : "Kontakt aufnehmen"}
@@ -286,8 +298,15 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
       {selectedCourse && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
           <div
+            tabIndex={0}
             className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
             onClick={() => setSelectedCourse(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setSelectedCourse(null);
+              }
+            }}
+            aria-label="Modal'i kapat"
           ></div>
           <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] w-full max-w-2xl relative z-10 shadow-2xl animate-in fade-in zoom-in duration-300 overflow-hidden border border-white/20 max-h-[95vh] overflow-y-auto">
             <button
@@ -318,11 +337,14 @@ const Courses: React.FC<CoursesProps> = ({ lang, setPage, currentPage }) => {
             </div>
 
             <div className="p-6 sm:p-10 space-y-6 sm:space-y-8 bg-white">
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-medium">
-                {selectedCourse.details
-                  ? selectedCourse.details[lang]
-                  : selectedCourse.description[lang]}
-              </p>
+              <div
+                className="text-base sm:text-lg text-slate-600 leading-relaxed font-medium"
+                dangerouslySetInnerHTML={createSafeHtml(
+                  selectedCourse.details
+                    ? selectedCourse.details[lang]
+                    : selectedCourse.description[lang],
+                )}
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {[

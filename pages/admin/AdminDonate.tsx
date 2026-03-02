@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from "../../services/api";
 import {
   Save,
   Heart,
@@ -105,7 +106,7 @@ const AdminDonate: React.FC = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem("adminToken");
-        const res = await fetch("https://localhost:7189/api/DonatePage", {
+        const res = await fetch(`${API_BASE_URL}/DonatePage`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -162,23 +163,21 @@ const AdminDonate: React.FC = () => {
     fetchData();
   }, []);
 
+  // @ts-expect-error -- React 19 FormEvent type deprecation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(
-        `https://localhost:7189/api/DonatePage/${data.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
+      const res = await fetch(`${API_BASE_URL}/DonatePage/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(data),
+      });
 
       if (res.status === 401) {
         handleUnauthorized();
@@ -253,7 +252,7 @@ const AdminDonate: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-10">
         {/* Sticky Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-kpf-teal/10 rounded-2xl">
               <Heart className="text-kpf-teal" size={28} />

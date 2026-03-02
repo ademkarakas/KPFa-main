@@ -17,6 +17,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { TEXTS } from "../../constants";
+import { API_BASE_URL } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 // Admin user interface
@@ -38,8 +40,6 @@ interface AdminFormData {
   name: string;
   role: string;
 }
-
-const API_BASE_URL = "https://localhost:7189/api";
 
 const AdminTeam: React.FC = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -167,8 +167,13 @@ const AdminTeam: React.FC = () => {
 
   const handleUnauthorized = () => {
     localStorage.removeItem("adminToken");
-    alert("Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
-    globalThis.location.href = "/admin/login";
+    showNotification(
+      TEXTS["admin_session_expired"]?.[language] || "Session expired",
+      "error",
+    );
+    setTimeout(() => {
+      globalThis.location.href = "/admin/login";
+    }, 2000);
   };
 
   const showNotification = (message: string, type: "success" | "error") => {
@@ -205,7 +210,10 @@ const AdminTeam: React.FC = () => {
       setAdmins(data);
     } catch (error) {
       console.error("Kullanıcılar yüklenirken hata:", error);
-      alert(t.loadError);
+      showNotification(
+        TEXTS["admin_load_error"]?.[language] || "Load error",
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -507,105 +515,189 @@ const AdminTeam: React.FC = () => {
 
       {/* Users Table */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-50 border-b-2 border-slate-200">
-            <tr>
-              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
-                {t.name}
-              </th>
-              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
-                {t.email}
-              </th>
-              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
-                {t.role}
-              </th>
-              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
-                {t.status}
-              </th>
-              <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
-                {t.lastLogin}
-              </th>
-              <th className="px-8 py-5 text-right text-base font-bold text-slate-700"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredAdmins.map((admin) => (
-              <tr
-                key={admin.id}
-                className="hover:bg-slate-50 transition-colors"
-              >
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-kpf-teal/10 flex items-center justify-center">
-                      <span className="text-kpf-teal font-bold text-xl">
-                        {admin.name.charAt(0).toUpperCase()}
+        {/* Desktop View - Table */}
+        <div className="hidden md:block">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b-2 border-slate-200">
+              <tr>
+                <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
+                  {t.name}
+                </th>
+                <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
+                  {t.email}
+                </th>
+                <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
+                  {t.role}
+                </th>
+                <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
+                  {t.status}
+                </th>
+                <th className="px-8 py-5 text-left text-base font-bold text-slate-700">
+                  {t.lastLogin}
+                </th>
+                <th className="px-8 py-5 text-right text-base font-bold text-slate-700"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredAdmins.map((admin) => (
+                <tr
+                  key={admin.id}
+                  className="hover:bg-slate-50 transition-colors"
+                >
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-kpf-teal/10 flex items-center justify-center">
+                        <span className="text-kpf-teal font-bold text-xl">
+                          {admin.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="font-semibold text-slate-800 text-base">
+                        {admin.name}
                       </span>
                     </div>
-                    <span className="font-semibold text-slate-800 text-base">
+                  </td>
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Mail size={16} />
+                      <span className="text-base">{admin.email}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5">
+                    <span
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border ${getRoleBadgeColor(
+                        admin.role,
+                      )}`}
+                    >
+                      {getRoleIcon(admin.role)}
+                      {getRoleLabel(admin.role)}
+                    </span>
+                  </td>
+                  <td className="px-8 py-5">
+                    {admin.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-bold">
+                        <Eye size={14} />
+                        {t.active}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-sm font-bold">
+                        <EyeOff size={14} />
+                        {t.inactive}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Clock size={16} />
+                      <span>{formatDate(admin.lastLoginAt)}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handleEdit(admin)}
+                        className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                        title={t.edit}
+                      >
+                        <Edit size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(admin.id)}
+                        className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        title={t.delete}
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile View - Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredAdmins.length === 0 ? (
+            <div className="text-center py-16 text-slate-500">
+              <Users size={56} className="mx-auto mb-4 opacity-30" />
+              <p className="text-lg font-semibold">{t.noUsersFound}</p>
+            </div>
+          ) : (
+            filteredAdmins.map((admin) => (
+              <button
+                key={admin.id}
+                type="button"
+                className="w-full text-left p-4 hover:bg-slate-50 transition-all"
+                onClick={() => handleEdit(admin)}
+              >
+                {/* Header with Avatar and Name */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-kpf-teal/10 flex items-center justify-center">
+                    <span className="text-kpf-teal font-bold text-xl">
+                      {admin.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-base text-slate-800 truncate">
                       {admin.name}
-                    </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                      {getRoleIcon(admin.role)}
+                      {getRoleLabel(admin.role)}
+                    </p>
                   </div>
-                </td>
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Mail size={16} />
-                    <span className="text-base">{admin.email}</span>
+                  {/* Status Badge */}
+                  <div>
+                    {admin.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                        <Eye size={12} />
+                        {t.active}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">
+                        <EyeOff size={12} />
+                        {t.inactive}
+                      </span>
+                    )}
                   </div>
-                </td>
-                <td className="px-8 py-5">
-                  <span
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border ${getRoleBadgeColor(
-                      admin.role,
-                    )}`}
-                  >
-                    {getRoleIcon(admin.role)}
-                    {getRoleLabel(admin.role)}
-                  </span>
-                </td>
-                <td className="px-8 py-5">
-                  {admin.isActive ? (
-                    <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-bold">
-                      <Eye size={14} />
-                      {t.active}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 rounded-full text-sm font-bold">
-                      <EyeOff size={14} />
-                      {t.inactive}
-                    </span>
-                  )}
-                </td>
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Clock size={16} />
+                </div>
+
+                {/* Contact Info */}
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Mail size={14} className="text-kpf-teal flex-shrink-0" />
+                    <span className="truncate">{admin.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Clock size={12} className="flex-shrink-0" />
                     <span>{formatDate(admin.lastLoginAt)}</span>
                   </div>
-                </td>
-                <td className="px-8 py-5">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => handleEdit(admin)}
-                      className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                      title={t.edit}
-                    >
-                      <Edit size={20} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(admin.id)}
-                      className="p-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                      title={t.delete}
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(admin)}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition-all font-semibold text-sm min-h-[44px]"
+                  >
+                    <Edit size={18} />
+                    {t.edit}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(admin.id)}
+                    className="py-3 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all min-h-[44px] min-w-[44px]"
+                    title={t.delete}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
 
         {filteredAdmins.length === 0 && (
-          <div className="text-center py-16 text-slate-500">
+          <div className="hidden md:block text-center py-16 text-slate-500">
             <Users size={56} className="mx-auto mb-4 opacity-30" />
             <p className="text-lg font-semibold">{t.noUsersFound}</p>
           </div>
@@ -614,8 +706,8 @@ const AdminTeam: React.FC = () => {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[98vw] md:max-w-2xl shadow-2xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
             <div className="border-b-2 border-slate-200 p-8 flex items-center justify-between">
               <h2 className="text-3xl font-bold text-slate-800">
                 {editingId ? t.editUser : t.createUser}

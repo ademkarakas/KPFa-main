@@ -76,9 +76,19 @@ export interface ActivityDto {
   descriptionDe: string;
   detailedContentTr?: string;
   detailedContentDe?: string;
-  dateTr: string;
-  dateDe: string;
-  location: string;
+  dateTr?: string;
+  dateDe?: string;
+  date?: string; // Backend: ISO 8601 format date (fallback)
+  dateISO?: string; // ISO 8601 format date
+  location?: string;
+  address?: {
+    street: string;
+    houseNo: string;
+    zipCode: string;
+    city: string;
+    state: string;
+    country: string;
+  };
   category: string;
   imageUrl?: string;
   galleryImages: GalleryImageDto[];

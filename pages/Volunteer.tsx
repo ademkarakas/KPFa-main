@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Heart, Users, Zap, Sprout, Mail, MapPin, Share2 } from "lucide-react";
 import { Language, PageView } from "../types";
+import { API_BASE_URL } from "../services/api";
 
 interface VolunteerSectionItem {
   titleTr: string;
@@ -50,7 +51,7 @@ const Volunteer: React.FC<VolunteerProps> = ({ lang, setPage }) => {
         // if (!token) throw new Error("Token yok");
 
         const res = await fetch(
-          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d",
+          `${API_BASE_URL}/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d`,
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json: VolunteerData = await res.json();

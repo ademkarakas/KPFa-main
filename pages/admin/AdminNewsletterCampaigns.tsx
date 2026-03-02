@@ -9,6 +9,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLanguage } from "../../contexts/LanguageContext";
 import toast from "react-hot-toast";
 import {
   newsletterAdminApi,
@@ -33,10 +34,13 @@ const QuillEditor = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
+  const isInitialized = useRef(false);
 
   // Initialize editor once
   useEffect(() => {
-    if (!containerRef.current || quillRef.current) return;
+    if (!containerRef.current || isInitialized.current) return;
+
+    isInitialized.current = true;
 
     const quill = new Quill(containerRef.current, {
       theme: "snow",
@@ -65,10 +69,6 @@ const QuillEditor = ({
     });
 
     quillRef.current = quill;
-
-    return () => {
-      quillRef.current = null;
-    };
   }, []);
 
   return (
@@ -80,6 +80,7 @@ const QuillEditor = ({
 
 const AdminNewsletterCampaigns: React.FC = () => {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [view, setView] = useState<"list" | "create">("list");
   const [campaigns, setCampaigns] = useState<NewsletterCampaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -418,7 +419,9 @@ const AdminNewsletterCampaigns: React.FC = () => {
             {t("newsletter.admin.campaigns.createNew")}
           </h1>
           <p className="text-slate-600 text-sm">
-            {t("newsletter.admin.campaigns.variablesHelp")}
+            {language === "tr"
+              ? "Kullanılabilir değişkenler: {{name}}, {{email}}"
+              : "Verfügbare Variablen: {{name}}, {{email}}"}
           </p>
         </div>
       </div>

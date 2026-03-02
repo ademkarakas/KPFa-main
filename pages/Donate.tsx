@@ -13,6 +13,8 @@ import {
   Scan,
   ArrowRight,
 } from "lucide-react";
+import { createSafeHtml } from "../utils/sanitize";
+import { API_BASE_URL } from "../services/api";
 
 type Language = "tr" | "de";
 
@@ -110,7 +112,7 @@ ${cleanIban}
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://localhost:7189/api/DonatePage");
+        const res = await fetch(`${API_BASE_URL}/DonatePage`);
         if (res.ok) {
           const json: DonatePageData = await res.json();
           setData(json);
@@ -227,11 +229,14 @@ ${cleanIban}
                     : data.whyDonateTitleDe}
                 </h2>
                 <br></br>
-                <p className="text-lg text-teal-50 leading-relaxed font-light">
-                  {lang === "tr"
-                    ? data.whyDonateDescriptionTr
-                    : data.whyDonateDescriptionDe}
-                </p>
+                <div
+                  className="text-lg text-teal-50 leading-relaxed font-light"
+                  dangerouslySetInnerHTML={createSafeHtml(
+                    lang === "tr"
+                      ? data.whyDonateDescriptionTr
+                      : data.whyDonateDescriptionDe,
+                  )}
+                />
               </div>
               <Heart
                 className="absolute -bottom-10 -right-10 text-white/10"
@@ -246,11 +251,14 @@ ${cleanIban}
                 <h2 className="text-3xl font-serif font-bold text-slate-900 mb-6">
                   {lang === "tr" ? data.whereTitleTr : data.whereTitleDe}
                 </h2>
-                <p className="text-lg text-slate-600 leading-relaxed mb-8">
-                  {lang === "tr"
-                    ? data.whereDescriptionTr
-                    : data.whereDescriptionDe}
-                </p>
+                <div
+                  className="text-lg text-slate-600 leading-relaxed mb-8"
+                  dangerouslySetInnerHTML={createSafeHtml(
+                    lang === "tr"
+                      ? data.whereDescriptionTr
+                      : data.whereDescriptionDe,
+                  )}
+                />
               </div>
               <div className="p-6 bg-teal-50 rounded-2xl border-l-4 border-teal-500 flex items-start gap-4 shadow-sm">
                 <Info className="text-teal-600 shrink-0 mt-1" size={20} />
@@ -539,12 +547,43 @@ ${cleanIban}
                       </div>
                     </div>
 
+                    {/* Security Notice */}
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                      <ShieldCheck
+                        className="text-blue-600 flex-shrink-0 mt-1"
+                        size={20}
+                      />
+                      <div className="text-sm text-blue-900">
+                        <p className="font-semibold mb-1">
+                          {lang === "tr"
+                            ? "🔒 Güvenli Ödeme"
+                            : "🔒 Sichere Zahlung"}
+                        </p>
+                        <p>
+                          {lang === "tr"
+                            ? "PayPal'ın güvenli sayfasına yönlendirileceksiniz. Ödeme bilgileriniz bizimle paylaşılmaz."
+                            : "Sie werden zur sicheren PayPal-Seite weitergeleitet. Ihre Zahlungsdaten werden nicht mit uns geteilt."}
+                        </p>
+                      </div>
+                    </div>
+
                     <a
                       href={data.payPalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group inline-flex items-center gap-3 bg-gradient-to-r from-[#003087] to-[#009cde] text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300"
+                      className="group inline-flex items-center gap-3 bg-gradient-to-r from-[#003087] to-[#009cde] text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105"
                     >
+                      <svg
+                        className="w-6 h-6"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M20.067 8.478c.492.88.556 2.014.3 3.327-.74 3.806-3.276 5.12-6.514 5.12h-.5a.805.805 0 00-.794.68l-.04.22-.63 3.993-.028.15a.805.805 0 01-.794.68H7.72a.483.483 0 01-.477-.558L8.926 13.7a.805.805 0 01.794-.68h2.586c4.264 0 7.583-1.73 8.555-6.733.366-1.876.24-3.448-.493-4.55-.077-.116-.158-.228-.244-.336.697.298 1.355.703 1.943 1.244z" />
+                        <path
+                          d="M7.895 3.137c.18-.895.793-1.234 1.61-1.234h6.875c1.033 0 1.779.098 2.284.31a4.44 4.44 0 011.02.535c.36.244.65.536.883.879.097.144.182.295.257.453.733 1.102.859 2.674.493 4.55-.972 5.002-4.29 6.733-8.555 6.733H9.72a.805.805 0 00-.794.68l-.04.22-.63 3.993-.028.15a.805.805 0 01-.794.68H3.088a.483.483 0 01-.477-.558z"
+                          opacity="0.7"
+                        />
+                      </svg>
                       <span>
                         {lang === "tr"
                           ? "PayPal ile Bağış Yap"
@@ -556,28 +595,106 @@ ${cleanIban}
                       />
                     </a>
 
+                    <p className="mt-4 text-xs text-slate-500 flex items-center gap-2">
+                      <Info size={14} />
+                      {lang === "tr"
+                        ? "PayPal hesabınız veya kredi kartınızla ödeme yapabilirsiniz"
+                        : "Sie können mit Ihrem PayPal-Konto oder Ihrer Kreditkarte bezahlen"}
+                    </p>
+
                     {data.payPalHandle && (
                       <div className="mt-6 p-4 bg-slate-50 rounded-xl inline-flex items-center gap-3">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-mono text-slate-700">
-                          {data.payPalHandle}
-                        </span>
+                        <div>
+                          <span className="text-xs text-slate-500 block mb-1">
+                            {lang === "tr" ? "PayPal Hesabı:" : "PayPal-Konto:"}
+                          </span>
+                          <span className="text-sm font-mono text-slate-700 font-semibold">
+                            {data.payPalHandle}
+                          </span>
+                        </div>
                       </div>
                     )}
+
+                    {/* How it works */}
+                    <div className="mt-8 bg-slate-50 rounded-xl p-6">
+                      <h4 className="text-lg font-bold text-slate-900 mb-4">
+                        {lang === "tr"
+                          ? "Nasıl Çalışır?"
+                          : "Wie funktioniert es?"}
+                      </h4>
+                      <ol className="space-y-3">
+                        <li className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-[#003087] text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                            1
+                          </div>
+                          <span className="text-slate-700">
+                            {lang === "tr"
+                              ? "Butona tıklayarak PayPal'ın güvenli sayfasına gidin"
+                              : "Klicken Sie auf den Button für die sichere PayPal-Seite"}
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-[#003087] text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                            2
+                          </div>
+                          <span className="text-slate-700">
+                            {lang === "tr"
+                              ? "PayPal hesabınızla giriş yapın veya kartla ödeme yapın"
+                              : "Melden Sie sich mit Ihrem PayPal-Konto an oder zahlen Sie mit Karte"}
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-6 h-6 bg-[#003087] text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                            3
+                          </div>
+                          <span className="text-slate-700">
+                            {lang === "tr"
+                              ? "Anında onay alın, e-posta ile bildirim gelsin"
+                              : "Erhalten Sie sofortige Bestätigung per E-Mail"}
+                          </span>
+                        </li>
+                      </ol>
+                    </div>
                   </div>
 
                   {/* Right Column - PayPal Benefits */}
-                  <div className="lg:w-1/3 bg-gradient-to-br from-slate-50 to-teal-50/50 rounded-2xl p-8 border border-slate-100">
-                    <h4 className="text-lg font-bold text-slate-900 mb-6">
-                      {lang === "tr" ? "Avantajlar" : "Vorteile"}
+                  <div className="lg:w-1/3 bg-gradient-to-br from-slate-50 to-blue-50/50 rounded-2xl p-8 border border-blue-100">
+                    <h4 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                      <ShieldCheck className="text-blue-600" size={20} />
+                      {lang === "tr"
+                        ? "Güvenlik & Avantajlar"
+                        : "Sicherheit & Vorteile"}
                     </h4>
-                    <ul className="space-y-6">
+                    <ul className="space-y-4">
                       <li className="flex items-start gap-3">
                         <CheckCircle
-                          className="text-teal-600 flex-shrink-0 mt-1"
+                          className="text-blue-600 flex-shrink-0 mt-1"
                           size={20}
                         />
-                        <span className="text-slate-700">
+                        <span className="text-slate-700 text-sm">
+                          {lang === "tr"
+                            ? "SSL şifreli güvenli bağlantı"
+                            : "SSL-verschlüsselte sichere Verbindung"}
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle
+                          className="text-blue-600 flex-shrink-0 mt-1"
+                          size={20}
+                        />
+                        <span className="text-slate-700 text-sm">
+                          {lang === "tr"
+                            ? "Ödeme bilgileriniz paylaşılmaz"
+                            : "Ihre Zahlungsdaten werden nicht geteilt"}
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle
+                          className="text-blue-600 flex-shrink-0 mt-1"
+                          size={20}
+                        />
+                        <span className="text-slate-700 text-sm">
                           {lang === "tr"
                             ? "Anında işlem onayı"
                             : "Sofortige Transaktionsbestätigung"}
@@ -585,38 +702,50 @@ ${cleanIban}
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle
-                          className="text-teal-600 flex-shrink-0 mt-1"
+                          className="text-blue-600 flex-shrink-0 mt-1"
                           size={20}
                         />
-                        <span className="text-slate-700">
+                        <span className="text-slate-700 text-sm">
                           {lang === "tr"
-                            ? "Güvenli ödeme koruması"
-                            : "Sicherer Zahlungsschutz"}
+                            ? "PayPal alıcı koruması"
+                            : "PayPal-Käuferschutz"}
                         </span>
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle
-                          className="text-teal-600 flex-shrink-0 mt-1"
+                          className="text-blue-600 flex-shrink-0 mt-1"
                           size={20}
                         />
-                        <span className="text-slate-700">
+                        <span className="text-slate-700 text-sm">
                           {lang === "tr"
-                            ? "Kolay iade imkanı"
-                            : "Einfache Rückerstattung"}
+                            ? "Mobil cihazlarla uyumlu"
+                            : "Kompatibel mit mobilen Geräten"}
                         </span>
                       </li>
                       <li className="flex items-start gap-3">
                         <CheckCircle
-                          className="text-teal-600 flex-shrink-0 mt-1"
+                          className="text-blue-600 flex-shrink-0 mt-1"
                           size={20}
                         />
-                        <span className="text-slate-700">
+                        <span className="text-slate-700 text-sm">
                           {lang === "tr"
-                            ? "Mobil uyumluluk"
-                            : "Mobile Kompatibilität"}
+                            ? "Kart veya PayPal hesabı kullanın"
+                            : "Nutzen Sie Karte oder PayPal-Konto"}
                         </span>
                       </li>
                     </ul>
+
+                    {/* Trust Badge */}
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <div className="flex items-center justify-center gap-2 text-xs text-slate-600">
+                        <ShieldCheck className="text-blue-600" size={16} />
+                        <span className="font-semibold">
+                          {lang === "tr"
+                            ? "PayPal tarafından güvence altında"
+                            : "Durch PayPal abgesichert"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

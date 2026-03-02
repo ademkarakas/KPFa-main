@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { FileText, BookOpen, Users, Shield, Building2 } from "lucide-react";
+import { FileText, BookOpen, Users, Shield } from "lucide-react";
 import { Language } from "../types";
 import { apiFetch } from "../services/api";
+import { createSafeHtml } from "../utils/sanitize";
 
 interface SatzungProps {
   lang: Language;
@@ -83,6 +84,10 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
     return isGerman ? content.bodyGerman : content.bodyTurkish;
   };
 
+  const getHtml = (content?: SectionContent) => {
+    return createSafeHtml(getText(content));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
@@ -146,11 +151,14 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                     : data.nameDescTurkish?.heading) || ""}
                 </h3>
               )}
-              <p className="text-slate-700 leading-relaxed">
-                {isGerman
-                  ? getText(data.nameDescGerman)
-                  : getText(data.nameDescTurkish)}
-              </p>
+              <div
+                className="text-slate-700 leading-relaxed"
+                dangerouslySetInnerHTML={
+                  isGerman
+                    ? getHtml(data.nameDescGerman)
+                    : getHtml(data.nameDescTurkish)
+                }
+              />
               {/* Seat */}
               {(
                 (isGerman
@@ -163,19 +171,25 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                     : data.seatTurkish?.heading) || ""}
                 </h3>
               )}
-              <p className="text-slate-700 leading-relaxed">
-                {isGerman
-                  ? getText(data.seatGerman)
-                  : getText(data.seatTurkish)}
-              </p>
+              <div
+                className="text-slate-700 leading-relaxed"
+                dangerouslySetInnerHTML={
+                  isGerman
+                    ? getHtml(data.seatGerman)
+                    : getHtml(data.seatTurkish)
+                }
+              />
               {/* Seat Description sadece farklıysa göster */}
               {getText(data.seatDescGerman) !== getText(data.seatGerman) &&
                 getText(data.seatDescTurkish) !== getText(data.seatTurkish) && (
-                  <p className="text-slate-600 mt-2">
-                    {isGerman
-                      ? getText(data.seatDescGerman)
-                      : getText(data.seatDescTurkish)}
-                  </p>
+                  <div
+                    className="text-slate-600 mt-2"
+                    dangerouslySetInnerHTML={
+                      isGerman
+                        ? getHtml(data.seatDescGerman)
+                        : getHtml(data.seatDescTurkish)
+                    }
+                  />
                 )}
               {/* Fiscal Year */}
               {(
@@ -189,11 +203,14 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                     : data.fiscalYearTurkish?.heading) || ""}
                 </h3>
               )}
-              <p className="text-slate-700 leading-relaxed">
-                {isGerman
-                  ? getText(data.fiscalYearDescGerman)
-                  : getText(data.fiscalYearDescTurkish)}
-              </p>
+              <div
+                className="text-slate-700 leading-relaxed"
+                dangerouslySetInnerHTML={
+                  isGerman
+                    ? getHtml(data.fiscalYearDescGerman)
+                    : getHtml(data.fiscalYearDescTurkish)
+                }
+              />
             </div>
           </div>
 
@@ -205,11 +222,14 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                 ? data.purposeOfAssociationGerman?.heading
                 : data.purposeOfAssociationTurkish?.heading) || ""}
             </h2>
-            <p className="text-slate-700 leading-relaxed mb-6">
-              {isGerman
-                ? getText(data.purposeOfAssociationGerman)
-                : getText(data.purposeOfAssociationTurkish)}
-            </p>
+            <div
+              className="text-slate-700 leading-relaxed mb-6"
+              dangerouslySetInnerHTML={
+                isGerman
+                  ? getHtml(data.purposeOfAssociationGerman)
+                  : getHtml(data.purposeOfAssociationTurkish)
+              }
+            />
             <div className="space-y-3">
               {Array.isArray(data.purposes) && data.purposes.length > 0 ? (
                 data.purposes.map((purpose) => (
@@ -217,9 +237,10 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                     <span className="flex-shrink-0 w-8 h-8 rounded-full bg-kpf-teal text-white flex items-center justify-center font-bold">
                       {purpose.letter}
                     </span>
-                    <p className="text-slate-700 leading-relaxed flex-1">
-                      {getText(purpose?.content)}
-                    </p>
+                    <div
+                      className="text-slate-700 leading-relaxed flex-1"
+                      dangerouslySetInnerHTML={getHtml(purpose?.content)}
+                    />
                   </div>
                 ))
               ) : (
@@ -238,11 +259,14 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                 ? data.gemeinnuetzigkeitGerman?.heading
                 : data.gemeinnuetzigkeitTurkish?.heading) || ""}
             </h2>
-            <p className="text-slate-700 leading-relaxed">
-              {isGerman
-                ? getText(data.gemeinnuetzigkeitGerman)
-                : getText(data.gemeinnuetzigkeitTurkish)}
-            </p>
+            <div
+              className="text-slate-700 leading-relaxed"
+              dangerouslySetInnerHTML={
+                isGerman
+                  ? getHtml(data.gemeinnuetzigkeitGerman)
+                  : getHtml(data.gemeinnuetzigkeitTurkish)
+              }
+            />
           </div>
 
           {/* 4. Politische Neutralität */}
@@ -253,11 +277,14 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                 ? data.politicalNeutralityGerman?.heading
                 : data.politicalNeutralityTurkish?.heading) || ""}
             </h2>
-            <p className="text-slate-700 leading-relaxed">
-              {isGerman
-                ? getText(data.politicalNeutralityGerman)
-                : getText(data.politicalNeutralityTurkish)}
-            </p>
+            <div
+              className="text-slate-700 leading-relaxed"
+              dangerouslySetInnerHTML={
+                isGerman
+                  ? getHtml(data.politicalNeutralityGerman)
+                  : getHtml(data.politicalNeutralityTurkish)
+              }
+            />
           </div>
 
           {/* 5. Mitgliedschaft */}
@@ -274,11 +301,14 @@ const Satzung: React.FC<SatzungProps> = ({ lang }) => {
                     <h3 className="font-semibold text-slate-800 mb-2">
                       {getText(membership.type)}
                     </h3>
-                    <p className="text-slate-700 leading-relaxed">
-                      {isGerman
-                        ? getText(membership.descriptionGerman)
-                        : getText(membership.descriptionTurkish)}
-                    </p>
+                    <div
+                      className="text-slate-700 leading-relaxed"
+                      dangerouslySetInnerHTML={
+                        isGerman
+                          ? getHtml(membership.descriptionGerman)
+                          : getHtml(membership.descriptionTurkish)
+                      }
+                    />
                   </div>
                 ))
               ) : (

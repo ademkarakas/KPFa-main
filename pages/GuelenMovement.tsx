@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Heart, Globe } from "lucide-react";
 import { Language } from "../types";
+import { API_BASE_URL } from "../services/api";
 import { createSafeHtml } from "../utils/sanitize";
 
 interface GuelenMovementData {
@@ -45,9 +46,7 @@ const GuelenMovement: React.FC<GuelenMovementProps> = ({ lang }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(
-          "https://localhost:7189/api/GuelenMovement",
-        );
+        const response = await fetch(`${API_BASE_URL}/GuelenMovement`);
         if (!response.ok) {
           throw new Error("Failed to fetch data");
         }

@@ -5,6 +5,7 @@ import { activitiesApi } from "../services/api";
 import { Activity, Language } from "../types";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
 import { navigateTo } from "../utils/navigation";
+import { createSafeHtml } from "../utils/sanitize";
 
 interface ActivitiesProps {
   lang: Language;
@@ -30,7 +31,7 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
 
         // Backend'den array dönmüyorsa hata ver
         if (!Array.isArray(data)) {
-          console.error("❌ Backend'den array dönmedi:", data);
+          console.error("Backend'den array dönmedi:", data);
           setActivities([]);
           return;
         }
@@ -326,9 +327,12 @@ const Activities: React.FC<ActivitiesProps> = ({ lang }) => {
                   <h3 className="text-xl font-bold text-slate-800 mb-3">
                     {activity.title[lang]}
                   </h3>
-                  <p className="text-slate-600 text-sm mb-6 flex-grow line-clamp-3">
-                    {activity.description[lang]}
-                  </p>
+                  <div
+                    className="text-slate-600 text-sm mb-6 flex-grow line-clamp-3"
+                    dangerouslySetInnerHTML={createSafeHtml(
+                      activity.description[lang],
+                    )}
+                  />
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => {

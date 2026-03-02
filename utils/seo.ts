@@ -131,7 +131,6 @@ export function updatePageMeta(
   const metaConfig = PAGE_META_CONFIG[page];
 
   if (!metaConfig) {
-    console.warn(`No meta config found for page: ${page}`);
     return;
   }
 

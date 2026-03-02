@@ -303,6 +303,14 @@ export const TEXTS: Record<string, Translation> = {
     tr: "Başarıyla güncellendi!",
     de: "Erfolgreich aktualisiert!",
   },
+  admin_session_expired: {
+    tr: "Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.",
+    de: "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+  },
+  admin_load_error: {
+    tr: "Kullanıcılar yüklenemedi!",
+    de: "Benutzer konnten nicht geladen werden!",
+  },
   admin_try_again: {
     tr: "Hata oluştu, lütfen tekrar deneyin.",
     de: "Ein Fehler ist aufgetreten, bitte erneut versuchen.",
@@ -561,12 +569,12 @@ export const TEXTS: Record<string, Translation> = {
     de: "Aktivitäten konnten nicht geladen werden!",
   },
   admin_activities_search_placeholder: {
-    tr: "🔍 Etkinlik ara... (başlık, konum veya kategoriye göre)",
-    de: "🔍 Aktivität suchen... (nach Titel, Ort oder Kategorie)",
+    tr: "Etkinlik ara... (başlık, konum veya kategoriye göre)",
+    de: "Aktivität suchen... (nach Titel, Ort oder Kategorie)",
   },
   admin_activities_no_results_title: {
-    tr: "🔍 Arama sonuçunda etkinlik bulunamadı",
-    de: "🔍 Keine Aktivitäten gefunden",
+    tr: "Arama sonuçunda etkinlik bulunamadı",
+    de: "Keine Aktivitäten gefunden",
   },
   admin_activities_no_results_subtitle: {
     tr: "Farklı anahtar kelimeler deneyin veya yeni bir etkinlik ekleyin",
@@ -823,12 +831,12 @@ export const TEXTS: Record<string, Translation> = {
     de: "Status konnte nicht geändert werden!",
   },
   admin_courses_search_placeholder: {
-    tr: "🔍 Kurs ara... (başlık, eğitmen veya kategoriye göre)",
-    de: "🔍 Kurs suchen... (nach Titel, Dozent oder Kategorie)",
+    tr: "Kurs ara... (başlık, eğitmen veya kategoriye göre)",
+    de: "Kurs suchen... (nach Titel, Dozent oder Kategorie)",
   },
   admin_courses_no_results_title: {
-    tr: "🔍 Arama sonucunda kurs bulunamadı",
-    de: "🔍 Keine Kurse gefunden",
+    tr: "Arama sonucunda kurs bulunamadı",
+    de: "Keine Kurse gefunden",
   },
   admin_courses_no_results_subtitle: {
     tr: "Farklı anahtar kelimeler deneyin veya yeni bir kurs ekleyin",
@@ -841,6 +849,7 @@ export const TEXTS: Record<string, Translation> = {
   admin_courses_header_instructor: { tr: "👨‍🏫 Eğitmen", de: "👨‍🏫 Dozent" },
   admin_courses_header_schedule: { tr: "📅 Program", de: "📅 Zeitplan" },
   admin_courses_header_capacity: { tr: "👥 Kapasite", de: "👥 Kapazität" },
+  admin_courses_capacity_unit: { tr: "kişi", de: "Personen" },
   admin_courses_header_status: { tr: "👁️ Durum", de: "👁️ Status" },
   admin_courses_header_actions: { tr: "⚙️ İşlemler", de: "⚙️ Aktionen" },
 

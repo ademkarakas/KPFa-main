@@ -4,7 +4,6 @@ import {
   Calendar,
   Image as ImageIcon,
   MapPin,
-  Play,
   X,
   Share2,
   CalendarPlus,
@@ -15,9 +14,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TEXTS } from "../constants";
-import { Activity, Language } from "../types";
+import { Activity, Language, Translation } from "../types";
 import { activitiesApi } from "../services/api";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
+import { createSafeHtml } from "../utils/sanitize";
 
 interface ActivityDetailProps {
   activityId?: string;
@@ -80,13 +80,14 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             }
           };
 
-          const formatAddress = (address: any) => {
-            if (!address) return "";
-            const parts = [];
-            if (address.street) parts.push(address.street);
-            if (address.houseNo) parts.push(address.houseNo);
-            if (address.zipCode) parts.push(address.zipCode);
-            if (address.city) parts.push(address.city);
+          // Address objesini string'e çevir
+          const formatAddress = (address: any): string => {
+            if (!address) return "TBD";
+            const parts = [
+              address.street,
+              address.houseNo,
+              `${address.zipCode} ${address.city}`,
+            ].filter(Boolean);
             return parts.join(", ");
           };
 
@@ -111,18 +112,21 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                 "",
             },
             date: {
-              tr: formatDate(foundActivity.date, "tr"),
-              de: formatDate(foundActivity.date, "de"),
+              tr:
+                foundActivity.dateTr ||
+                formatDate(foundActivity.date || "", "tr"),
+              de:
+                foundActivity.dateDe ||
+                formatDate(foundActivity.date || "", "de"),
             },
-            location: formatAddress(foundActivity.address) || "TBD",
-            imageUrl:
-              foundActivity.imageSource ||
-              foundActivity.imageUrl ||
-              "/api/placeholder/800/600",
+            location:
+              foundActivity.location || formatAddress(foundActivity.address),
+            imageUrl: foundActivity.imageUrl || "/api/placeholder/800/600",
             galleryImages: foundActivity.galleryImages || [],
             videoUrl: foundActivity.videoUrl || "",
-            dateISO: foundActivity.date,
-            category: foundActivity.category || "social",
+            dateISO: foundActivity.date || foundActivity.createdAt,
+            category:
+              (foundActivity.category as Activity["category"]) || "social",
           };
 
           setActivity(formattedActivity);
@@ -172,17 +176,19 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
   }
 
   // Etkinlik tarihinin geçip geçmediğini kontrol eden fonksiyon
-  const isPastActivity = (dateObj: { tr: string; de: string }): boolean => {
+  const isPastActivity = (dateObj: Translation): boolean => {
     try {
       // Örnek format: "12.05.2024" -> "2024-05-12" formatına çeviriyoruz
-      const parts = dateObj.tr.split(".");
+      const trDate = dateObj.tr || dateObj["tr"];
+      if (!trDate) return false;
+      const parts = trDate.split(".");
       if (parts.length !== 3) return false;
       const eventDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
       const today = new Date();
       // Saati sıfırlayarak sadece gün bazlı karşılaştırma yapıyoruz
       today.setHours(0, 0, 0, 0);
       return eventDate < today;
-    } catch (e) {
+    } catch {
       return false;
     }
   };
@@ -289,9 +295,12 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                 <div className="w-1.5 h-8 bg-kpf-teal rounded-full" />
                 {lang === "tr" ? "Etkinlik Hakkında" : "Über die Veranstaltung"}
               </h2>
-              <p className="text-slate-600 leading-relaxed text-lg whitespace-pre-line">
-                {activity.description[lang]}
-              </p>
+              <div
+                className="text-slate-600 leading-relaxed text-lg whitespace-pre-line"
+                dangerouslySetInnerHTML={createSafeHtml(
+                  activity.description[lang],
+                )}
+              />
             </section>
 
             {activity.videoUrl && (
@@ -469,18 +478,18 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                 return (
                   <motion.div
                     key={index}
-                    whileHover={{ y: -8 }}
-                    className="relative aspect-[4/5] rounded-[2rem] overflow-hidden cursor-pointer group shadow-md"
+                    whileHover={{ scale: 1.02 }}
+                    className="relative aspect-[4/5] rounded-[2rem] overflow-hidden cursor-pointer group shadow-lg hover:shadow-2xl hover:shadow-kpf-teal/20 transition-shadow duration-300"
                     onClick={() => setSelectedImageIndex(index)}
                   >
                     {imageSrc && (
                       <>
                         <img
                           src={imageSrc}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
                           alt="Gallery item"
                         />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-kpf-teal/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </>
                     )}
                   </motion.div>
@@ -498,7 +507,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/95 z-[100] flex items-center justify-center p-6 backdrop-blur-sm"
+            className="fixed inset-0 bg-gradient-to-br from-blue-950 via-cyan-950/95 to-blue-900/90 z-[100] flex items-center justify-center p-6 backdrop-blur-xl"
             onClick={() => setSelectedImageIndex(null)}
           >
             <button
@@ -543,7 +552,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                           ? `data:image/jpeg;base64,${image.base64Data}`
                           : "";
                     })()}
-                    className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                    className="max-w-3xl max-h-[75vh] object-contain rounded-2xl shadow-2xl"
                   />
                 )}
 

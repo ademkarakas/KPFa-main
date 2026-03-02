@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Heart, Save, Languages, CheckCircle, List } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { TEXTS } from "../../constants";
+import { API_BASE_URL } from "../../services/api";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -109,9 +112,15 @@ interface VolunteerData {
 
 const AdminVolunteerPage: React.FC = () => {
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const [data, setData] = useState<VolunteerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // --- Backend Veri Çekme Mantığı (Eski Kod Korundu) ---
   useEffect(() => {
@@ -119,7 +128,7 @@ const AdminVolunteerPage: React.FC = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          "https://localhost:7189/api/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d",
+          `${API_BASE_URL}/ValueItems/8eeb81f3-3fde-44bc-9b38-7058cf240b4d`,
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const json: any = await res.json();
@@ -208,27 +217,34 @@ const AdminVolunteerPage: React.FC = () => {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) {
-        alert("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
+        setMessage({
+          type: "error",
+          text: TEXTS["admin_session_expired"]?.[language] || "Session expired",
+        });
+        setTimeout(() => setMessage(null), 3000);
         return;
       }
-      const res = await fetch(
-        `https://localhost:7189/api/ValueItems/${data.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
+      const res = await fetch(`${API_BASE_URL}/ValueItems/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(data),
+      });
       if (!res.ok) throw new Error("Kaydetme başarısız");
-      alert("Gönüllü Ol sayfası başarıyla güncellendi!");
+      setMessage({
+        type: "success",
+        text:
+          TEXTS["admin_updated_success"]?.[language] || "Updated successfully",
+      });
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      alert(
-        "Kaydetme başarısız: " +
-          (err instanceof Error ? err.message : "Bilinmeyen hata"),
-      );
+      setMessage({
+        type: "error",
+        text: TEXTS["admin_try_again"]?.[language] || "Please try again",
+      });
+      setTimeout(() => setMessage(null), 3000);
     } finally {
       setSaving(false);
     }
@@ -253,7 +269,7 @@ const AdminVolunteerPage: React.FC = () => {
     <div className="max-w-7xl mx-auto pb-20 px-4">
       <form onSubmit={handleSave} className="space-y-10">
         {/* Üst Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-kpf-teal/10 rounded-2xl">
               <Heart className="text-kpf-teal" size={28} />
@@ -489,6 +505,19 @@ const AdminVolunteerPage: React.FC = () => {
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }
       `}</style>
+
+      {/* Notification */}
+      {message && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-4 rounded-2xl shadow-2xl font-bold z-50 animate-slide-in ${
+            message.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
     </div>
   );
 };

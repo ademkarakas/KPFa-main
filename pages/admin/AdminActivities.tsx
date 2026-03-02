@@ -844,7 +844,7 @@ const AdminActivities: React.FC = () => {
     <div className="max-w-7xl mx-auto pb-20 px-4">
       <div className="space-y-6">
         {/* Üst Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-kpf-teal/10 rounded-2xl">
               <Calendar className="text-kpf-teal" size={28} />
@@ -910,8 +910,8 @@ const AdminActivities: React.FC = () => {
 
         {/* Activities List */}
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold text-white bg-gradient-to-r from-kpf-teal to-kpf-teal uppercase tracking-wide">
+          {/* Desktop View - Header */}
+          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 text-xs font-bold text-white bg-gradient-to-r from-kpf-teal to-kpf-teal uppercase tracking-wide">
             <div className="col-span-4">
               {t("admin_activities_header_activity")}
             </div>
@@ -932,8 +932,8 @@ const AdminActivities: React.FC = () => {
             </div>
           </div>
 
-          {/* Rows */}
-          <div className="divide-y divide-slate-100">
+          {/* Desktop View - Rows */}
+          <div className="hidden md:block divide-y divide-slate-100">
             {filteredActivities.map((activity) => {
               const categoryIcons: Record<string, string> = {
                 music: "🎵",
@@ -948,7 +948,7 @@ const AdminActivities: React.FC = () => {
               return (
                 <div
                   key={activity.id}
-                  className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-teal/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
+                  className="grid grid-cols-12 gap-4 px-4 md:px-6 py-5 items-center hover:bg-gradient-to-r hover:from-kpf-teal/5 hover:to-kpf-teal/5 transition-all duration-200 border-l-4 border-transparent hover:border-kpf-teal"
                 >
                   {/* Title + Image */}
                   <div className="col-span-4 flex items-center gap-4">
@@ -1048,15 +1048,125 @@ const AdminActivities: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Mobile View - Cards */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filteredActivities.map((activity) => {
+              const categoryIcons: Record<string, string> = {
+                music: "🎵",
+                art: "🎨",
+                education: "📚",
+                culture: "🌍",
+                sport: "⚽",
+                social: "🤝",
+              };
+              const categoryIcon = categoryIcons[activity.category] || "📌";
+
+              return (
+                <div
+                  key={activity.id}
+                  className="p-4 hover:bg-slate-50 transition-all"
+                >
+                  {/* Image */}
+                  <div className="relative mb-3">
+                    <img
+                      src={activity.imageUrl}
+                      alt={activity.titleTr}
+                      className="w-full h-40 object-cover rounded-lg shadow-md"
+                    />
+                    {!activity.isActive && (
+                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        <EyeOff size={24} className="text-white" />
+                      </div>
+                    )}
+                    {/* Status Badge */}
+                    <div className="absolute top-2 right-2">
+                      <button
+                        onClick={() =>
+                          toggleActive(activity.id, activity.isActive)
+                        }
+                        className="shadow-lg"
+                        title={
+                          activity.isActive
+                            ? t("admin_activities_deactivate")
+                            : t("admin_activities_activate")
+                        }
+                      >
+                        {activity.isActive ? (
+                          <span className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5">
+                            <Eye size={14} />
+                            {t("admin_active")}
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1.5 bg-slate-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5">
+                            <EyeOff size={14} />
+                            {t("admin_inactive")}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="space-y-2.5">
+                    <h3 className="font-bold text-lg text-slate-800 line-clamp-2">
+                      {language === "tr" ? activity.titleTr : activity.titleDe}
+                    </h3>
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {language === "tr"
+                        ? activity.descriptionTr
+                        : activity.descriptionDe}
+                    </p>
+
+                    {/* Meta Info */}
+                    <div className="flex flex-wrap gap-2 text-xs text-slate-600">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-kpf-teal/10 text-kpf-teal font-bold rounded-full">
+                        {categoryIcon} {activity.category}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 rounded-full">
+                        <Calendar size={14} className="text-kpf-teal" />
+                        {activity.date}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-1.5 text-xs text-slate-600">
+                      <MapPin
+                        size={14}
+                        className="text-kpf-teal flex-shrink-0 mt-0.5"
+                      />
+                      <span className="line-clamp-2">{activity.location}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => handleEdit(activity)}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all font-semibold text-sm"
+                    >
+                      <Edit size={18} />
+                      {t("admin_edit")}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(activity.id)}
+                      className="py-3 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all"
+                      title={t("admin_delete")}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-6xl max-h-[90vh] overflow-y-auto my-8 shadow-2xl border border-slate-100">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl md:rounded-[2.5rem] w-full max-w-[98vw] md:max-w-4xl lg:max-w-6xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto my-4 md:my-8 shadow-2xl border border-slate-100">
               {/* Üst Bar - AdminVolunteerPage tarzı */}
               <form onSubmit={handleSubmit} className="contents">
-                <div className="sticky top-0 bg-white/90 backdrop-blur-md p-6 rounded-t-[2.5rem] border-b border-slate-100 flex items-center justify-between z-10">
+                <div className="sticky top-0 bg-white/90 backdrop-blur-md p-4 md:p-6 rounded-t-2xl md:rounded-t-[2.5rem] border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 z-10">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-kpf-teal/10 rounded-2xl">
                       <Calendar className="text-kpf-teal" size={28} />
@@ -1073,7 +1183,7 @@ const AdminActivities: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                     <button
                       type="submit"
                       disabled={
@@ -1083,24 +1193,22 @@ const AdminActivities: React.FC = () => {
                         !formData.descriptionTr ||
                         !formData.descriptionDe
                       }
-                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-kpf-teal to-blue-600 text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 sm:px-6 py-3 bg-gradient-to-r from-kpf-teal to-blue-600 text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm sm:text-base min-h-[44px]"
                     >
                       <Save size={20} />
-                      <span className="hidden sm:inline">
-                        {t("admin_publish")}
-                      </span>
+                      <span>{t("admin_publish")}</span>
                     </button>
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="p-3 hover:bg-slate-100 rounded-2xl transition-colors"
+                      className="p-3 hover:bg-slate-100 rounded-2xl transition-colors min-h-[44px] min-w-[44px]"
                     >
                       <X size={24} className="text-slate-500" />
                     </button>
                   </div>
                 </div>
 
-                <div className="p-8 lg:p-12 space-y-10">
+                <div className="p-4 sm:p-6 md:p-8 lg:p-12 space-y-6 md:space-y-8 lg:space-y-10">
                   <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
                     <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
                       {/* Türkçe */}
@@ -1230,7 +1338,7 @@ const AdminActivities: React.FC = () => {
                   </div>
 
                   {/* Tarih ve Kategori */}
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                       <span className="text-[10px] font-bold text-slate-400 uppercase mb-3 block tracking-widest flex items-center gap-2">
                         <Calendar size={14} className="text-kpf-teal" />
@@ -1287,7 +1395,7 @@ const AdminActivities: React.FC = () => {
                       {t("admin_activities_address_section_title")}
                     </h3>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Sokak */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -1474,7 +1582,7 @@ const AdminActivities: React.FC = () => {
                       accept="image/*"
                       onChange={handleImageUpload}
                       disabled={uploadingImage}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-kpf-teal/80 file:cursor-pointer"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white text-base file:mr-3 file:py-3 file:px-5 md:file:py-2 md:file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-kpf-teal/80 file:cursor-pointer"
                     />
                     {(formData.imageUrl || formData.imageBase64) && (
                       <div className="mt-4 space-y-3">
@@ -1486,7 +1594,7 @@ const AdminActivities: React.FC = () => {
                                 : formData.imageUrl || undefined
                             }
                             alt="Preview"
-                            className="w-full h-48 object-cover rounded-lg shadow-md"
+                            className="w-full h-40 md:h-48 object-cover rounded-lg shadow-md"
                           />
                           <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
                             ✓ {t("admin_uploaded")}
@@ -1501,9 +1609,12 @@ const AdminActivities: React.FC = () => {
                                 imageFileName: null,
                               })
                             }
-                            className="absolute top-2 left-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors"
+                            className="absolute top-2 left-2 bg-red-500 hover:bg-red-600 text-white px-3 py-2 md:px-3 md:py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-colors min-h-[36px] min-w-[36px] justify-center"
                           >
-                            ✕ {t("admin_delete")}
+                            <X size={16} />
+                            <span className="hidden sm:inline">
+                              {t("admin_delete")}
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -1597,13 +1708,13 @@ const AdminActivities: React.FC = () => {
                       multiple
                       onChange={handleGalleryUpload}
                       disabled={uploadingImage}
-                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-teal-700 file:cursor-pointer"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-kpf-teal bg-white text-base file:mr-3 file:py-3 file:px-5 md:file:py-2 md:file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal file:text-white hover:file:bg-teal-700 file:cursor-pointer"
                     />
                     <p className="text-xs text-slate-500 mt-2">
                       {t("admin_activities_gallery_help")}
                     </p>
                     {formData.galleryImages.length > 0 && (
-                      <div className="mt-4 grid grid-cols-3 md:grid-cols-4 gap-3">
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                         {formData.galleryImages.map((img, index) => {
                           const displayUrl = img.url || img.base64Data;
                           const imageId =
@@ -1624,7 +1735,7 @@ const AdminActivities: React.FC = () => {
                                   <img
                                     src={imageSrc}
                                     alt={`${t("admin_activities_gallery_image_alt")} ${index + 1}`}
-                                    className="h-24 w-full object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
+                                    className="h-28 sm:h-24 w-full object-cover rounded-lg shadow-sm group-hover:shadow-md transition-shadow"
                                   />
                                   <button
                                     type="button"
@@ -1637,10 +1748,10 @@ const AdminActivities: React.FC = () => {
                                           ),
                                       })
                                     }
-                                    className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                                    className="absolute -top-2 -right-2 p-2 sm:p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 min-w-[32px] min-h-[32px] flex items-center justify-center"
                                     title={t("admin_delete")}
                                   >
-                                    <X size={14} />
+                                    <X size={16} />
                                   </button>
                                   <div className="absolute bottom-1 right-1 bg-black/60 text-white px-2 py-0.5 rounded text-xs">
                                     {img.base64Data ? "📤" : "🔗"} #{index + 1}

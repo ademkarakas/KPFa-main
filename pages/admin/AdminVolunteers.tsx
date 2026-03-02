@@ -118,7 +118,8 @@ const AdminVolunteers: React.FC = () => {
 
       {/* Volunteers Table */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop View - Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b-2 border-slate-200">
               <tr>
@@ -279,12 +280,127 @@ const AdminVolunteers: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View - Cards */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredVolunteers.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <UserCheck
+                size={64}
+                className="mx-auto mb-4 opacity-20 text-slate-400"
+              />
+              <p className="text-lg font-semibold text-slate-500">
+                {searchQuery
+                  ? t("admin_volunteers_no_results")
+                  : t("admin_volunteers_no_submissions")}
+              </p>
+            </div>
+          ) : (
+            filteredVolunteers.map((volunteer) => {
+              const initials =
+                (volunteer.fullName || "?")
+                  .split(" ")
+                  .map((n: string) => n[0] || "")
+                  .filter(Boolean)
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2) || "??";
+
+              return (
+                <button
+                  key={volunteer.id}
+                  type="button"
+                  className="w-full text-left p-4 hover:bg-slate-50 transition-all cursor-pointer"
+                  onClick={() => setSelectedVolunteer(volunteer)}
+                >
+                  {/* Header with Avatar and Name */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-kpf-teal to-teal-600 flex items-center justify-center shadow-md flex-shrink-0">
+                      <span className="text-white font-bold text-base">
+                        {initials}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base text-slate-800 truncate">
+                        {volunteer.fullName || "N/A"}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        <Clock size={12} className="inline mr-1" />
+                        {formatDate(volunteer.submittedAt || "")}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Mail size={14} className="text-kpf-teal flex-shrink-0" />
+                      <span className="truncate">
+                        {volunteer.email || "N/A"}
+                      </span>
+                    </div>
+                    {volunteer.phone && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Phone
+                          size={14}
+                          className="text-green-600 flex-shrink-0"
+                        />
+                        <span>{volunteer.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Message Preview */}
+                  {volunteer.message && (
+                    <div className="bg-slate-50 rounded-lg p-3 mb-3">
+                      <div className="flex items-start gap-2">
+                        <MessageSquare
+                          size={14}
+                          className="text-slate-400 flex-shrink-0 mt-0.5"
+                        />
+                        <p className="text-sm text-slate-600 line-clamp-2">
+                          {volunteer.message}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        globalThis.location.href = `mailto:${volunteer.email}`;
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-kpf-teal/10 hover:bg-kpf-teal/20 text-kpf-teal transition-all font-semibold text-sm min-h-[44px]"
+                    >
+                      <Mail size={18} />
+                      {t("admin_volunteers_send_email")}
+                    </button>
+                    {volunteer.phone && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          globalThis.location.href = `tel:${volunteer.phone}`;
+                        }}
+                        className="py-3 px-4 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition-all min-h-[44px] min-w-[44px]"
+                        title={t("admin_volunteers_call")}
+                      >
+                        <Phone size={18} />
+                      </button>
+                    )}
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Detail Modal */}
       {selectedVolunteer && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[98vw] md:max-w-2xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-slate-800">
                 {t("admin_volunteers_details_title")}

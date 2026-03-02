@@ -187,10 +187,18 @@ const Layout: React.FC<LayoutProps> = ({
           <div className="flex items-center h-24">
             {/* Logo */}
             <div
+              tabIndex={0}
               className="flex items-center space-x-3 cursor-pointer group"
               onClick={() => {
                 navigateTo("");
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigateTo("");
+                }
+              }}
+              aria-label={t("nav_home") || "Ana Sayfa"}
             >
               <img
                 src="/assets/cropped-Logoweb.png"
@@ -845,7 +853,7 @@ const Layout: React.FC<LayoutProps> = ({
                       <span className="text-slate-400 group-hover:text-white group-hover:font-semibold transition-all duration-300 ease-out">
                         {item.label}
                       </span>
-                      <div className="absolute left-0 bottom-0 h-0.5 bg-gradient-to-r from-kpf-red to-orange-500 w-0 group-hover:w-full transition-all duration-500 ease-out"></div>
+                      <div className="absolute left-0 bottom-0 h-0.5 bg-kpf-teal w-0 group-hover:w-full transition-all duration-500 ease-out"></div>
                     </button>
                   </li>
                 ))}

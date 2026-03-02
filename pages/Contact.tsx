@@ -100,6 +100,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
     }
   };
 
+  // @ts-expect-error -- React 19 FormEvent type deprecation
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);

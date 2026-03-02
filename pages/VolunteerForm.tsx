@@ -120,13 +120,10 @@ const VolunteerForm: React.FC<VolunteerFormProps> = ({ lang }) => {
       // Subscribe to newsletter if checkbox is checked
       if (formData.subscribeToNewsletter) {
         try {
-          const result = await newsletterApi.subscribe(
+          await newsletterApi.subscribe(
             formData.email,
             `${formData.firstName} ${formData.lastName}`,
           );
-          if (result.success) {
-            console.log("Newsletter subscription successful");
-          }
         } catch (err) {
           console.error("Newsletter subscription error:", err);
           // Don't block the main flow if newsletter subscription fails

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BookOpen, Coffee, Globe, Heart } from "lucide-react";
 import { Language } from "../types";
 import { TEXTS } from "../constants";
+import { API_BASE_URL } from "../services/api";
 import { createSafeHtml } from "../utils/sanitize";
 
 interface TeaEvent {
@@ -35,7 +36,7 @@ const Teegespraeche: React.FC<TeegespraecheProps> = ({ lang }) => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
-        const response = await fetch("https://localhost:7189/api/TeaEvent");
+        const response = await fetch(`${API_BASE_URL}/TeaEvent`);
         if (!response.ok) throw new Error("Etkinlikler yüklenemedi!");
         const data: TeaEvent[] = await response.json();
         setEvents(data.filter((ev) => ev.isActive));

@@ -132,8 +132,8 @@ const NewsletterStatsWidget: React.FC<{
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 hover:border-blue-300 transition-all">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+        <div className="bg-blue-50 rounded-xl p-4 md:p-5 border border-blue-100 hover:border-blue-300 transition-all">
           <div className="flex items-center gap-2 mb-3">
             <Users size={20} className="text-blue-600" />
             <p className="text-slate-600 text-sm font-semibold">
@@ -147,7 +147,7 @@ const NewsletterStatsWidget: React.FC<{
           </p>
         </div>
 
-        <div className="bg-green-50 rounded-xl p-5 border border-green-100 hover:border-green-300 transition-all">
+        <div className="bg-green-50 rounded-xl p-4 md:p-5 border border-green-100 hover:border-green-300 transition-all">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={20} className="text-green-600" />
             <p className="text-slate-600 text-sm font-semibold">
@@ -161,7 +161,7 @@ const NewsletterStatsWidget: React.FC<{
           </p>
         </div>
 
-        <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 hover:border-purple-300 transition-all">
+        <div className="bg-purple-50 rounded-xl p-4 md:p-5 border border-purple-100 hover:border-purple-300 transition-all">
           <div className="flex items-center gap-2 mb-3">
             <Send size={20} className="text-purple-600" />
             <p className="text-slate-600 text-sm font-semibold">
@@ -175,7 +175,7 @@ const NewsletterStatsWidget: React.FC<{
           </p>
         </div>
 
-        <div className="bg-orange-50 rounded-xl p-5 border border-orange-100 hover:border-orange-300 transition-all">
+        <div className="bg-orange-50 rounded-xl p-4 md:p-5 border border-orange-100 hover:border-orange-300 transition-all">
           <div className="flex items-center gap-2 mb-3">
             <Mail size={20} className="text-orange-600" />
             <p className="text-slate-600 text-sm font-semibold">

@@ -1,6 +1,7 @@
 import { Book, Plus, Save, Trash2, CheckCircle } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from "../../services/api";
 
 // Backend DTO (backend contract is preserved)
 interface SectionContent {
@@ -87,7 +88,7 @@ type AdminSatzungTab =
   | "gemeinnuetzigkeit"
   | "membership";
 
-const API_URL = "https://localhost:7189/api/Satzung";
+const API_URL = `${API_BASE_URL}/Satzung`;
 
 const createUiKey = () =>
   globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
@@ -456,18 +457,21 @@ const AdminSatzung: React.FC = () => {
       )}
 
       <form onSubmit={handleSave} className="space-y-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-kpf-teal/10 rounded-2xl">
-              <Book className="text-kpf-teal" size={28} />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="p-2 md:p-3 bg-kpf-teal/10 rounded-2xl flex-shrink-0">
+              <Book className="text-kpf-teal" size={20} />
             </div>
-            <div>
-              <h1 className="text-xl font-black text-slate-800">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base md:text-xl font-black text-slate-800 truncate">
                 {t("satzung.pageTitle")}
               </h1>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                <CheckCircle size={10} className="text-green-500" />
-                {t("satzung.subtitle")}
+              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle
+                  size={10}
+                  className="text-green-500 flex-shrink-0"
+                />
+                <span className="truncate">{t("satzung.subtitle")}</span>
               </p>
             </div>
           </div>
@@ -475,7 +479,7 @@ const AdminSatzung: React.FC = () => {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold"
+            className="flex items-center justify-center gap-2 px-10 py-3 bg-kpf-teal text-white rounded-2xl hover:bg-kpf-teal/90 transition-all disabled:opacity-50 shadow-xl shadow-kpf-teal/20 font-bold w-full md:w-auto"
           >
             <Save size={18} />
             {saving ? t("common.saving") : t("common.publish")}
@@ -488,16 +492,16 @@ const AdminSatzung: React.FC = () => {
           </div>
         )}
 
-        <div className="flex gap-2 border-b border-slate-200 overflow-x-auto bg-white rounded-2xl p-4">
+        <div className="flex gap-2 border-b border-slate-200 overflow-x-auto bg-white rounded-2xl p-2 md:p-4">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
+              className={`px-3 py-2 md:px-6 md:py-3 text-xs md:text-sm font-semibold transition-all whitespace-nowrap rounded-lg ${
                 activeTab === tab.id
-                  ? "border-b-2 border-kpf-teal text-kpf-teal"
-                  : "text-slate-600 hover:text-slate-800"
+                  ? "bg-kpf-teal text-white"
+                  : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
               }`}
             >
               {tab.label}

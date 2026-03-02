@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { TEXTS } from "../../constants";
+import { API_BASE_URL } from "../../services/api";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 // --- 1. React 19 Uyumlu Modern Editör Bileşeni ---
@@ -128,6 +129,11 @@ const AdminTeegespraeche: React.FC = () => {
     onConfirm: () => {},
   });
 
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   const emptyEvent: TeaEvent = {
     id: "",
     titleTr: "",
@@ -154,7 +160,7 @@ const AdminTeegespraeche: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await fetch("https://localhost:7189/api/TeaEvent", {
+      const response = await fetch(`${API_BASE_URL}/TeaEvent`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error("Veriler yüklenemedi");
@@ -167,6 +173,7 @@ const AdminTeegespraeche: React.FC = () => {
     }
   };
 
+  // @ts-expect-error -- React 19 FormEvent type deprecation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent) return;
@@ -176,8 +183,8 @@ const AdminTeegespraeche: React.FC = () => {
       const token = localStorage.getItem("adminToken");
       const isUpdate = !!editingEvent.id;
       const url = isUpdate
-        ? `https://localhost:7189/api/TeaEvent/${editingEvent.id}`
-        : "https://localhost:7189/api/TeaEvent";
+        ? `${API_BASE_URL}/TeaEvent/${editingEvent.id}`
+        : `${API_BASE_URL}/TeaEvent`;
 
       const response = await fetch(url, {
         method: isUpdate ? "PUT" : "POST",
@@ -190,13 +197,20 @@ const AdminTeegespraeche: React.FC = () => {
 
       if (!response.ok) throw new Error("İşlem başarısız!");
 
-      alert(isUpdate ? t("admin_updated_success") : t("admin_created_success"));
+      setMessage({
+        type: "success",
+        text: isUpdate
+          ? t("admin_updated_success")
+          : t("admin_created_success"),
+      });
+      setTimeout(() => setMessage(null), 3000);
       fetchEvents();
       setShowForm(false);
       setEditingEvent(null);
     } catch (error) {
       console.error("TeaEvent kaydetme hatası:", error);
-      alert(t("admin_try_again"));
+      setMessage({ type: "error", text: t("admin_try_again") });
+      setTimeout(() => setMessage(null), 3000);
     } finally {
       setLoading(false);
     }
@@ -210,14 +224,18 @@ const AdminTeegespraeche: React.FC = () => {
       onConfirm: () => {
         void (async () => {
           try {
-            const response = await fetch(
-              `https://localhost:7189/api/TeaEvent/${id}`,
-              { method: "DELETE" },
-            );
-            if (response.ok) setEvents(events.filter((e) => e.id !== id));
+            const response = await fetch(`${API_BASE_URL}/TeaEvent/${id}`, {
+              method: "DELETE",
+            });
+            if (response.ok) {
+              setEvents(events.filter((e) => e.id !== id));
+              setMessage({ type: "success", text: t("admin_updated_success") });
+              setTimeout(() => setMessage(null), 3000);
+            }
           } catch (error) {
             console.error("TeaEvent silme hatası:", error);
-            alert(t("admin_delete_failed"));
+            setMessage({ type: "error", text: t("admin_delete_failed") });
+            setTimeout(() => setMessage(null), 3000);
           }
         })();
       },
@@ -227,7 +245,7 @@ const AdminTeegespraeche: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Sticky Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50 mx-6 mt-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10 mx-6 mt-6">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-kpf-teal/10 rounded-2xl">
             <Layout className="text-kpf-teal" size={28} />
@@ -406,7 +424,7 @@ const AdminTeegespraeche: React.FC = () => {
                       id="imageUpload"
                       type="file"
                       accept="image/*"
-                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none cursor-pointer hover:border-kpf-teal transition-colors"
+                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none cursor-pointer hover:border-kpf-teal transition-colors file:mr-4 file:py-3 file:px-5 md:file:py-2 md:file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-kpf-teal/10 file:text-kpf-teal hover:file:bg-kpf-teal/20"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
@@ -712,6 +730,19 @@ const AdminTeegespraeche: React.FC = () => {
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }
       `}</style>
+
+        {/* Notification */}
+        {message && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-4 rounded-2xl shadow-2xl font-bold z-50 animate-slide-in ${
+              message.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
 
         {/* Confirm Dialog */}
         <ConfirmDialog

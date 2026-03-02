@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Save, FileText, Image as ImageIcon, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { API_BASE_URL } from "../../services/api";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -114,12 +115,17 @@ const AdminGuelen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   // --- Backend Veri Çekme ---
   useEffect(() => {
     const fetchGuelen = async () => {
       setLoading(true);
       try {
-        const res = await fetch("https://localhost:7189/api/GuelenMovement");
+        const res = await fetch(`${API_BASE_URL}/GuelenMovement`);
         if (!res.ok) throw new Error("Failed to fetch");
         const json: any = await res.json();
 
@@ -222,6 +228,7 @@ const AdminGuelen: React.FC = () => {
     return normalized;
   };
 
+  // @ts-expect-error -- React 19 FormEvent type deprecation
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data) return;
@@ -229,7 +236,11 @@ const AdminGuelen: React.FC = () => {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) {
-        alert(t("adminGuelen.alerts.sessionExpired"));
+        setMessage({
+          type: "error",
+          text: t("adminGuelen.alerts.sessionExpired"),
+        });
+        setTimeout(() => setMessage(null), 3000);
         return;
       }
 
@@ -263,23 +274,25 @@ const AdminGuelen: React.FC = () => {
         visionContentDe: normalizeContent(data.vision.contentDe),
       };
 
-      const res = await fetch(
-        `https://localhost:7189/api/GuelenMovement/${data.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
+      const res = await fetch(`${API_BASE_URL}/GuelenMovement/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify(payload),
+      });
       if (!res.ok) throw new Error("Kaydetme başarısız");
-      alert(t("adminGuelen.alerts.updated"));
+      setMessage({ type: "success", text: t("adminGuelen.alerts.updated") });
+      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : t("common.unknownError");
-      alert(`${t("adminGuelen.alerts.saveFailed")}: ${message}`);
+      setMessage({
+        type: "error",
+        text: `${t("adminGuelen.alerts.saveFailed")}: ${message}`,
+      });
+      setTimeout(() => setMessage(null), 3000);
     } finally {
       setSaving(false);
     }
@@ -315,7 +328,7 @@ const AdminGuelen: React.FC = () => {
     <div className="max-w-7xl mx-auto pb-20 px-4">
       <form onSubmit={handleSave} className="space-y-10">
         {/* Üst Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-50">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 sticky top-4 z-10">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-kpf-teal/10 rounded-2xl">
               <FileText className="text-kpf-teal" size={28} />
@@ -505,6 +518,19 @@ const AdminGuelen: React.FC = () => {
         .ql-container.ql-snow { border: none !important; min-height: 160px; font-size: 15px; }
         .ql-editor { padding: 15px !important; }
       `}</style>
+
+      {/* Notification */}
+      {message && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-4 rounded-2xl shadow-2xl font-bold z-50 animate-slide-in ${
+            message.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
     </div>
   );
 };

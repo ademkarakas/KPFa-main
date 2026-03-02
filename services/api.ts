@@ -14,7 +14,7 @@ import {
   PaginatedResponse,
 } from "../types";
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "https://localhost:7189/api";
 
 // Helper function to get auth token
@@ -147,19 +147,20 @@ export const authApi = {
       setAuthToken(response.token);
 
       // Store admin ID for future API calls
-      let adminId = response.id;
+      let adminId: string | undefined = response.id;
 
       // If ID is not in response, try to decode from JWT token
       if (!adminId) {
         const decoded = decodeJWT(response.token);
         // Try common JWT claim names for user ID
-        adminId =
+        const claimValue =
           decoded?.sub ||
           decoded?.userId ||
           decoded?.nameid ||
           decoded?.[
             "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
           ];
+        adminId = typeof claimValue === "string" ? claimValue : undefined;
       }
 
       if (adminId) {

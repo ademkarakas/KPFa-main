@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Language } from "../types";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
+import { API_BASE_URL } from "../services/api";
 
 // API Response Types (yeni backend yapısı)
 interface ApiQuote {
@@ -151,10 +152,9 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       setLoading(true);
       try {
         // Phase 1: Load critical data first (summary endpoint)
-        const summaryRes = await fetch(
-          "https://localhost:7189/api/AboutUs/summary",
-          { signal },
-        );
+        const summaryRes = await fetch(`${API_BASE_URL}/AboutUs/summary`, {
+          signal,
+        });
         if (summaryRes.ok) {
           const summaryData: {
             quote: ApiQuote;
@@ -170,10 +170,9 @@ const About: React.FC<AboutProps> = ({ lang }) => {
         }
 
         // Phase 2: Load secondary data (values endpoint)
-        const valuesRes = await fetch(
-          "https://localhost:7189/api/AboutUs/values",
-          { signal },
-        );
+        const valuesRes = await fetch(`${API_BASE_URL}/AboutUs/values`, {
+          signal,
+        });
         if (valuesRes.ok) {
           const valuesData: {
             vision: ApiVision;
@@ -196,13 +195,13 @@ const About: React.FC<AboutProps> = ({ lang }) => {
           humanRightsRes,
           partnersRes,
         ] = await Promise.all([
-          fetch("https://localhost:7189/api/AboutUs/focus-areas", { signal }),
-          fetch("https://localhost:7189/api/AboutUs/activity-areas", {
+          fetch(`${API_BASE_URL}/AboutUs/focus-areas`, { signal }),
+          fetch(`${API_BASE_URL}/AboutUs/activity-areas`, {
             signal,
           }),
-          fetch("https://localhost:7189/api/AboutUs/team", { signal }),
-          fetch("https://localhost:7189/api/AboutUs/human-rights", { signal }),
-          fetch("https://localhost:7189/api/Partners", { signal }),
+          fetch(`${API_BASE_URL}/AboutUs/team`, { signal }),
+          fetch(`${API_BASE_URL}/AboutUs/human-rights`, { signal }),
+          fetch(`${API_BASE_URL}/Partners`, { signal }),
         ]);
 
         if (focusAreasRes.ok) {
@@ -268,10 +267,6 @@ const About: React.FC<AboutProps> = ({ lang }) => {
             element.scrollIntoView({ behavior: "smooth", block: "start" });
           } else if (attempts < maxAttempts) {
             setTimeout(tryScroll, 200);
-          } else {
-            console.warn(
-              `⚠️ Element with id="${sectionId}" not found after ${maxAttempts} attempts`,
-            );
           }
         };
 

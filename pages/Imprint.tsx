@@ -8,6 +8,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Language } from "../types";
+import { API_BASE_URL } from "../services/api";
 
 interface ImprintProps {
   lang: Language;
@@ -60,7 +61,7 @@ const Imprint: React.FC<ImprintProps> = ({ lang }) => {
 
   const loadImprintData = async () => {
     try {
-      const response = await fetch("https://localhost:7189/api/Imprint");
+      const response = await fetch(`${API_BASE_URL}/Imprint`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -93,7 +94,7 @@ const Imprint: React.FC<ImprintProps> = ({ lang }) => {
 
   const updateImprint = async (updatedData: ImprintData) => {
     try {
-      const response = await fetch("https://localhost:7189/api/Imprint", {
+      const response = await fetch(`${API_BASE_URL}/Imprint`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),

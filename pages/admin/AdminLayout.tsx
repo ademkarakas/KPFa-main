@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { TEXTS } from "../../constants";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -32,8 +32,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { language, setLanguage } = useLanguage();
   const t = (key: string) => TEXTS[key]?.[language] || key;
+
+  // Handle mobile detection and sidebar behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Close sidebar on navigation in mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [currentPage, isMobile]);
 
   // Get current admin info from localStorage on every render for consistency
   const adminName = localStorage.getItem("adminName") || "Admin User";
@@ -142,12 +165,37 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   ];
 
   return (
-    <div className="flex h-screen bg-slate-100 p-4 gap-4">
+    <div className="flex h-screen bg-slate-100 p-2 gap-2 md:p-4 md:gap-4">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-kpf-teal text-white rounded-xl shadow-lg hover:bg-teal-700 transition-colors"
+        aria-label="Toggle menu"
+      >
+        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Backdrop for mobile */}
+      {sidebarOpen && isMobile && (
+        <button
+          type="button"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden cursor-default"
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => e.key === "Escape" && setSidebarOpen(false)}
+          aria-label="Close menu"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-20"
-        } bg-white rounded-2xl shadow-sm text-slate-600 transition-all duration-300 flex flex-col`}
+        } bg-white rounded-2xl shadow-sm text-slate-600 transition-all duration-300 flex flex-col
+        fixed lg:relative inset-y-0 left-0 z-50 lg:z-30
+        transform ${
+          isMobile && !sidebarOpen ? "-translate-x-full" : "translate-x-0"
+        } lg:translate-x-0
+        m-2 my-2 lg:m-0`}
       >
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -158,7 +206,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-slate-50 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-50 rounded-lg transition-colors hidden lg:block"
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -364,7 +412,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-white rounded-2xl shadow-sm">
-        <div className="p-8">{children}</div>
+        <div className="p-4 pt-16 md:pt-6 lg:p-8">{children}</div>
       </main>
     </div>
   );
