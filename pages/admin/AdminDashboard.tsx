@@ -15,6 +15,7 @@ import {
   newsletterAdminApi,
   NewsletterStats,
 } from "../../services/newsletterApi";
+import { API_BASE_URL } from "../../services/api";
 
 interface DashboardStats {
   totalActivities: number;
@@ -192,9 +193,6 @@ const NewsletterStatsWidget: React.FC<{
     </div>
   );
 };
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://localhost:7189/api";
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const [stats, setStats] = useState<DashboardStats>({

@@ -14,7 +14,17 @@
     "submit": "Absenden",
     "confirm": "Bestätigen",
     "back": "Zurück",
-    "unknownError": "Unbekannter Fehler"
+    "unknownError": "Unbekannter Fehler",
+    "errorBoundary": {
+      "title": "Etwas ist schief gelaufen",
+      "description": "Die Anwendung ist auf einen unerwarteten Fehler gestoßen. Bitte versuchen Sie die Seite neu zu laden oder kehren Sie zur Startseite zurück.",
+      "reloadButton": "Seite neu laden",
+      "homeButton": "Zur Startseite",
+      "supportText": "Wenn das Problem weiterhin besteht, kontaktieren Sie bitte den Support.",
+      "technicalDetails": "Technische Details (Entwicklungsmodus)",
+      "error": "Fehler:",
+      "componentStack": "Komponenten-Stack:"
+    }
   },
   "admin": {
     "dashboard": "Dashboard",

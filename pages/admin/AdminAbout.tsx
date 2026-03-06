@@ -593,13 +593,13 @@ const AdminAbout: React.FC = () => {
   };
 
   const deleteCoreValue = (id: string) => {
-    void handleDelete(`https://localhost:7189/api/AboutUs/core-values/${id}`);
+    void handleDelete(`${API_BASE_URL}/AboutUs/core-values/${id}`);
   };
 
   const saveFocusArea = (item: ApiFocusArea) => {
     const endpoint = item.id
-      ? `https://localhost:7189/api/AboutUs/focus-areas/${item.id}`
-      : "https://localhost:7189/api/AboutUs/focus-areas";
+      ? `${API_BASE_URL}/AboutUs/focus-areas/${item.id}`
+      : `${API_BASE_URL}/AboutUs/focus-areas`;
     const method = item.id ? "PUT" : "POST";
 
     const payload: ApiFocusArea = {
@@ -613,45 +613,43 @@ const AdminAbout: React.FC = () => {
   };
 
   const deleteFocusArea = (id: string) => {
-    void handleDelete(`https://localhost:7189/api/AboutUs/focus-areas/${id}`);
+    void handleDelete(`${API_BASE_URL}/AboutUs/focus-areas/${id}`);
   };
 
   const saveActivityArea = (item: ApiActivityArea) => {
     const endpoint = item.id
-      ? `https://localhost:7189/api/AboutUs/activity-areas/${item.id}`
-      : "https://localhost:7189/api/AboutUs/activity-areas";
+      ? `${API_BASE_URL}/AboutUs/activity-areas/${item.id}`
+      : `${API_BASE_URL}/AboutUs/activity-areas`;
     const method = item.id ? "PUT" : "POST";
     void handleSave(item, endpoint, method, () => setEditingActivityArea(null));
   };
 
   const deleteActivityArea = (id: string) => {
-    void handleDelete(
-      `https://localhost:7189/api/AboutUs/activity-areas/${id}`,
-    );
+    void handleDelete(`${API_BASE_URL}/AboutUs/activity-areas/${id}`);
   };
 
   const saveTeamMember = (item: ApiTeamMember) => {
     const endpoint = item.id
-      ? `https://localhost:7189/api/AboutUs/team-members/${item.id}`
-      : "https://localhost:7189/api/AboutUs/team-members";
+      ? `${API_BASE_URL}/AboutUs/team-members/${item.id}`
+      : `${API_BASE_URL}/AboutUs/team-members`;
     const method = item.id ? "PUT" : "POST";
     void handleSave(item, endpoint, method, () => setEditingTeamMember(null));
   };
 
   const deleteTeamMember = (id: string) => {
-    void handleDelete(`https://localhost:7189/api/AboutUs/team-members/${id}`);
+    void handleDelete(`${API_BASE_URL}/AboutUs/team-members/${id}`);
   };
 
   const savePartner = (item: ApiPartner) => {
     const endpoint = item.id
-      ? `https://localhost:7189/api/Partners/${item.id}`
-      : "https://localhost:7189/api/Partners";
+      ? `${API_BASE_URL}/Partners/${item.id}`
+      : `${API_BASE_URL}/Partners`;
     const method = item.id ? "PUT" : "POST";
     void handleSave(item, endpoint, method, () => setEditingPartner(null));
   };
 
   const deletePartner = (id: string) => {
-    void handleDelete(`https://localhost:7189/api/Partners/${id}`);
+    void handleDelete(`${API_BASE_URL}/Partners/${id}`);
   };
 
   if (isLoading) {

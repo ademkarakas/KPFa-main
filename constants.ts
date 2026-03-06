@@ -1223,6 +1223,8 @@ export const TEXTS: Record<string, Translation> = {
   contact_form_anrede_other: { tr: "Diğer", de: "Divers" },
   contact_form_name: { tr: "Adınız Soyadınız", de: "Vor- und Nachname" },
   contact_form_email: { tr: "E-posta Adresiniz", de: "Ihre E-Mail-Adresse" },
+  contact_form_phone: { tr: "Telefon Numaranız", de: "Ihre Telefonnummer" },
+  contact_form_subject: { tr: "Konu", de: "Betreff" },
   contact_form_message: { tr: "Mesajınız", de: "Ihre Nachricht" },
   contact_form_send: { tr: "Gönder", de: "Senden" },
   contact_success: {

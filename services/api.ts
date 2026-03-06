@@ -15,7 +15,7 @@ import {
 } from "../types";
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://localhost:7189/api";
+  import.meta.env.VITE_API_URL || "https://api.kulturplattformfreiburg.org/api";
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {

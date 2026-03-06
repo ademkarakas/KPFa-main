@@ -1,7 +1,6 @@
-import { apiFetch } from "./api";
+import { apiFetch, API_BASE_URL } from "./api";
 
-const NEWSLETTER_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://localhost:7189/api";
+const NEWSLETTER_BASE_URL = API_BASE_URL;
 
 // ========================
 // Type Definitions

@@ -71,7 +71,14 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
     message: "",
   });
 
-  const t = (key: string) => TEXTS[key][lang];
+  const t = (key: string) => {
+    const translation = TEXTS[key];
+    if (!translation) {
+      console.warn(`Translation key not found: ${key}`);
+      return key;
+    }
+    return translation[lang];
+  };
 
   useEffect(() => {
     loadContactData();
@@ -442,7 +449,7 @@ const Contact: React.FC<ContactProps> = ({ lang }) => {
                       <label
                         className={`absolute left-12 text-slate-400 pointer-events-none transition-all ${focusedField === "subject" || formData.subject ? "-top-2.5 left-10 text-xs font-bold text-teal-600 bg-white px-2" : "top-4 text-slate-400"}`}
                       >
-                        {lang === "tr" ? "Konu" : "Betreff"}
+                        {t("contact_form_subject")}
                       </label>
                       <MessageSquare
                         className="absolute left-4 top-4 text-slate-400 group-focus-within/input:text-teal-600 transition-colors"

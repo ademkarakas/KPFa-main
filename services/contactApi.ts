@@ -1,10 +1,9 @@
-class ContactApi {
-  private baseURL: string;
+import { API_BASE_URL } from "./api";
 
-  constructor(
-    baseURL: string = import.meta.env.VITE_API_URL ||
-      "https://localhost:7189/api",
-  ) {
+class ContactApi {
+  private readonly baseURL: string;
+
+  constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
   }
 
