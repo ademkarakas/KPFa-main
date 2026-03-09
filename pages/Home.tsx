@@ -12,6 +12,7 @@ import { activitiesApi, API_BASE_URL } from "../services/api";
 import { createSafeHtml } from "../utils/sanitize";
 import { isRequestCancelled } from "../hooks/useCancelableRequest";
 import { navigateTo } from "../utils/navigation";
+import { analytics } from "../utils/analytics";
 
 // Custom Instagram Icon (deprecated in Lucide)
 const InstagramIcon: React.FC<{ size?: number; className?: string }> = ({
@@ -124,7 +125,7 @@ const INITIAL_HOME_DATA: HomeData = {
     donateButtonDe: "",
   },
   instagramItems: [],
-  instagramProfileLink: "https://instagram.com/kulturplattformfreiburg",
+  instagramProfileLink: "https://www.instagram.com/kulturplattformfreiburg",
   instagramHandle: "@kulturplattformfreiburg",
 };
 
@@ -280,9 +281,9 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
         const firstItemWithLink = instagramItems.find((item) => item.link);
         const instagramProfileLink =
           firstItemWithLink?.link ||
-          "https://instagram.com/kulturplattformfreiburg";
+          "https://www.instagram.com/kulturplattformfreiburg";
 
-        // Handle'ı link'ten çıkar (örn: https://www.instagram.com/kulturplattformfreiburg1/ -> @kulturplattformfreiburg1)
+        // Handle'ı link'ten çıkar (örn: https://www.instagram.com/kulturplattformfreiburg/ -> @kulturplattformfreiburg)
         const extractHandle = (link: string): string => {
           try {
             const url = new URL(link);
@@ -372,7 +373,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               ? homeData.hero.descriptionTr
               : homeData.hero.descriptionDe) && (
               <p
-                className="text-lg text-slate-400 mb-3 md:mb-10 leading-relaxed max-w-xl animate-fade-in-up delay-150"
+                className="text-lg text-slate-300 mb-3 md:mb-10 leading-relaxed max-w-xl animate-fade-in-up delay-150"
                 dangerouslySetInnerHTML={createSafeHtml(
                   lang === "tr"
                     ? homeData.hero.descriptionTr
@@ -384,14 +385,15 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               <button
                 onClick={() => setPage("activities")}
                 className="
-      bg-kpf-teal hover:bg-kpf-teal text-white
-      px-2 py-1 sm:px-3 sm:py-2.5
-      text-xs sm:text-base
+      bg-kpf-teal hover:bg-teal-600 text-white
+      px-4 py-2 sm:px-6 sm:py-3
+      text-sm sm:text-base
       rounded-lg sm:rounded-2xl
       font-bold transition-all
-      flex items-center justify-center gap-1 sm:gap-2
+      flex items-center justify-center gap-2
       group shadow-lg shadow-red-900/20
       whitespace-nowrap
+      min-h-[44px] min-w-[120px]
     "
               >
                 {lang === "tr"
@@ -404,17 +406,21 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
               </button>
 
               <button
-                onClick={() => setPage("volunteer")}
+                onClick={() => {
+                  analytics.trackVolunteerClick();
+                  setPage("volunteer");
+                }}
                 className="
     bg-white hover:bg-slate-100
     text-teal-700
     border border-white
-    px-2 py-1 sm:px-3 sm:py-2.5
-    text-xs sm:text-base
+    px-4 py-2 sm:px-6 sm:py-3
+    text-sm sm:text-base
     rounded-lg sm:rounded-2xl
     font-bold transition-all
     flex items-center justify-center
     whitespace-nowrap
+    min-h-[44px] min-w-[120px]
   "
               >
                 {lang === "tr"
@@ -463,7 +469,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                   <h3 className="text-2xl font-bold text-slate-900 mb-3">
                     {lang === "tr" ? feature.titleTr : feature.titleDe}
                   </h3>
-                  <p className="text-slate-600 leading-relaxed mb-6">
+                  <p className="text-slate-900 leading-relaxed mb-6">
                     {lang === "tr"
                       ? feature.descriptionTr
                       : feature.descriptionDe}
@@ -531,6 +537,8 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                     navigateTo(`activity/${activity.id}`);
                   };
 
+                  const isPast = new Date(activity.dateISO) < new Date();
+
                   return (
                     <div
                       key={activity.id}
@@ -551,11 +559,12 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                           alt={activity.title[lang]}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
-                        <div className="absolute top-4 left-4">
-                          <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold text-slate-900 shadow-lg">
-                            {activity.category}
-                          </span>
-                        </div>
+
+                        {isPast && (
+                          <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            {lang === "tr" ? "GEÇTİ" : "ABGELAUFEN"}
+                          </div>
+                        )}
                       </div>
                       <div className="p-8">
                         <div className="flex items-center gap-2 text-kpf-teal text-sm font-bold mb-3">
@@ -612,6 +621,7 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                   href={homeData.instagramProfileLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => analytics.trackInstagramClick()}
                   className="inline-flex items-center gap-3 bg-white text-purple-600 px-6 py-3 rounded-xl font-bold text-lg hover:bg-slate-100 hover:scale-105 transition-all shadow-lg"
                 >
                   <InstagramIcon size={22} />
@@ -639,7 +649,10 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
 
               <div className="relative z-10 flex flex-wrap gap-4">
                 <button
-                  onClick={() => setPage("activities")}
+                  onClick={() => {
+                    analytics.trackNavigation("home", "activities");
+                    setPage("activities");
+                  }}
                   className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-md"
                 >
                   <ArrowRight size={18} />
@@ -648,7 +661,10 @@ const Home: React.FC<HomeProps> = ({ lang, setPage }) => {
                     : homeData.cta.primaryButtonDe}
                 </button>
                 <button
-                  onClick={() => setPage("contact")}
+                  onClick={() => {
+                    analytics.trackContactClick();
+                    setPage("contact");
+                  }}
                   className="bg-white text-teal-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-all shadow-md"
                 >
                   {lang === "tr"

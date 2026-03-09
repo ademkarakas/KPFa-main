@@ -800,7 +800,7 @@ const Layout: React.FC<LayoutProps> = ({
               </p>
               <div className="flex space-x-3">
                 <a
-                  href="https://facebook.com/kulturplattformfreiburg"
+                  href="https://www.facebook.com/kulturplattformfreiburg"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-800 p-2.5 rounded-full hover:bg-[#1877F2] hover:text-white transition-all duration-300 hover:-translate-y-1"
@@ -818,7 +818,7 @@ const Layout: React.FC<LayoutProps> = ({
                   </a>
                 )}
                 <a
-                  href="https://twitter.com/kulturplattformfreiburg"
+                  href="https://www.twitter.com/kulturplattformfreiburg"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-800 p-2.5 rounded-full hover:bg-[#1DA1F2] hover:text-white transition-all duration-300 hover:-translate-y-1"
@@ -910,12 +910,12 @@ const Layout: React.FC<LayoutProps> = ({
           </div>
 
           {/* Footer Bottom */}
-          <div className="border-t border-slate-800 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
-            <div>
+          <div className="border-t border-slate-800 mt-16 pt-8 flex flex-col md:flex-row items-center gap-4 text-sm text-slate-500">
+            <div className="flex-1">
               &copy; {new Date().getFullYear()} {t("common_site_title")} e.V.{" "}
               {t("footer_rights")}
             </div>
-            <div className="flex gap-6">
+            <div className="flex gap-6 md:mr-auto md:ml-8">
               <button
                 onClick={() => {
                   setPage("privacy");

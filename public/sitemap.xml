@@ -4,118 +4,134 @@
   
   <!-- Homepage -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/"/>
   </url>
 
-  <!-- About -->
+  <!-- About / Über uns -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#about</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/about</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#about"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#about"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/about"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/about?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/about"/>
   </url>
 
-  <!-- Activities -->
+  <!-- Activities / Aktivitäten -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#activities</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/activities</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#activities"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#activities"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/activities"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/activities?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/activities"/>
   </url>
 
-  <!-- Courses -->
+  <!-- Courses / Kurse -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#courses</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/courses</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#courses"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#courses"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/courses"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/courses?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/courses"/>
   </url>
 
-  <!-- Volunteer -->
+  <!-- Volunteer / Freiwillig -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#volunteer</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/volunteer</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#volunteer"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#volunteer"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/volunteer"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/volunteer?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/volunteer"/>
   </url>
 
-  <!-- Contact -->
+  <!-- Contact / Kontakt -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#contact</loc>
-    <lastmod>2026-02-19</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#contact"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#contact"/>
-  </url>
-
-  <!-- Donate -->
-  <url>
-    <loc>https://kultur-plattform-freiburg.de/#donate</loc>
-    <lastmod>2026-02-19</lastmod>
-    <changefreq>yearly</changefreq>
+    <loc>https://www.kulturplattformfreiburg.org/contact</loc>
+    <lastmod>2026-03-09</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#donate"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#donate"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/contact"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/contact?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/contact"/>
   </url>
 
-  <!-- Satzung -->
+  <!-- Donate / Spenden -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#satzung</loc>
-    <lastmod>2026-02-19</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.6</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#satzung"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#satzung"/>
+    <loc>https://www.kulturplattformfreiburg.org/donate</loc>
+    <lastmod>2026-03-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/donate"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/donate?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/donate"/>
+  </url>
+
+  <!-- Teegespräche / Çay Sohbetleri -->
+  <url>
+    <loc>https://www.kulturplattformfreiburg.org/teegespraeche</loc>
+    <lastmod>2026-03-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/teegespraeche"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/teegespraeche?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/teegespraeche"/>
   </url>
 
   <!-- Gülen Movement -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#guelen</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/guelen-movement</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#guelen"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#guelen"/>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/guelen-movement"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/guelen-movement?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/guelen-movement"/>
   </url>
 
-  <!-- Teegespraeche -->
+  <!-- Satzung / Statutes -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#teegespraeche</loc>
-    <lastmod>2026-02-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="de" href="https://kultur-plattform-freiburg.de/#teegespraeche"/>
-    <xhtml:link rel="alternate" hreflang="tr" href="https://kultur-plattform-freiburg.de/?lang=tr#teegespraeche"/>
-  </url>
-
-  <!-- Privacy -->
-  <url>
-    <loc>https://kultur-plattform-freiburg.de/#privacy</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/satzung</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/satzung"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/satzung?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/satzung"/>
   </url>
 
-  <!-- Imprint -->
+  <!-- Privacy / Datenschutz -->
   <url>
-    <loc>https://kultur-plattform-freiburg.de/#imprint</loc>
-    <lastmod>2026-02-19</lastmod>
+    <loc>https://www.kulturplattformfreiburg.org/privacy</loc>
+    <lastmod>2026-03-09</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/privacy"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/privacy?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/privacy"/>
+  </url>
+
+  <!-- Imprint / Impressum -->
+  <url>
+    <loc>https://www.kulturplattformfreiburg.org/imprint</loc>
+    <lastmod>2026-03-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.kulturplattformfreiburg.org/imprint"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://www.kulturplattformfreiburg.org/imprint?lang=tr"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.kulturplattformfreiburg.org/imprint"/>
   </url>
 
 </urlset>

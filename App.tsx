@@ -6,6 +6,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { Toaster } from "react-hot-toast";
 import i18n from "./src/i18n/config";
 import { updatePageMeta } from "./utils/seo";
+import CookieConsent from "./components/CookieConsent";
 
 // Lazy load pages for better performance (code splitting)
 const About = lazy(() => import("./pages/About"));
@@ -148,15 +149,9 @@ const App: React.FC = () => {
       case "about":
         return <About lang={lang} />;
       case "activities":
-        return <Activities lang={lang} currentPage={currentPage} />;
+        return <Activities lang={lang} />;
       case "courses":
-        return (
-          <Courses
-            lang={lang}
-            setPage={setCurrentPage}
-            currentPage={currentPage}
-          />
-        );
+        return <Courses lang={lang} setPage={setCurrentPage} />;
       case "donate":
         return <Donate lang={lang} />;
       case "contact":
@@ -209,6 +204,8 @@ const App: React.FC = () => {
             duration: 4000, // 4 saniye
           }}
         />
+        {/* Cookie Consent Banner */}
+        <CookieConsent lang={lang} />
       </Layout>
     </LanguageProvider>
   );

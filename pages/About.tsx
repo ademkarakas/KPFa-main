@@ -312,7 +312,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       <div className="bg-kpf-teal text-white py-20 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-12 -right-12 opacity-10 pointer-events-none transform -rotate-12">
-          <Users size={400} strokeWidth={0.5} />
+          <Users size={200} strokeWidth={0.5} />
         </div>
         <div className="container mx-auto px-4 text-center relative z-10">
           <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6 tracking-tight">
@@ -416,9 +416,9 @@ const About: React.FC<AboutProps> = ({ lang }) => {
       {(aboutData?.vision || aboutData?.mission) && (
         <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-24 relative overflow-hidden">
           {/* Decorative elements */}
-          <div className="absolute -left-20 top-20 w-64 h-64 bg-kpf-teal rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob"></div>
-          <div className="absolute -right-20 bottom-20 w-64 h-64 bg-kpf-red rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob animation-delay-2000"></div>
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-slate-700 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+          <div className="absolute -left-20 top-20 w-64 h-64 bg-kpf-teal rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-blob"></div>
+          <div className="absolute -right-20 bottom-20 w-64 h-64 bg-kpf-red rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-slate-700 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-blob animation-delay-4000"></div>
 
           <div className="container mx-auto px-4 max-w-6xl relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
@@ -549,6 +549,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                         }
                         alt={lang === "tr" ? area.titleTr : area.titleDe}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-kpf-dark/20 group-hover:bg-kpf-dark/10 transition-colors"></div>
                     </div>
@@ -710,6 +711,7 @@ const About: React.FC<AboutProps> = ({ lang }) => {
                           src={partner.logoUrl}
                           alt={partner.name}
                           className="max-h-full max-w-full object-contain filter drop-shadow-sm"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="text-4xl font-bold text-slate-400">

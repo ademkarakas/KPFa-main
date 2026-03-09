@@ -2,6 +2,26 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
+
+    <!-- Google tag (gtag.js) - GA4 -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-GK347MG43P"
+    ></script>
+    <script>
+      globalThis.dataLayer = globalThis.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-GK347MG43P", {
+        anonymize_ip: true,
+        cookie_flags: "SameSite=None;Secure",
+        allow_google_signals: false,
+      });
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- Favicon -->
@@ -14,11 +34,20 @@
       content="Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert."
     />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://kultur-plattform-freiburg.de/" />
+    <link rel="canonical" href="https://www.kulturplattformfreiburg.org/" />
+
+    <!-- Google Search Console Verification -->
+    <meta
+      name="google-site-verification"
+      content="OQG6VQxklxQIiKI9hnQ_MyF5UOJYK_pizjSRLPxTa-0"
+    />
 
     <!-- Open Graph / Meta -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://kultur-plattform-freiburg.de/" />
+    <meta
+      property="og:url"
+      content="https://www.kulturplattformfreiburg.org/"
+    />
     <meta property="og:title" content="Kultur Plattform Freiburg" />
     <meta
       property="og:description"
@@ -39,17 +68,17 @@
     <link
       rel="alternate"
       hreflang="de"
-      href="https://kultur-plattform-freiburg.de/"
+      href="https://www.kulturplattformfreiburg.org/"
     />
     <link
       rel="alternate"
       hreflang="tr"
-      href="https://kultur-plattform-freiburg.de/?lang=tr"
+      href="https://www.kulturplattformfreiburg.org/?lang=tr"
     />
     <link
       rel="alternate"
       hreflang="x-default"
-      href="https://kultur-plattform-freiburg.de/"
+      href="https://www.kulturplattformfreiburg.org/"
     />
 
     <!-- Fonts -->
@@ -62,25 +91,63 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Kultur Plattform Freiburg",
-        "alternateName": "KPF",
-        "url": "https://kultur-plattform-freiburg.de",
-        "logo": "https://kultur-plattform-freiburg.de/assets/cropped-Logoweb.png",
-        "description": "Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert.",
+        "@type": ["Organization", "LocalBusiness", "NonProfit"],
+        "name": "Kultur Plattform Freiburg e.V.",
+        "alternateName": [
+          "KPF",
+          "Kulturplattform Freiburg",
+          "Kültür Platformu Freiburg"
+        ],
+        "legalName": "Kultur Plattform Freiburg eingetragener Verein",
+        "url": "https://www.kulturplattformfreiburg.org",
+        "logo": "https://www.kulturplattformfreiburg.org/assets/cropped-Logoweb.png",
+        "image": "https://www.kulturplattformfreiburg.org/assets/og-image.jpg",
+        "description": "Gemeinnütziger Verein für kulturellen Austausch, interkultureller Dialog und Integration in Freiburg im Breisgau. Wir fördern kulturelle Veranstaltungen, Dialog und gesellschaftliches Engagement.",
+        "slogan": "Kultureller Austausch & Dialog in Freiburg",
+        "foundingDate": "2020",
+        "email": "info@kulturplattformfreiburg.org",
         "address": {
           "@type": "PostalAddress",
-          "addressLocality": "Freiburg",
-          "addressCountry": "DE"
+          "streetAddress": "Böcklerstraße 3",
+          "addressLocality": "Freiburg im Breisgau",
+          "postalCode": "79110",
+          "addressRegion": "Baden-Württemberg",
+          "addressCountry": "Deutschland"
         },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "47.9990",
+          "longitude": "7.8421"
+        },
+        "areaServed": {
+          "@type": "GeoCircle",
+          "geoMidpoint": {
+            "@type": "GeoCoordinates",
+            "latitude": "47.9990",
+            "longitude": "7.8421"
+          },
+          "geoRadius": "50000"
+        },
+        "knowsAbout": [
+          "Interkultureller Dialog",
+          "Kulturelle Integration",
+          "Kulturelle Veranstaltungen",
+          "Dialog",
+          "Integration",
+          "Gemeinnützigkeit",
+          "Kultureller Austausch",
+          "Gesellschaftliches Engagement"
+        ],
+        "keywords": "verein freiburg, kultur freiburg, integration freiburg, kulturplattform, gemeinnützig, interkulturell, dialog, kulturelle veranstaltungen, freiburg im breisgau, eingetragener verein",
         "sameAs": [
-          "https://www.instagram.com/kpf_freiburg",
-          "https://www.facebook.com/KPFFreiburg"
+          "https://www.instagram.com/kulturplattformfreiburg",
+          "https://www.facebook.com/kulturplattformfreiburg"
         ],
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "General Inquiries",
-          "email": "info@kultur-plattform-freiburg.de"
+          "email": "info@kulturplattformfreiburg.org",
+          "availableLanguage": ["German", "Turkish"]
         }
       }
     </script>

@@ -269,7 +269,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                     ? "Etkinlik"
                     : "Veranstaltung"}
               </div>
-              <h1 className="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+              <h1 className="text-2xl md:text-6xl font-black text-white mb-6 leading-tight">
                 {activity.title[lang]}
               </h1>
 
@@ -306,6 +306,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             {activity.videoUrl && (
               <div className="bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl aspect-video border-[8px] border-white shadow-slate-200">
                 <iframe
+                  title={activity.title[lang] || "Activity Video"}
                   src={
                     isYouTubeVideo(activity.videoUrl)
                       ? getYouTubeEmbedUrl(activity.videoUrl)
@@ -421,7 +422,8 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                       try {
                         await navigator.share(shareData);
                       } catch (err) {
-                        // Share cancelled or failed
+                        // Share cancelled or failed - this is expected behavior
+                        console.debug("Share cancelled", err);
                       }
                     } else {
                       // Fallback: URL'yi clipboard'a kopyala
@@ -522,8 +524,13 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
             </button>
 
             <div
+              role="button"
+              tabIndex={0}
               className="relative w-full max-w-5xl h-full flex items-center justify-center"
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") e.stopPropagation();
+              }}
             >
               <button
                 className="absolute -left-4 md:-left-12 p-4 text-white hover:text-kpf-teal transition-colors"
@@ -552,7 +559,7 @@ const ActivityDetail: React.FC<ActivityDetailProps> = ({
                           ? `data:image/jpeg;base64,${image.base64Data}`
                           : "";
                     })()}
-                    className="max-w-3xl max-h-[75vh] object-contain rounded-2xl shadow-2xl"
+                    className="max-w-[90vw] max-h-[70vh] w-auto h-auto object-contain rounded-2xl shadow-2xl"
                   />
                 )}
 

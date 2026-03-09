@@ -13,7 +13,7 @@ Allow: /*.css
 Allow: /*.js
 
 # Sitemap location
-Sitemap: https://kultur-plattform-freiburg.de/sitemap.xml
+Sitemap: https://www.kulturplattformfreiburg.org/sitemap.xml
 
 # Crawl-delay for bots (optional, prevents aggressive crawling)
 Crawl-delay: 1

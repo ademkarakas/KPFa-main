@@ -12,47 +12,49 @@ export const PAGE_META_CONFIG: Record<string, PageMetaData> = {
     titleDe: "Kultur Plattform Freiburg - Kultureller Austausch & Engagement",
     titleTr: "Kültür Platformu Freiburg - Kültürel Değişim & Katılım",
     descriptionDe:
-      "Kultur Plattform Freiburg (KPF) ist eine Initiative, die den kulturellen Austausch und das gesellschaftliche Engagement in Freiburg fördert.",
+      "Kultur Plattform Freiburg (KPF) - Gemeinnütziger Verein für kulturellen Austausch, interkultureller Dialog und Integration in Freiburg im Breisgau.",
     descriptionTr:
-      "Kültür Platformu Freiburg (KPF), Freiburg'da kültürel değişimi ve toplumsal katılımı teşvik eden bir girişimdir.",
+      "Kültür Platformu Freiburg (KPF) - Freiburg'da kültürel değişim, kültürlerarası diyalog ve integrasyon için kar amacı gütmeyen dernek.",
     keywords:
-      "kultur, freiburg, kulturplattform, verein, integration, austausch",
+      "kultur freiburg, kulturplattform, verein freiburg, integration freiburg, dialog, austausch, gemeinnützig, freiburg im breisgau, interkultureller dialog",
   },
   about: {
     titleDe: "Über uns - Kultur Plattform Freiburg",
     titleTr: "Hakkımızda - Kültür Platformu Freiburg",
     descriptionDe:
-      "Erfahren Sie mehr über unsere Mission, Vision und Werte. KPF fördert kulturelle Vielfalt und gesellschaftliches Engagement.",
+      "Erfahren Sie mehr über unsere Mission, Vision und Werte. Kultur Plattform Freiburg fördert kulturelle Vielfalt und gesellschaftliches Engagement.",
     descriptionTr:
-      "Misyonumuz, vizyonumuz ve değerlerimiz hakkında daha fazla bilgi edinin. KPF kültürel çeşitliliği ve toplumsal katılımı teşvik eder.",
-    keywords: "über uns, mission, vision, werte, team, partner",
+      "Misyonumuz, vizyonumuz ve değerlerimiz hakkında daha fazla bilgi edinin. Kültür Platformu Freiburg kültürel çeşitliliği ve toplumsal katılımı teşvik eder.",
+    keywords:
+      "über uns, mission, vision, werte, team, partner, integration, dialog, kulturelle veranstaltungen",
   },
   activities: {
-    titleDe: "Aktivitäten & Veranstaltungen - KPF Freiburg",
-    titleTr: "Etkinlikler & Aktiviteler - KPF Freiburg",
+    titleDe: "Aktivitäten & Veranstaltungen - Kultur Plattform Freiburg",
+    titleTr: "Etkinlikler & Aktiviteler - Kültür Platformu Freiburg Freiburg",
     descriptionDe:
       "Entdecken Sie unsere kulturellen Veranstaltungen, Workshops und Events in Freiburg. Werden Sie Teil unserer Gemeinschaft!",
     descriptionTr:
       "Freiburg'daki kültürel etkinliklerimizi, atölyelerimizi ve organizasyonlarımızı keşfedin. Topluluğumuzun bir parçası olun!",
-    keywords: "veranstaltungen, events, workshops, kultur, aktivitäten",
+    keywords:
+      "veranstaltungen freiburg, events freiburg, workshops, kultur, aktivitäten, kulturelle veranstaltungen, dialog, integration",
   },
   courses: {
-    titleDe: "Kurse & Bildung - KPF Freiburg",
-    titleTr: "Kurslar & Eğitim - KPF Freiburg",
+    titleDe: "Kurse & Bildung - Kultur Plattform Freiburg",
+    titleTr: "Kurslar & Eğitim - Kültür Platformu Freiburg Freiburg",
     descriptionDe:
       "Nehmen Sie an unseren Bildungskursen teil: Sprachkurse, kulturelle Workshops und mehr. Jetzt anmelden!",
     descriptionTr:
       "Eğitim kurslarımıza katılın: Dil kursları, kültürel atölyeler ve daha fazlası. Şimdi kayıt olun!",
     keywords:
-      "kurse, bildung, sprachkurse, deutschkurs, türkischkurs, workshops",
+      "kurse freiburg, bildung, kulturelle veranstaltungen, dialog, integration, workshops, interkultureller austausch",
   },
   volunteer: {
-    titleDe: "Freiwillig engagieren - KPF Freiburg",
-    titleTr: "Gönüllü Ol - KPF Freiburg",
+    titleDe: "Freiwillig engagieren - Kultur Plattform Freiburg",
+    titleTr: "Gönüllü Ol - Kültür Platformu Freiburg",
     descriptionDe:
-      "Werden Sie Freiwilliger bei KPF! Unterstützen Sie unsere kulturelle Arbeit und machen Sie einen Unterschied.",
+      "Werden Sie Freiwilliger bei Kultur Plattform Freiburg! Unterstützen Sie unsere kulturelle Arbeit und machen Sie einen Unterschied.",
     descriptionTr:
-      "KPF'de gönüllü olun! Kültürel çalışmalarımızı destekleyin ve fark yaratın.",
+      "Kültür Platformu Freiburg'de gönüllü olun! Kültürel çalışmalarımızı destekleyin ve fark yaratın.",
     keywords: "freiwillig, ehrenamt, mitmachen, engagement, helfen",
   },
   contact: {
@@ -65,8 +67,8 @@ export const PAGE_META_CONFIG: Record<string, PageMetaData> = {
     keywords: "kontakt, email, telefon, adresse, ansprechpartner",
   },
   donate: {
-    titleDe: "Spenden - KPF Freiburg unterstützen",
-    titleTr: "Bağış - KPF Freiburg'u Destekle",
+    titleDe: "Spenden - Kultur Plattform Freiburg unterstützen",
+    titleTr: "Bağış - Kültür Platformu Freiburg'u Destekle",
     descriptionDe:
       "Unterstützen Sie unsere kulturelle Arbeit mit Ihrer Spende. Jeder Beitrag macht einen Unterschied!",
     descriptionTr:
@@ -92,8 +94,8 @@ export const PAGE_META_CONFIG: Record<string, PageMetaData> = {
     keywords: "gülen bewegung, fethullah gülen, dialog, interkulturell",
   },
   teegespraeche: {
-    titleDe: "Teegespräche - KPF Freiburg",
-    titleTr: "Çay Sohbetleri - KPF Freiburg",
+    titleDe: "Teegespräche - Kultur Plattform Freiburg",
+    titleTr: "Çay Sohbetleri - Kültür Platformu Freiburg",
     descriptionDe:
       "Nehmen Sie an unseren Teegesprächen teil: Informelle Treffen für interkulturellen Austausch und Dialog.",
     descriptionTr:
@@ -101,8 +103,8 @@ export const PAGE_META_CONFIG: Record<string, PageMetaData> = {
     keywords: "teegespräche, dialog, austausch, treffen, diskussion",
   },
   privacy: {
-    titleDe: "Datenschutzerklärung - KPF Freiburg",
-    titleTr: "Gizlilik Politikası - KPF Freiburg",
+    titleDe: "Datenschutzerklärung - Kultur Plattform Freiburg",
+    titleTr: "Gizlilik Politikası - Kültür Platformu Freiburg",
     descriptionDe:
       "Unsere Datenschutzerklärung informiert Sie über die Verarbeitung personenbezogener Daten.",
     descriptionTr:
@@ -187,7 +189,7 @@ function updateMetaTag(
  * Updates the canonical URL based on current page
  */
 function updateCanonicalUrl(page: string, lang: "de" | "tr"): void {
-  const baseUrl = "https://kultur-plattform-freiburg.de";
+  const baseUrl = "https://www.kulturplattformfreiburg.org";
   const langParam = lang === "tr" ? "?lang=tr" : "";
   const hash = page === "home" ? "" : `#${page}`;
   const url = `${baseUrl}${langParam}${hash}`;
@@ -231,7 +233,7 @@ export function generateEventStructuredData(
     organizer: {
       "@type": "Organization",
       name: "Kultur Plattform Freiburg",
-      url: "https://kultur-plattform-freiburg.de",
+      url: "https://www.kulturplattformfreiburg.org",
     },
     ...(imageUrl && { image: imageUrl }),
   };
