@@ -12,9 +12,9 @@ export const PAGE_META_CONFIG: Record<string, PageMetaData> = {
     titleDe: "Kultur Plattform Freiburg - Kultureller Austausch & Engagement",
     titleTr: "Kültür Platformu Freiburg - Kültürel Değişim & Katılım",
     descriptionDe:
-      "Kultur Plattform Freiburg (KPF) - Gemeinnütziger Verein für kulturellen Austausch, interkultureller Dialog und Integration in Freiburg im Breisgau.",
+      "Kultur Plattform Freiburg e.V. - Gemeinnütziger Verein für kulturellen Austausch, interkultureller Dialog und Integration in Freiburg im Breisgau.",
     descriptionTr:
-      "Kültür Platformu Freiburg (KPF) - Freiburg'da kültürel değişim, kültürlerarası diyalog ve integrasyon için kar amacı gütmeyen dernek.",
+      "Kültür Platformu Freiburg e.V. - Freiburg'da kültürel değişim, kültürlerarası diyalog ve integrasyon için kar amacı gütmeyen dernek.",
     keywords:
       "kultur freiburg, kulturplattform, verein freiburg, integration freiburg, dialog, austausch, gemeinnützig, freiburg im breisgau, interkultureller dialog",
   },
@@ -22,9 +22,9 @@ export const PAGE_META_CONFIG: Record<string, PageMetaData> = {
     titleDe: "Über uns - Kultur Plattform Freiburg",
     titleTr: "Hakkımızda - Kültür Platformu Freiburg",
     descriptionDe:
-      "Erfahren Sie mehr über unsere Mission, Vision und Werte. Kultur Plattform Freiburg fördert kulturelle Vielfalt und gesellschaftliches Engagement.",
+      "Erfahren Sie mehr über unsere Mission, Vision und Werte. Kultur Plattform Freiburg e.V. fördert kulturelle Vielfalt und gesellschaftliches Engagement.",
     descriptionTr:
-      "Misyonumuz, vizyonumuz ve değerlerimiz hakkında daha fazla bilgi edinin. Kültür Platformu Freiburg kültürel çeşitliliği ve toplumsal katılımı teşvik eder.",
+      "Misyonumuz, vizyonumuz ve değerlerimiz hakkında daha fazla bilgi edinin. Kültür Platformu Freiburg e.V. kültürel çeşitliliği ve toplumsal katılımı teşvik eder.",
     keywords:
       "über uns, mission, vision, werte, team, partner, integration, dialog, kulturelle veranstaltungen",
   },
