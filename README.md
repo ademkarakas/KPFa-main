@@ -1,4 +1,4 @@
-# KPF-Frontend
+# Kültür Platformu Freiburg (KPF)
 
 İki dilli (Türkçe/Almanca) kültür platformu web uygulaması ve admin paneli.
 
